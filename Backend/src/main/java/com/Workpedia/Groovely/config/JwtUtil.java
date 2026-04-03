@@ -1,5 +1,6 @@
 package com.Workpedia.Groovely.config;
 
+
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -38,6 +39,16 @@ public class JwtUtil {
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token).getBody().getSubject();
+    }
+
+    public String generateGoogleToken(String googleId) {
+        return Jwts.builder()
+                .setSubject(googleId)
+                .claim("type", "GOOGLE_LINK")
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 600_000))
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
     }
 
     public boolean validateToken(String token){
