@@ -1,13 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --background: #050510;
+  --background: #0A0A0B;
   --foreground: #ffffff;
-  --accent-cyan: #00D1FF;
-  --accent-magenta: #FF00FF;
-  --accent-purple: #9D00FF;
-  --card-bg: rgba(255, 255, 255, 0.03);
-  --card-border: rgba(255, 255, 255, 0.1);
+  --accent-cyan: #2DD4BF;
+  --accent-magenta: #D946EF;
+  --accent-purple: #8B5CF6;
+  --accent-purple-dark: #4C1D95;
+  --card-bg: rgba(255, 255, 255, 0.02);
+  --card-border: rgba(255, 255, 255, 0.05);
 }
 
 @theme inline {
@@ -16,6 +17,7 @@
   --color-accent-cyan: var(--accent-cyan);
   --color-accent-magenta: var(--accent-magenta);
   --color-accent-purple: var(--accent-purple);
+  --color-accent-purple-dark: var(--accent-purple-dark);
   --color-card-bg: var(--card-bg);
   --color-card-border: var(--card-border);
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
@@ -31,9 +33,9 @@ body {
 /* Custom utilities for the premium design */
 .mesh-gradient {
   background: 
-    radial-gradient(circle at 0% 20%, rgba(157, 0, 255, 0.25) 0%, transparent 50%),
-    radial-gradient(circle at 100% 20%, rgba(0, 209, 255, 0.2) 0%, transparent 50%),
-    #050510;
+    radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(45, 212, 191, 0.1) 0%, transparent 40%),
+    #0A0A0B;
 }
 
 .glass-card {
@@ -56,14 +58,14 @@ body {
 }
 
 .text-gradient-cyan {
-  background: linear-gradient(180deg, #00D1FF 0%, #0088AA 100%);
+  background: linear-gradient(to bottom right, #ffffff, #2DD4BF);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .text-gradient-purple {
-  background: linear-gradient(180deg, #FF00FF 0%, #9D00FF 100%);
+  background: linear-gradient(to bottom right, #ffffff, #8B5CF6);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;

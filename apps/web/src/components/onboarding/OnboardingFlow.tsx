@@ -7,7 +7,7 @@ import { Button } from '../ui/Button';
 import { ProgressBar } from '../ui/ProgressBar';
 import { SelectionCard } from './SelectionCard';
 import { WalletCard } from './WalletCard';
-import { Twitter as XIcon, Instagram as InstagramIcon, SoundCloud as SoundCloudIcon } from '../ui/SocialIcons';
+import { Twitter as XIcon, Instagram as InstagramIcon, SoundCloud as SoundCloudIcon, Google as GoogleIcon } from '../ui/SocialIcons';
 
 export const MetaMaskIcon = () => (
   <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="MetaMask" className="w-16 h-16" />
@@ -80,7 +80,8 @@ export const OnboardingFlow = () => {
       <main className="flex-1 flex items-start justify-center px-4 pt-2 pb-12 relative z-10 w-full">
         <div className={`w-full ${step === 4 ? 'max-w-[900px] p-6 md:p-8' : 'max-w-[640px] p-8 sm:p-10'} bg-black/40 backdrop-blur-2xl rounded-[40px] border border-white/5 shadow-2xl relative overflow-hidden mb-12 transition-all duration-500`}>
           {/* Subtle Background Inner Glow */}
-          <div className="absolute -top-24 -right-24 w-64 h-64 bg-accent-purple/5 blur-[80px] rounded-full" />
+          <div className="absolute -top-24 -right-24 w-64 h-64 bg-accent-purple/5 blur-[80px] rounded-full pointer-events-none" />
+
 
           {/* Back Button */}
           {step < 4 && (
@@ -185,8 +186,22 @@ export const OnboardingFlow = () => {
                 <Button fullWidth onClick={() => setStep(3)} disabled={!wallet}>
                   Connect
                 </Button>
-                <p className="text-zinc-500 text-sm font-medium text-center">
-                  Reassurance/helper text
+                
+                {/* OR Separator */}
+                <div className="relative flex items-center gap-4 py-2">
+                  <div className="flex-grow h-[1px] bg-white/5" />
+                  <span className="text-zinc-600 text-[10px] font-bold uppercase tracking-[0.2em] px-2">Or</span>
+                  <div className="flex-grow h-[1px] bg-white/5" />
+                </div>
+
+                {/* Google Button */}
+                <button className="w-full flex items-center justify-center gap-3 bg-white/5 border border-white/10 hover:bg-white/10 transition-all rounded-full py-4 group active:scale-[0.98]">
+                  <GoogleIcon size={18} />
+                  <span className="text-white font-bold text-sm tracking-wide">Continue with Google</span>
+                </button>
+                
+                <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest text-center mt-2">
+                  Your privacy matters. We won't post anything.
                 </p>
               </div>
 

@@ -1,0 +1,129 @@
+'use client';
+
+import React, { useState } from 'react';
+import { ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
+
+interface FeaturedTrack {
+  id: number;
+  title: string;
+  creator: string;
+  image: string;
+  licenseType: string;
+  price: string;
+  currency: string;
+}
+
+const FEATURED: FeaturedTrack[] = [
+  {
+    id: 1,
+    title: 'Neon Soul',
+    creator: 'Midnight Vibe',
+    image: 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+    licenseType: 'Exclusive License',
+    price: '0.25 ETH',
+    currency: '$420',
+  },
+  {
+    id: 2,
+    title: 'Lagos at 2AM',
+    creator: 'Groove Master',
+    image: 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+    licenseType: 'Non-Exclusive',
+    price: '0.05 ETH',
+    currency: '$84',
+  },
+  {
+    id: 3,
+    title: 'Cosmic Drift',
+    creator: 'Synth Wave',
+    image: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+    licenseType: 'Stems Included',
+    price: '0.12 ETH',
+    currency: '$202',
+  },
+  {
+    id: 4,
+    title: 'After Rain',
+    creator: 'Static Echo',
+    image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+    licenseType: 'Beat Lease',
+    price: '0.03 ETH',
+    currency: '$50',
+  },
+];
+
+import Link from 'next/link';
+
+export const FeaturedCarousel = () => {
+  const [active, setActive] = useState(0);
+
+  const prev = () => setActive(i => (i === 0 ? FEATURED.length - 1 : i - 1));
+  const next = () => setActive(i => (i === FEATURED.length - 1 ? 0 : i + 1));
+  const track = FEATURED[active];
+
+  return (
+    <div className="relative rounded-3xl overflow-hidden h-[300px] shadow-2xl group">
+      {/* Background image */}
+      <img
+        key={track.id}
+        src={track.image}
+        alt={track.title}
+        className="absolute inset-0 w-full h-full object-cover transition-all duration-700 scale-105 group-hover:scale-100"
+      />
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+
+      {/* Content */}
+      <div className="absolute inset-0 flex flex-col justify-end p-8">
+        <Link href={`/dashboard/marketplace/${track.id}`} className="block group/link">
+          <h2 className="text-4xl font-black text-white tracking-tight mb-1 drop-shadow-lg group-hover/link:text-accent-purple transition-colors">{track.title}</h2>
+          <p className="text-zinc-400 text-sm font-medium mb-5">{track.creator}</p>
+        </Link>
+
+        <div className="flex items-center gap-3">
+          {/* License pill */}
+          <div className="bg-black/50 border border-white/10 backdrop-blur-md rounded-xl px-4 py-2">
+            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">LICENSE</p>
+            <p className="text-xs font-bold text-white">{track.licenseType}</p>
+          </div>
+          {/* Price pill */}
+          <div className="bg-black/50 border border-white/10 backdrop-blur-md rounded-xl px-4 py-2">
+            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">PRICE</p>
+            <p className="text-xs font-bold text-white">{track.price}</p>
+          </div>
+          {/* Buy */}
+          <button className="ml-1 flex items-center gap-2 bg-accent-purple hover:bg-accent-purple/90 text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow-[0_0_20px_rgba(139,92,246,0.4)] transition-all hover:scale-105 active:scale-95">
+            <ShoppingCart size={15} />
+            Buy {track.currency}
+          </button>
+        </div>
+      </div>
+
+      {/* Arrow nav */}
+      <button
+        onClick={prev}
+        className="absolute left-4 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 border border-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-accent-purple/50 transition-all opacity-0 group-hover:opacity-100"
+      >
+        <ChevronLeft size={18} />
+      </button>
+      <button
+        onClick={next}
+        className="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 border border-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-accent-purple/50 transition-all opacity-0 group-hover:opacity-100"
+      >
+        <ChevronRight size={18} />
+      </button>
+
+      {/* Dots */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2">
+        {FEATURED.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setActive(i)}
+            className={`rounded-full transition-all duration-300 ${i === active ? 'w-6 h-2 bg-accent-purple' : 'w-2 h-2 bg-white/20 hover:bg-white/50'}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
