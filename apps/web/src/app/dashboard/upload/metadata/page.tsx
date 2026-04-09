@@ -207,7 +207,9 @@ export default function MetadataPage() {
               <Link href="/dashboard/upload">
                 <Button variant="secondary" className="px-10">Back to Step 1</Button>
               </Link>
-              <Button variant="primary" className="px-12 bg-accent-purple shadow-[0_0_20px_rgba(157,0,255,0.3)]">Continue to Mint</Button>
+              <Link href="/dashboard/upload/mint">
+                <Button variant="primary" className="px-12 bg-accent-purple shadow-[0_0_20px_rgba(157,0,255,0.3)]">Continue to Mint</Button>
+              </Link>
            </div>
         </footer>
       </div>

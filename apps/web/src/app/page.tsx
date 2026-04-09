@@ -18,12 +18,14 @@ export default function Home() {
       </div>
 
       {/* Navigation */}
-      <nav className="fixed top-0 z-50 flex w-full items-center justify-between px-12 py-8 backdrop-blur-xl bg-black/10 border-b border-white/5">
+      <nav className="fixed top-0 z-50 flex w-full items-center justify-between px-6 lg:px-12 py-6 backdrop-blur-md bg-black/40 border-b border-white/5">
         <Logo />
-        <div className="flex items-center gap-12 text-sm font-black uppercase tracking-widest">
-          <button className="text-zinc-500 hover:text-white transition-colors">Login</button>
-          <Link href="/onboarding" className="rounded-xl bg-accent-cyan px-8 py-3 text-black font-black hover:bg-cyan-400 transition-all shadow-[0_0_20px_rgba(0,209,255,0.3)] hover:scale-105">
-            Join Groovely
+        <div className="flex items-center gap-6 lg:gap-12">
+          <Link href="/login" className="text-zinc-500 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest">
+            Login/Signup
+          </Link>
+          <Link href="/onboarding" className="rounded-xl bg-accent-purple px-6 py-2.5 text-white text-xs font-bold hover:bg-accent-purple/90 transition-all uppercase tracking-widest shadow-[0_0_15px_rgba(139,92,246,0.3)]">
+            Explore Groovely
           </Link>
         </div>
       </nav>
@@ -31,19 +33,18 @@ export default function Home() {
       {/* Hero */}
       <Hero />
 
-      {/* Trusted By */}
-      <section className="py-24 border-y border-white/5 bg-black/20 relative z-10">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <p className="text-[10px] font-black tracking-[0.5em] text-zinc-500 mb-14 uppercase">
-            TRUSTED BY ARTISTS & DECORATORS FROM
-          </p>
-          <div className="flex flex-wrap justify-between items-center gap-12 opacity-40 grayscale hover:grayscale-0 transition-all hover:opacity-100 px-10">
-            <span className="text-2xl font-black tracking-tighter">SOUNDWAVE</span>
-            <span className="text-2xl font-extrabold tracking-[0.4em] text-zinc-300">AUDIUS</span>
-            <span className="text-3xl font-black italic tracking-tighter font-serif">VIBE.io</span>
-            <span className="text-2xl font-bold tracking-widest uppercase">MINTABLE</span>
-            <span className="text-2xl font-black tracking-[0.2em] italic">NOISE</span>
-          </div>
+      {/* Trusted By Ticker */}
+      <section className="py-6 border-y border-white/5 bg-white/[0.02] relative z-10 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 whitespace-nowrap">
+           <div className="flex items-center justify-center gap-20 animate-infinite-scroll">
+              <span className="text-[10px] font-bold tracking-[0.4em] text-zinc-600 uppercase shrink-0">TRUSTED BY NEXT-GEN ARTISTS FROM</span>
+              <div className="flex items-center gap-16 opacity-30">
+                 <span className="text-lg font-black tracking-tighter">METAMASK</span>
+                 <span className="text-lg font-black tracking-tighter">SPOTIFY</span>
+                 <span className="text-xl font-bold italic tracking-tighter">SoundCloud</span>
+                 <span className="text-lg font-black tracking-widest uppercase">AUDIUS</span>
+              </div>
+           </div>
         </div>
       </section>
 
@@ -51,22 +52,22 @@ export default function Home() {
       <FeatureCards />
 
       {/* Why Choose Fragment */}
-      <section className="py-32 px-6 bg-gradient-to-b from-transparent to-black/40 relative z-10">
+      <section className="py-32 px-6 relative z-10">
         <div className="max-w-7xl mx-auto text-center">
           <h2 className="text-4xl lg:text-5xl font-black mb-6 uppercase tracking-tighter">Why choose Groovely?</h2>
-          <p className="text-zinc-500 text-lg mb-24 max-w-2xl mx-auto font-medium">The future of audio is decentralized, fast, and fun.</p>
+          <p className="text-zinc-600 text-lg mb-24 max-w-2xl mx-auto font-medium">The future of audio is decentralized, fair, and fun.</p>
           <div className="grid md:grid-cols-3 gap-20">
             {[
-              { icon: '⭐', title: 'Direct Ownership', desc: 'Your music is yours. Forever. We take zero middleman fees on your hard work.' },
-              { icon: '⚡', title: 'Instant Payouts', desc: 'No more waiting months for streaming checks. Revenue flows to your wallet in real-time.' },
-              { icon: '👥', title: 'Community First', desc: 'Chat, share, and vibe in real-time listening rooms. Build a superfan base that pays.' }
+              { color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20', icon: '⊙', title: 'Direct Ownership', desc: 'Your music is yours. Forever. We take zero middleman fees on your hard work.' },
+              { color: 'bg-accent-purple/10 text-accent-purple border-accent-purple/20', icon: '▶', title: 'Instant Payouts', desc: 'No more waiting months for streaming checks. Revenue flows to your wallet in real-time.' },
+              { color: 'bg-red-500/10 text-red-500 border-red-500/20', icon: '♡', title: 'Community First', desc: 'Chat, share, and vibe in real-time listening rooms. Build a superfan base that pays.' }
             ].map((feature, i) => (
               <div key={i} className="flex flex-col items-center">
-                <div className="w-20 h-20 rounded-[28px] bg-white/5 flex items-center justify-center text-3xl mb-10 border border-white/10 shadow-xl group hover:border-accent-purple transition-all">
+                <div className={`w-20 h-20 rounded-full ${feature.color} flex items-center justify-center text-3xl mb-8 border shadow-lg`}>
                   {feature.icon}
                 </div>
-                <h4 className="text-2xl font-black mb-5 uppercase tracking-tight">{feature.title}</h4>
-                <p className="text-zinc-500 text-md leading-relaxed max-w-xs font-medium">
+                <h4 className="text-xl font-black mb-4 uppercase tracking-tight">{feature.title}</h4>
+                <p className="text-zinc-500 text-sm leading-relaxed max-w-xs font-medium">
                   {feature.desc}
                 </p>
               </div>
@@ -83,52 +84,50 @@ export default function Home() {
 
       {/* Web3 Info */}
       <section className="py-32 px-6 text-center relative z-10">
-         <div className="w-16 h-16 rounded-full border-2 border-accent-cyan/40 bg-accent-cyan/5 flex items-center justify-center mx-auto mb-10 text-accent-cyan font-black text-xl shadow-lg">
-            0
+         <div className="w-12 h-12 rounded-full border border-emerald-500/40 bg-emerald-500/10 flex items-center justify-center mx-auto mb-10 text-emerald-500 font-bold text-xl shadow-lg">
+            🛡️
          </div>
-         <h2 className="text-4xl lg:text-5xl font-black mb-8 uppercase tracking-tighter">New to Web3? No problem.</h2>
-         <p className="text-zinc-500 max-w-2xl mx-auto leading-relaxed text-lg font-medium italic opacity-80">
-           "You don't need a crypto wallet to get started. Sign up with your email, and we'll create a secure custodial wallet for you. You own your assets, always."
+         <h2 className="text-4xl lg:text-5xl font-black mb-6 uppercase tracking-tighter">New to Web3? No problem.</h2>
+         <p className="text-zinc-500 max-w-2xl mx-auto leading-relaxed text-sm lg:text-md font-medium">
+           Setting started is easier than you think. Connect your wallet and enjoy full ownership of everything you create and collect.
          </p>
       </section>
 
       {/* Ready CTA */}
-      <section className="py-32 px-6 text-center relative overflow-hidden z-10">
+      <section className="py-40 px-6 text-center relative overflow-hidden z-10">
          <div className="max-w-7xl mx-auto">
-            <h2 className="text-6xl md:text-8xl font-black mb-16 uppercase tracking-tighter">
-              Ready to <span className="text-accent-magenta italic font-serif">Groove?</span>
+            <h2 className="text-6xl md:text-[100px] font-black mb-16 uppercase tracking-tighter leading-tight">
+              Ready to <span className="text-accent-purple">Groove?</span>
             </h2>
-            <div className="flex flex-wrap justify-center gap-8">
-              <Link href="/onboarding" className="rounded-full bg-accent-cyan px-14 py-6 text-black font-black text-xl hover:scale-105 transition-all shadow-[0_0_50px_rgba(0,209,255,0.4)] uppercase tracking-widest">
-                Join Groovely Free
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-6">
+              <Link href="/login" className="w-full sm:w-auto rounded-xl border border-white/10 bg-white/5 px-12 py-5 text-white font-bold text-sm hover:bg-white/10 transition-all uppercase tracking-widest">
+                Log In/Sign Up
               </Link>
-              <button className="rounded-full border border-white/20 px-14 py-6 font-black text-xl hover:bg-white/5 transition-all uppercase tracking-widest">
-                View Top Charts
-              </button>
+              <Link href="/onboarding" className="w-full sm:w-auto rounded-xl bg-accent-purple px-12 py-5 text-white font-bold text-sm hover:bg-accent-purple/90 transition-all shadow-[0_0_25px_rgba(139,92,246,0.3)] hover:scale-105 uppercase tracking-widest">
+                Explore Groovely
+              </Link>
             </div>
          </div>
-         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-[600px] bg-gradient-to-t from-accent-purple/20 to-transparent -z-10 blur-3xl opacity-50" />
+         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-[400px] bg-accent-purple/5 blur-[120px] -z-10 pointer-events-none" />
       </section>
 
       {/* Footer */}
-      <footer className="py-32 px-12 border-t border-white/5 relative z-10 bg-black/40">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-16">
-          <div className="grayscale brightness-200">
-            <Logo />
+      <footer className="py-24 px-6 lg:px-12 border-t border-white/5 relative z-10 bg-black/40">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-12">
+          <Logo />
+          <div className="flex flex-wrap justify-center gap-8 font-bold tracking-widest text-zinc-600 uppercase text-[10px]">
+            <a href="#" className="hover:text-white transition-colors">About</a>
+            <a href="#" className="hover:text-white transition-colors">Terms</a>
+            <a href="#" className="hover:text-white transition-colors">Pricing</a>
+            <a href="#" className="hover:text-white transition-colors">Support</a>
           </div>
-          <div className="flex gap-12 font-black tracking-[0.3em] text-zinc-500 uppercase text-[11px]">
-            <a href="#" className="hover:text-white transition-colors">Music</a>
-            <a href="#" className="hover:text-white transition-colors">Work</a>
-            <a href="#" className="hover:text-white transition-colors">Privacy</a>
-            <a href="#" className="hover:text-white transition-colors">Cookies</a>
-          </div>
-          <div className="flex gap-8 opacity-40 hover:opacity-100 transition-opacity">
-             <span className="text-white cursor-pointer hover:text-accent-cyan transition-colors text-xl">𝕏</span>
-             <span className="text-white cursor-pointer hover:text-accent-purple transition-colors text-xl">👾</span>
+          <div className="flex gap-6">
+             <span className="text-zinc-600 cursor-pointer hover:text-white transition-colors text-lg">𝕏</span>
+             <span className="text-zinc-600 cursor-pointer hover:text-white transition-colors text-lg">👾</span>
           </div>
         </div>
-        <div className="max-w-7xl mx-auto mt-20 text-center text-[10px] text-zinc-700 tracking-[0.6em] uppercase font-black">
-          © 2024 Groovely Inc. All vibes reserved.
+        <div className="max-w-7xl mx-auto mt-16 text-center text-[10px] text-zinc-800 tracking-widest uppercase font-bold">
+          © 2024 Groovely Inc. All rights reserved.
         </div>
       </footer>
     </div>
