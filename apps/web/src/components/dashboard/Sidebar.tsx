@@ -17,6 +17,7 @@ import {
   MessageSquare,
   LogOut,
   Upload,
+  Settings
 } from 'lucide-react';
 
 interface NavItemProps {
@@ -76,21 +77,22 @@ export const Sidebar = ({ activePage }: SidebarProps = {}) => {
 
       <nav className="flex-1 space-y-1">
         <NavItem icon={LayoutDashboard} label="Dashboard"        href="/dashboard"              active={isDashboard} />
-        <NavItem icon={Library}        label="My Library"        href="/dashboard/library" />
-        <NavItem icon={Wallet}         label="Earnings"          href="/dashboard/earnings" />
+        <NavItem icon={Library}        label="My Library"        href="/dashboard/library"      active={pathname === '/dashboard/library'} />
+        <NavItem icon={Wallet}         label="Earnings"          href="/dashboard/earnings"     active={pathname === '/dashboard/earnings'} />
 
         <div className="h-px bg-white/5 my-6 mx-6" />
 
         <NavItem icon={Store}          label="Groovely Market"   href="/dashboard/marketplace"  active={isMarket} />
-        <NavItem icon={BarChart3}      label="Analytics"         href="/dashboard/analytics" />
+        <NavItem icon={BarChart3}      label="Analytics"         href="/dashboard/analytics"    active={pathname === '/dashboard/analytics'} />
         <NavItem icon={Sparkles}       label="AI Tools"          comingSoon />
         <NavItem icon={Headphones}     label="Listening Rooms"   href="/dashboard/rooms" />
 
         <div className="h-px bg-white/5 my-6 mx-6" />
 
-        <NavItem icon={User}           label="Profile"           href="/dashboard/profile" />
+        <NavItem icon={User}           label="Profile"           href="/dashboard/profile"      active={pathname === '/dashboard/profile'} />
         <NavItem icon={FileText}       label="Licenses"          href="/dashboard/licenses" />
         <NavItem icon={MessageSquare}  label="Community &amp; Support" href="/dashboard/community" />
+        <NavItem icon={Settings}       label="Settings"          href="/dashboard/settings"     active={pathname === '/dashboard/settings'} />
       </nav>
 
       <div className="mt-auto px-4 pb-4">
