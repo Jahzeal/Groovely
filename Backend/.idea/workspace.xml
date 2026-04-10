@@ -44,7 +44,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "Spring Boot.Application.executor": "Run",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "dev",
     "last_opened_file_path": "C:/Users/user/Desktop/Groovely/Backend",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
@@ -81,6 +81,7 @@
       <workItem from="1774796985554" duration="3767000" />
       <workItem from="1775047741119" duration="27034000" />
       <workItem from="1775499823879" duration="5968000" />
+      <workItem from="1775816697296" duration="424000" />
     </task>
     <servers />
   </component>
