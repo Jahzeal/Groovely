@@ -27,23 +27,23 @@ public class CorsConfig {
 
         config.setAllowedOrigins(origins);
 
-        // Allow all standard HTTP methods
+        // http methods
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
 
-        // Allow all headers including Authorization (for JWT)
+        // Allow all headers(for JWT)
         config.setAllowedHeaders(List.of("*"));
 
-        // Expose Authorization header to frontend
+        // Expose header to frontend
         config.setExposedHeaders(List.of("Authorization", "Content-Type"));
 
-        // Allow credentials (cookies, auth headers)
+        // Allow cookies, auth headers
         config.setAllowCredentials(true);
 
-        // Cache preflight response for 1 hour
+        // Cache preflight response
         config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // Apply to all endpoints
+        //all endpoints
         source.registerCorsConfiguration("/**", config);
         return source;
     }
