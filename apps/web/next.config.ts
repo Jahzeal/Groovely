@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
         destination: '/dashboard/marketplace',
         permanent: false,
       },
+      {
+        source: '/explore',
+        destination: '/dashboard/explore',
+        permanent: false,
+      },
     ];
   },
 };
