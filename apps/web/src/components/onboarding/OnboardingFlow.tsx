@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAccount, useConnect, useDisconnect, useSignMessage } from 'wagmi';
 import { Logo } from '../ui/Logo';
 import { Button } from '../ui/Button';
 import { ProgressBar } from '../ui/ProgressBar';
@@ -15,16 +16,16 @@ export const MetaMaskIcon = () => (
 
 export const WalletConnectIcon = () => (
   <svg width="64" height="64" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="50" cy="50" r="50" fill="#3B99FC"/>
-    <path d="M72.2965 37.6433C60.0384 25.4309 40.1037 25.4309 27.8455 37.6433C27.1353 38.3506 27.1353 39.4975 27.8455 40.2048L32.1472 44.4905C32.4938 44.8358 33.0558 44.8358 33.4024 44.4905C42.548 35.3789 57.3826 35.3789 66.5283 44.4905C66.8749 44.8358 67.4368 44.8358 67.7834 44.4905L72.0851 40.2048C72.7954 39.4975 72.7954 38.3506 72.2965 37.6433Z" fill="white"/>
-    <path d="M84.7679 49.9868C79.4673 44.7061 70.8388 44.7061 65.5381 49.9868C65.1915 50.3321 65.1915 50.8919 65.5381 51.2372L69.8398 55.523C70.5501 56.2302 70.5501 57.3771 69.8398 58.0844C66.3688 61.5425 60.7138 61.5425 57.2427 58.0844L52.8872 53.7449C51.2721 52.1357 48.6586 52.1357 47.0434 53.7449L42.6879 58.0844C39.2168 61.5425 33.5619 61.5425 30.0908 58.0844C29.3806 57.3771 29.3806 56.2302 30.0908 55.523L34.3925 51.2372C34.7391 50.8919 34.7391 50.3321 34.3925 49.9868C29.0919 44.7061 20.4633 44.7061 15.1627 49.9868C14.4524 50.6941 14.4524 51.841 15.1627 52.5483L25.9613 63.3067C31.2503 68.5759 39.8143 68.5759 45.1033 63.3067L49.07 59.3547C49.569 58.8576 50.3805 58.8576 50.8795 59.3547L54.8462 63.3067C60.1352 68.5759 68.6993 68.5759 73.9883 63.3067L84.7869 52.5483C85.4971 51.841 85.4971 50.6941 84.7679 49.9868Z" fill="white"/>
+    <circle cx="50" cy="50" r="50" fill="#3B99FC" />
+    <path d="M72.2965 37.6433C60.0384 25.4309 40.1037 25.4309 27.8455 37.6433C27.1353 38.3506 27.1353 39.4975 27.8455 40.2048L32.1472 44.4905C32.4938 44.8358 33.0558 44.8358 33.4024 44.4905C42.548 35.3789 57.3826 35.3789 66.5283 44.4905C66.8749 44.8358 67.4368 44.8358 67.7834 44.4905L72.0851 40.2048C72.7954 39.4975 72.7954 38.3506 72.2965 37.6433Z" fill="white" />
+    <path d="M84.7679 49.9868C79.4673 44.7061 70.8388 44.7061 65.5381 49.9868C65.1915 50.3321 65.1915 50.8919 65.5381 51.2372L69.8398 55.523C70.5501 56.2302 70.5501 57.3771 69.8398 58.0844C66.3688 61.5425 60.7138 61.5425 57.2427 58.0844L52.8872 53.7449C51.2721 52.1357 48.6586 52.1357 47.0434 53.7449L42.6879 58.0844C39.2168 61.5425 33.5619 61.5425 30.0908 58.0844C29.3806 57.3771 29.3806 56.2302 30.0908 55.523L34.3925 51.2372C34.7391 50.8919 34.7391 50.3321 34.3925 49.9868C29.0919 44.7061 20.4633 44.7061 15.1627 49.9868C14.4524 50.6941 14.4524 51.841 15.1627 52.5483L25.9613 63.3067C31.2503 68.5759 39.8143 68.5759 45.1033 63.3067L49.07 59.3547C49.569 58.8576 50.3805 58.8576 50.8795 59.3547L54.8462 63.3067C60.1352 68.5759 68.6993 68.5759 73.9883 63.3067L84.7869 52.5483C85.4971 51.841 85.4971 50.6941 84.7679 49.9868Z" fill="white" />
   </svg>
 );
 
 export const PhantomIcon = () => (
   <svg width="64" height="64" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect width="128" height="128" rx="32" fill="#AB9FF2"/>
-    <path fillRule="evenodd" clipRule="evenodd" d="M47.7923 93L47.7818 92.9897L47.7288 92.9376L47.7923 83.25V47.5C47.7923 45.4289 49.4712 43.75 51.5423 43.75H73.0423C85.5898 43.75 95.7923 53.9525 95.7923 66.5V93L87.7923 85L79.7923 93L71.7923 85L63.7923 93L55.7923 85L47.7923 93ZM81.5423 58.75C81.5423 61.5114 79.3037 63.75 76.5423 63.75C73.7809 63.75 71.5423 61.5114 71.5423 58.75C71.5423 55.9886 73.7809 53.75 76.5423 53.75C79.3037 53.75 81.5423 55.9886 81.5423 58.75ZM66.5423 58.75C66.5423 61.5114 64.3037 63.75 61.5423 63.75C58.7809 63.75 56.5423 61.5114 56.5423 58.75C56.5423 55.9886 58.7809 53.75 61.5423 53.75C64.3037 53.75 66.5423 55.9886 66.5423 58.75Z" fill="white"/>
+    <rect width="128" height="128" rx="32" fill="#AB9FF2" />
+    <path fillRule="evenodd" clipRule="evenodd" d="M47.7923 93L47.7818 92.9897L47.7288 92.9376L47.7923 83.25V47.5C47.7923 45.4289 49.4712 43.75 51.5423 43.75H73.0423C85.5898 43.75 95.7923 53.9525 95.7923 66.5V93L87.7923 85L79.7923 93L71.7923 85L63.7923 93L55.7923 85L47.7923 93ZM81.5423 58.75C81.5423 61.5114 79.3037 63.75 76.5423 63.75C73.7809 63.75 71.5423 61.5114 71.5423 58.75C71.5423 55.9886 73.7809 53.75 76.5423 53.75C79.3037 53.75 81.5423 55.9886 81.5423 58.75ZM66.5423 58.75C66.5423 61.5114 64.3037 63.75 61.5423 63.75C58.7809 63.75 56.5423 61.5114 56.5423 58.75C56.5423 55.9886 58.7809 53.75 61.5423 53.75C64.3037 53.75 66.5423 55.9886 66.5423 58.75Z" fill="white" />
   </svg>
 );
 
@@ -48,12 +49,113 @@ export const OnboardingFlow = () => {
   const [step, setStep] = useState(1);
   const [role, setRole] = useState<'creator' | 'listener' | null>(null);
   const [wallet, setWallet] = useState<'metamask' | 'walletconnect' | 'phantom' | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Profile data (Step 3)
+  const [displayName, setDisplayName] = useState('');
+  const [username, setUsername] = useState('');
+  const [bio, setBio] = useState('');
+  const [creatorType, setCreatorType] = useState('');
+
+  const { address, isConnected } = useAccount();
+  const { connectAsync, connectors } = useConnect();
+  const { disconnect } = useDisconnect();
+  const { signMessageAsync } = useSignMessage();
 
   const handleBack = () => {
     if (step > 1) {
       setStep(step - 1);
     } else {
       router.back();
+    }
+  };
+
+  const handleConnectWallet = async () => {
+    if (!wallet) return;
+    setLoading(true);
+    setError(null);
+    try {
+      // 1. Find the right connector using improved discovery (EIP-6963)
+      const target = wallet?.toLowerCase() || ''; // 'metamask', 'phantom', etc.
+      let connector = connectors.find((c: any) => {
+        const cName = c.name.toLowerCase();
+        const cId = c.id.toLowerCase();
+        return cId.includes(target) || cName.includes(target);
+      });
+
+      // Special case: If still not found for 'metamask', try generic 'injected'
+      if (!connector && target === 'metamask') {
+        connector = connectors.find((c: any) => c.id === 'injected');
+      }
+
+      if (!connector) connector = connectors[0];
+
+      // 2. Connect
+      if (!isConnected) {
+        await connectAsync({ connector });
+      }
+
+      // 3. Fetch Nonce
+      const walletAddr = address || (await connectAsync({ connector })).accounts[0];
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.groovely.io';
+      const nonceRes = await fetch(`${apiUrl}/api/auth/nonce/${walletAddr}`);
+      if (!nonceRes.ok) throw new Error('Failed to fetch nonce');
+      const { nonce, message } = await nonceRes.json();
+
+      // 4. Sign Message
+      const signature = await signMessageAsync({ message });
+
+      // 5. Connect Backend
+      const connectRes = await fetch(`${apiUrl}/api/auth/wallet/connect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress: walletAddr, signature }),
+      });
+
+      if (!connectRes.ok) throw new Error('Authentication failed');
+      const authData = await connectRes.json();
+
+      // 6. Store JWT
+      localStorage.setItem('groovely_token', authData.token);
+      localStorage.setItem('groovely_user_id', authData.userId);
+
+      // Move to Step 3
+      setStep(3);
+    } catch (err: any) {
+      console.error('Connection error:', err);
+      setError(err.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem('groovely_token');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.groovely.io';
+      const res = await fetch(`${apiUrl}/api/users/me`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          displayName,
+          username,
+          bio,
+          creatorType: role === 'creator' ? creatorType : 'FAN'
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to update profile');
+      setStep(4);
+    } catch (err: any) {
+      setError(err.message || 'Failed to save profile');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -157,6 +259,11 @@ export const OnboardingFlow = () => {
                 <p className="text-zinc-400 text-lg font-medium text-center">
                   Choose a wallet to connect to Groovely
                 </p>
+                {error && (
+                  <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm font-medium">
+                    {error}
+                  </div>
+                )}
               </div>
 
               {/* Wallet Cards */}
@@ -183,10 +290,10 @@ export const OnboardingFlow = () => {
 
               {/* Connect Button */}
               <div className="space-y-6">
-                <Button fullWidth onClick={() => setStep(3)} disabled={!wallet}>
-                  Connect
+                <Button fullWidth onClick={handleConnectWallet} disabled={!wallet || loading}>
+                  {loading ? 'Connecting...' : 'Connect'}
                 </Button>
-                
+
                 {/* OR Separator */}
                 <div className="relative flex items-center gap-4 py-2">
                   <div className="flex-grow h-[1px] bg-white/5" />
@@ -199,7 +306,7 @@ export const OnboardingFlow = () => {
                   <GoogleIcon size={18} />
                   <span className="text-white font-bold text-sm tracking-wide">Continue with Google</span>
                 </button>
-                
+
                 <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest text-center mt-2">
                   Your privacy matters. We won't post anything.
                 </p>
@@ -225,8 +332,13 @@ export const OnboardingFlow = () => {
                   You're almost ready to create, stream, and connect. Let's personalize your space
                 </p>
                 <div className="bg-white/5 border border-white/10 px-4 py-1.5 rounded-full text-xs font-semibold text-white">
-                  Wallet Connected: 0xA3C...91B7
+                  Wallet Connected: {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Not Connected'}
                 </div>
+                {error && (
+                  <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm font-medium">
+                    {error}
+                  </div>
+                )}
               </div>
 
               {/* Profile Image Upload */}
@@ -248,6 +360,8 @@ export const OnboardingFlow = () => {
                   <label className="block text-sm font-bold text-white mb-2">Display Name</label>
                   <input
                     type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
                     placeholder="Enter your display name"
                     className="w-full bg-transparent border border-white/20 rounded-xl px-4 py-3 placeholder-zinc-600 text-white focus:outline-none focus:border-accent-purple transition-colors"
                   />
@@ -260,6 +374,8 @@ export const OnboardingFlow = () => {
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-medium pt-0.5">@</span>
                     <input
                       type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
                       placeholder="Username"
                       className="w-full bg-transparent border border-white/20 rounded-xl pl-10 pr-4 py-3 placeholder-zinc-600 text-white focus:outline-none focus:border-accent-purple transition-colors"
                     />
@@ -272,6 +388,8 @@ export const OnboardingFlow = () => {
                     <div>
                       <label className="block text-sm font-bold text-white mb-2">Bio</label>
                       <textarea
+                        value={bio}
+                        onChange={(e) => setBio(e.target.value)}
                         placeholder="Tell the world what kind of sound you make"
                         rows={4}
                         className="w-full bg-transparent border border-white/20 rounded-xl px-4 py-3 placeholder-zinc-600 text-white focus:outline-none focus:border-accent-purple transition-colors resize-none"
@@ -282,8 +400,12 @@ export const OnboardingFlow = () => {
                     <div>
                       <label className="block text-sm font-bold text-white mb-2">Creator Type</label>
                       <div className="relative">
-                        <select className="w-full bg-transparent border border-white/20 rounded-xl px-4 py-3 text-zinc-500 appearance-none focus:outline-none focus:border-accent-purple transition-colors cursor-pointer">
-                          <option value="" disabled selected>I'm a...</option>
+                        <select
+                          value={creatorType}
+                          onChange={(e) => setCreatorType(e.target.value)}
+                          className="w-full bg-transparent border border-white/20 rounded-xl px-4 py-3 text-zinc-500 appearance-none focus:outline-none focus:border-accent-purple transition-colors cursor-pointer"
+                        >
+                          <option value="" disabled>I'm a...</option>
                           <option value="artist">Artist</option>
                           <option value="producer">Producer</option>
                           <option value="dj">DJ</option>
@@ -326,7 +448,14 @@ export const OnboardingFlow = () => {
                   </div>
                 )}
                 <div className="flex-1">
-                  <Button variant="primary" className="w-full text-sm" onClick={() => setStep(4)}>Save & Continue</Button>
+                  <Button
+                    variant="primary"
+                    className="w-full text-sm"
+                    onClick={handleSaveProfile}
+                    disabled={loading || !displayName || !username}
+                  >
+                    {loading ? 'Saving...' : 'Save & Continue'}
+                  </Button>
                 </div>
               </div>
 
@@ -340,35 +469,35 @@ export const OnboardingFlow = () => {
           {step === 4 && (
             <div className="flex flex-col md:flex-row gap-8 md:gap-12 items-center text-center md:text-left">
               <div className="w-full md:w-1/2 flex-shrink-0">
-                <img 
-                   src={role === 'creator' 
-                     ? "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                     : "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-                   } 
-                   alt={role === 'creator' ? "Creator Success" : "Fan Success"} 
-                   className="w-full aspect-[4/5] object-cover rounded-[32px] shadow-lg"
+                <img
+                  src={role === 'creator'
+                    ? "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                    : "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                  }
+                  alt={role === 'creator' ? "Creator Success" : "Fan Success"}
+                  className="w-full aspect-[4/5] object-cover rounded-[32px] shadow-lg"
                 />
               </div>
               <div className="w-full md:w-1/2 flex flex-col justify-center py-4">
-                 <h1 className="text-[32px] md:text-4xl font-extrabold tracking-tight mb-4 text-white">
-                   {role === 'creator' ? `You're all set, [Display Name]!` : `Welcome to Groovely, [Display Name]!`}
-                 </h1>
-                 <p className="text-zinc-400 text-base font-medium mb-10 leading-relaxed max-w-sm mx-auto md:mx-0">
-                   Your wallet and profile are now connected to Groovely<br/><br/>
-                   {role === 'creator' 
-                     ? "Start creating, streaming, and connecting with your sound"
-                     : "Start streaming and connecting with your sound"
-                   }
-                 </p>
-                 <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                   <Button variant="secondary" className="flex-1 bg-white/5 border-none hover:bg-white/10 text-sm" onClick={() => router.push('/marketplace')}>Visit Marketplace</Button>
-                   <Button variant="primary" className="flex-1 text-sm" onClick={() => router.push(role === 'creator' ? '/dashboard' : '/explore')}>
-                     {role === 'creator' ? 'Go to Dashboard' : 'Explore'}
-                   </Button>
-                 </div>
-                 <p className="text-zinc-500 text-[11px] font-medium px-4 md:px-0">
-                   Groovely keeps your data secure, your wallet stays under your control
-                 </p>
+                <h1 className="text-[32px] md:text-4xl font-extrabold tracking-tight mb-4 text-white">
+                  {role === 'creator' ? `You're all set, ${displayName}!` : `Welcome to Groovely, ${displayName}!`}
+                </h1>
+                <p className="text-zinc-400 text-base font-medium mb-10 leading-relaxed max-w-sm mx-auto md:mx-0">
+                  Your wallet and profile are now connected to Groovely<br /><br />
+                  {role === 'creator'
+                    ? "Start creating, streaming, and connecting with your sound"
+                    : "Start streaming and connecting with your sound"
+                  }
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 mb-8">
+                  <Button variant="secondary" className="flex-1 bg-white/5 border-none hover:bg-white/10 text-sm" onClick={() => router.push('/marketplace')}>Visit Marketplace</Button>
+                  <Button variant="primary" className="flex-1 text-sm" onClick={() => router.push(role === 'creator' ? '/dashboard' : '/explore')}>
+                    {role === 'creator' ? 'Go to Dashboard' : 'Explore'}
+                  </Button>
+                </div>
+                <p className="text-zinc-500 text-[11px] font-medium px-4 md:px-0">
+                  Groovely keeps your data secure, your wallet stays under your control
+                </p>
               </div>
             </div>
           )}
