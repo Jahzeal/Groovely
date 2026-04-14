@@ -8,6 +8,7 @@ public record UserProfileDto(
         String id,
         String walletAddress,
         String username,
+        String displayName,
         String bio,
         User.CreatorType creatorType,
         String avatarUrl,
@@ -22,7 +23,8 @@ public record UserProfileDto(
         return new UserProfileDto(
                 user.getId(),
                 user.getWalletAddress(),
-                user.getId(),
+                user.getUsername(),
+                user.getDisplayName(),
                 user.getBio(),
                 user.getCreatorType(),
                 user.getAvatarUrl(),

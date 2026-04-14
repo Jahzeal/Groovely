@@ -23,6 +23,9 @@ public class User {
     @Column(name = "wallet_address", unique = true, nullable = false, length = 42)
     private String walletAddress;
 
+    @Column(name = "display_name")
+    private String displayName;
+
     @Column(name = "username", unique = true, length = 50)
     private String username;
 
@@ -65,10 +68,11 @@ public class User {
     private LocalDateTime updatedAt;
 
     public enum CreatorType {
-        MUSICIAN,
+        ARTIST,
         PRODUCER,
+        DJ,
+        SKIT_MAKER,
         PODCASTER,
-        SKIT_CREATOR,
         FAN,
         OTHER
     }
