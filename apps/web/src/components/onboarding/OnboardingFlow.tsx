@@ -430,9 +430,11 @@ export const OnboardingFlow = () => {
                           className="w-full bg-transparent border border-white/20 rounded-xl px-4 py-3 text-zinc-500 appearance-none focus:outline-none focus:border-accent-purple transition-colors cursor-pointer"
                         >
                           <option value="" disabled>I'm a...</option>
-                          <option value="artist">Artist</option>
-                          <option value="producer">Producer</option>
-                          <option value="dj">DJ</option>
+                          <option value="ARTIST">Artist</option>
+                          <option value="PRODUCER">Producer</option>
+                          <option value="DJ">DJ</option>
+                          <option value="SKIT_MAKER">Skit Maker</option>
+                          <option value="PODCASTER">Podcaster</option>
                         </select>
                         <svg className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                       </div>

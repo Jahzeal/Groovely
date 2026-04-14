@@ -34,6 +34,7 @@ public class UserService {
             user.setUsername(req.username());
         }
 
+        if (req.displayName() != null) user.setDisplayName(req.displayName());
         if (req.bio() != null) user.setBio(req.bio());
         if (req.creatorType() != null) user.setCreatorType(req.creatorType());
         if (req.avatarUrl() != null)      user.setAvatarUrl(req.avatarUrl());
