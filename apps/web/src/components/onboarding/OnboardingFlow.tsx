@@ -137,13 +137,19 @@ export const OnboardingFlow = () => {
 
       if (!connectRes.ok) throw new Error('Authentication failed');
       const authData = await connectRes.json();
+      console.log('Step 5 SUCCESS. authData:', { isNewUser: authData.isNewUser, userId: authData.userId });
 
       // 6. Store JWT
       localStorage.setItem('groovely_token', authData.token);
       localStorage.setItem('groovely_user_id', authData.userId);
+      localStorage.setItem('groovely_wallet', walletAddr);
 
-      // Move to Step 3
-      setStep(3);
+      // Move to Step 3 if new, else dashboard
+      if (authData.isNewUser) {
+        setStep(3);
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err: any) {
       console.error('Connection error step trace:', err);
       if (err instanceof Error) {
@@ -153,6 +159,12 @@ export const OnboardingFlow = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleLogin = () => {
+    // Redirect browser to backend Google Auth endpoint
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://groovely-f7i7.onrender.com';
+    window.location.href = `${backendUrl}/oauth2/authorization/google`;
   };
 
   const handleSaveProfile = async () => {
@@ -326,7 +338,10 @@ export const OnboardingFlow = () => {
                 </div>
 
                 {/* Google Button */}
-                <button className="w-full flex items-center justify-center gap-3 bg-white/5 border border-white/10 hover:bg-white/10 transition-all rounded-full py-4 group active:scale-[0.98]">
+                <button 
+                  onClick={handleGoogleLogin}
+                  className="w-full flex items-center justify-center gap-3 bg-white/5 border border-white/10 hover:bg-white/10 transition-all rounded-full py-4 group active:scale-[0.98]"
+                >
                   <GoogleIcon size={18} />
                   <span className="text-white font-bold text-sm tracking-wide">Continue with Google</span>
                 </button>

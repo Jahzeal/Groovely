@@ -28,7 +28,7 @@ public class GoogleAccount {
     @Column(name = "display_name")
     private String displayName;
 
-    @Column(name="created_at", nullable = false)
+    @Column(name = "avatar_url")
     private String avatarUrl;
 
     @OneToOne(fetch = FetchType.LAZY)
@@ -36,7 +36,7 @@ public class GoogleAccount {
     private User user;
 
     @CreationTimestamp
-    @Column(name="created_at", updatable = false, insertable = false)
+    @Column(name="created_at")
     private LocalDateTime createdAt;
 
     public boolean hasLinnkedWallet(){
