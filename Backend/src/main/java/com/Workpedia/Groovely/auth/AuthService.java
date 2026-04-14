@@ -93,7 +93,7 @@ public class AuthService {
 
         log.info("Wallet {} authenticated. New user: {}", address, isNewUser);
         return AuthResponse.builder()
-                .token(jwtUtil.generateToken(address))
+                .token(jwtUtil.generateToken(user.getId()))
                 .walletAddress(address)
                 .userId(user.getId())
                 .isNewUser(isNewUser)

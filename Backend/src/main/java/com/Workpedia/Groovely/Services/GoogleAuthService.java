@@ -61,26 +61,33 @@ public class GoogleAuthService {
         googleAccount.setAvatarUrl(avatarUrl);
         googleAccountRepository.save(googleAccount);
 
-        if(googleAccount.hasLinnkedWallet()){
-            User user = googleAccount.getUser();
-            String token = jwtUtil.generateToken(user.getWalletAddress());
-            log.info("Wallet has been linked");
-
-            return GoogleAuthResponse.builder()
-                    .status("AUTHENTICATED")
-                    .token(token).walletAddress(user.getWalletAddress())
-                    .userId(user.getId())
-                    .isNewUser(false)
+        if (googleAccount.getUser() == null) {
+            log.info("Creating new User for Google account: {}", email);
+            User newUser = User.builder()
+                    .displayName(displayName)
+                    .avatarUrl(avatarUrl)
+                    .creatorType(User.CreatorType.FAN)
+                    .active(true)
+                    .verified(false)
                     .build();
+            User savedUser = userRepository.save(newUser);
+            googleAccount.setUser(savedUser);
+            googleAccountRepository.save(googleAccount);
         }
 
-        String googleToken = jwtUtil.generateGoogleToken(googleId);
-        pendingLinkToken.put(googleToken, googleAccount.getId());
+        User user = googleAccount.getUser();
+        String token = jwtUtil.generateToken(user.getId());
+        boolean isNewUser = googleAccount.getCreatedAt() != null && 
+                           googleAccount.getCreatedAt().isAfter(java.time.LocalDateTime.now().minusSeconds(10));
 
-        log.info("Google user {} authenticated but no wallet linked yet", email);
+        log.info("Google user {} authenticated successfully", email);
+
         return GoogleAuthResponse.builder()
-                .status("WALLET_REQUIRED")
-                .googleToken(googleToken)
+                .status("AUTHENTICATED")
+                .token(token)
+                .walletAddress(user.getWalletAddress())
+                .userId(user.getId())
+                .isNewUser(isNewUser)
                 .email(email)
                 .displayName(displayName)
                 .build();
