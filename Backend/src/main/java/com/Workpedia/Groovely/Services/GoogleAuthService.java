@@ -29,8 +29,7 @@ public class GoogleAuthService {
     private final WalletNonceRepository walletNonceRepository;
     private final AuthService authService;
     private final JwtUtil  jwtUtil;
-@Value("${groovely.auth.google-token-expiry}")
-
+    @Value("${groovely.auth.google-token-expiry}")
     private long googleTokenExpiryMs;
     private final Map<String,String> pendingLinkToken = new ConcurrentHashMap<>();
     /**
@@ -44,6 +43,13 @@ public class GoogleAuthService {
         String email = oAuth2User.getAttribute("email");
         String displayName = oAuth2User.getAttribute("name");
         String avatarUrl = oAuth2User.getAttribute("picture");
+
+        log.debug("Processing Google login for: {} (id: {})", email, googleId);
+
+        if (googleId == null || email == null) {
+            log.error("Google login failed: missing required attributes. sub={}, email={}", googleId, email);
+            throw new AuthException("Missing required information from Google");
+        }
 
         GoogleAccount googleAccount = googleAccountRepository.findByGoogleId(googleId)
                 .orElseGet(() -> {
@@ -77,10 +83,11 @@ public class GoogleAuthService {
 
         User user = googleAccount.getUser();
         String token = jwtUtil.generateToken(user.getId());
-        boolean isNewUser = googleAccount.getCreatedAt() != null && 
-                           googleAccount.getCreatedAt().isAfter(java.time.LocalDateTime.now().minusSeconds(10));
 
         log.info("Google user {} authenticated successfully", email);
+
+        boolean isNewUser = googleAccount.getCreatedAt() == null || 
+                           googleAccount.getCreatedAt().isAfter(java.time.LocalDateTime.now().minusSeconds(10));
 
         return GoogleAuthResponse.builder()
                 .status("AUTHENTICATED")
