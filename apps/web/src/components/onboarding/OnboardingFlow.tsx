@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAccount, useConnect, useDisconnect, useSignMessage } from 'wagmi';
 import { Logo } from '../ui/Logo';
 import { Button } from '../ui/Button';
@@ -46,7 +46,20 @@ const PencilIcon = () => (
 
 export const OnboardingFlow = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
+  const [initialized, setInitialized] = useState(false);
+
+  // Auto-skip to wallet selection if 'link_wallet' stage requested
+  useEffect(() => {
+    if (!initialized) {
+      const stage = searchParams.get('stage');
+      if (stage === 'link_wallet') {
+        setStep(2);
+      }
+      setInitialized(true);
+    }
+  }, [searchParams, initialized]);
   const [role, setRole] = useState<'creator' | 'listener' | null>(null);
   const [wallet, setWallet] = useState<'metamask' | 'walletconnect' | 'phantom' | null>(null);
   const [loading, setLoading] = useState(false);
@@ -127,22 +140,45 @@ export const OnboardingFlow = () => {
       console.log('Step 4 SUCCESS. Signature received substring:', signature?.substring(0, 10));
 
       // 5. Connect Backend
-      console.log('Step 5: Sending connect POST request to backend...');
-      const connectRes = await fetch(`/api/auth/wallet/connect`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ walletAddress: walletAddr, signature }),
-      });
-      console.log('Step 5 SUCCESS. Backend responded with status:', connectRes.status);
+      console.log('Step 5: Sending auth request to backend...');
+      
+      const pendingGoogleToken = localStorage.getItem('pending_google_token');
+      let status: number;
+      let authData: any;
 
-      if (!connectRes.ok) throw new Error('Authentication failed');
-      const authData = await connectRes.json();
+      if (pendingGoogleToken) {
+        // CASE: Linking wallet to Google Account
+        console.log('Linking wallet to Google account with token...');
+        const linkRes = await fetch(`/api/auth/google/link-wallet`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            googleToken: pendingGoogleToken, 
+            walletAddress: walletAddr, 
+            signature 
+          }),
+        });
+        status = linkRes.status;
+        authData = await linkRes.json();
+        if (linkRes.ok) localStorage.removeItem('pending_google_token');
+      } else {
+        // CASE: Standard wallet connection
+        const connectRes = await fetch(`/api/auth/wallet/connect`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ walletAddress: walletAddr, signature }),
+        });
+        status = connectRes.status;
+        authData = await connectRes.json();
+      }
+
+      if (status >= 400) throw new Error(authData.message || 'Authentication failed');
       console.log('Step 5 SUCCESS. authData:', { isNewUser: authData.isNewUser, userId: authData.userId });
 
       // 6. Store JWT
       localStorage.setItem('groovely_token', authData.token);
       localStorage.setItem('groovely_user_id', authData.userId);
-      localStorage.setItem('groovely_wallet', walletAddr);
+      localStorage.setItem('groovely_wallet', walletAddr || '');
 
       // Move to Step 3 if new, else dashboard
       if (authData.isNewUser) {
