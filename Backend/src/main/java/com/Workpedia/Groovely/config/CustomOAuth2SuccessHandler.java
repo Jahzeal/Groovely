@@ -32,22 +32,36 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
             return;
         }
 
-        String finalFrontendUrl = (frontendUrl != null && !frontendUrl.isBlank()) ? frontendUrl : "http://localhost:3000";
+        try {
+            log.info("OAuth2 login successful. Processing user details...");
+            
+            String finalFrontendUrl = (frontendUrl != null && !frontendUrl.isBlank()) ? frontendUrl : "http://localhost:3000";
+            log.debug("Using frontend URL: {}", finalFrontendUrl);
 
-        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-        GoogleAuthResponse authResponse = googleAuthService.handleGoogleLogin(oAuth2User);
+            OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+            log.debug("Google User Attributes: {}", oAuth2User.getAttributes());
 
-        String targetUrl = UriComponentsBuilder.fromUriString(finalFrontendUrl + "/auth/callback")
-                .queryParam("status", authResponse.getStatus())
-                .queryParam("token", authResponse.getToken())
-                .queryParam("walletAddress", authResponse.getWalletAddress())
-                .queryParam("userId", authResponse.getUserId())
-                .queryParam("isNewUser", authResponse.isNewUser())
-                .queryParam("googleToken", authResponse.getGoogleToken())
-                .queryParam("email", authResponse.getEmail())
-                .queryParam("displayName", authResponse.getDisplayName())
-                .build().toUriString();
+            GoogleAuthResponse authResponse = googleAuthService.handleGoogleLogin(oAuth2User);
+            log.info("Handled Google login for email: {}. Status: {}", authResponse.getEmail(), authResponse.getStatus());
 
-        getRedirectStrategy().sendRedirect(request, response, targetUrl);
+            String targetUrl = UriComponentsBuilder.fromUriString(finalFrontendUrl + "/auth/callback")
+                    .queryParam("status", authResponse.getStatus())
+                    .queryParam("token", authResponse.getToken())
+                    .queryParam("walletAddress", authResponse.getWalletAddress())
+                    .queryParam("userId", authResponse.getUserId())
+                    .queryParam("isNewUser", authResponse.isNewUser())
+                    .queryParam("email", authResponse.getEmail())
+                    .queryParam("displayName", authResponse.getDisplayName())
+                    .build().toUriString();
+
+            log.debug("Redirecting to: {}", targetUrl);
+            getRedirectStrategy().sendRedirect(request, response, targetUrl);
+
+        } catch (Exception e) {
+            log.error("Error in CustomOAuth2SuccessHandler: {}", e.getMessage(), e);
+            // Redirect to frontend error page instead of showing Whitelabel 500
+            String errorUrl = (frontendUrl != null && !frontendUrl.isBlank() ? frontendUrl : "http://localhost:3000") + "/auth/error?message=" + e.getMessage();
+            getRedirectStrategy().sendRedirect(request, response, errorUrl);
+        }
     }
 }
