@@ -48,18 +48,7 @@ export const OnboardingFlow = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
-  const [initialized, setInitialized] = useState(false);
-
-  // Auto-skip to wallet selection if 'link_wallet' stage requested
-  useEffect(() => {
-    if (!initialized) {
-      const stage = searchParams.get('stage');
-      if (stage === 'link_wallet') {
-        setStep(2);
-      }
-      setInitialized(true);
-    }
-  }, [searchParams, initialized]);
+  // Handled via standard AUTHENTICATED status now
   const [role, setRole] = useState<'creator' | 'listener' | null>(null);
   const [wallet, setWallet] = useState<'metamask' | 'walletconnect' | 'phantom' | null>(null);
   const [loading, setLoading] = useState(false);
@@ -142,37 +131,15 @@ export const OnboardingFlow = () => {
       // 5. Connect Backend
       console.log('Step 5: Sending auth request to backend...');
       
-      const pendingGoogleToken = localStorage.getItem('pending_google_token');
-      let status: number;
-      let authData: any;
+      const connectRes = await fetch(`/api/auth/wallet/connect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress: walletAddr, signature }),
+      });
+      
+      const authData = await connectRes.json();
 
-      if (pendingGoogleToken) {
-        // CASE: Linking wallet to Google Account
-        console.log('Linking wallet to Google account with token...');
-        const linkRes = await fetch(`/api/auth/google/link-wallet`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            googleToken: pendingGoogleToken, 
-            walletAddress: walletAddr, 
-            signature 
-          }),
-        });
-        status = linkRes.status;
-        authData = await linkRes.json();
-        if (linkRes.ok) localStorage.removeItem('pending_google_token');
-      } else {
-        // CASE: Standard wallet connection
-        const connectRes = await fetch(`/api/auth/wallet/connect`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ walletAddress: walletAddr, signature }),
-        });
-        status = connectRes.status;
-        authData = await connectRes.json();
-      }
-
-      if (status >= 400) throw new Error(authData.message || 'Authentication failed');
+      if (!connectRes.ok) throw new Error(authData.message || 'Authentication failed');
       console.log('Step 5 SUCCESS. authData:', { isNewUser: authData.isNewUser, userId: authData.userId });
 
       // 6. Store JWT
@@ -373,14 +340,24 @@ export const OnboardingFlow = () => {
                   <div className="flex-grow h-[1px] bg-white/5" />
                 </div>
 
-                {/* Google Button */}
-                <button 
-                  onClick={handleGoogleLogin}
-                  className="w-full flex items-center justify-center gap-3 bg-white/5 border border-white/10 hover:bg-white/10 transition-all rounded-full py-4 group active:scale-[0.98]"
-                >
-                  <GoogleIcon size={18} />
-                  <span className="text-white font-bold text-sm tracking-wide">Continue with Google</span>
-                </button>
+                {/* Google Button or Skip button if already on Google */}
+                {localStorage.getItem('groovely_token') && !address ? (
+                  <Button 
+                    fullWidth 
+                    variant="secondary"
+                    onClick={() => setStep(3)}
+                  >
+                    Continue without Wallet
+                  </Button>
+                ) : (
+                  <button 
+                    onClick={handleGoogleLogin}
+                    className="w-full flex items-center justify-center gap-3 bg-white/5 border border-white/10 hover:bg-white/10 transition-all rounded-full py-4 group active:scale-[0.98]"
+                  >
+                    <GoogleIcon size={18} />
+                    <span className="text-white font-bold text-sm tracking-wide">Continue with Google</span>
+                  </button>
+                )}
 
                 <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest text-center mt-2">
                   Your privacy matters. We won't post anything.

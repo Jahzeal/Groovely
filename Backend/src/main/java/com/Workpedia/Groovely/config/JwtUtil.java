@@ -25,16 +25,16 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
 
-    public String generateToken(String walletAddress){
+    public String generateToken(String userId){
         return Jwts.builder()
-                .setSubject(walletAddress)
+                .setSubject(userId)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationsMs))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public String getWalletAddressFromToken(String token){
+    public String getSubjectFromToken(String token){
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()

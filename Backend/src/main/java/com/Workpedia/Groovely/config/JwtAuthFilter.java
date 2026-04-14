@@ -32,14 +32,16 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         try{
             String token = extractToken(request);
             if (token != null && jwtUtil.validateToken(token)) {
-                String walletAddress = jwtUtil.getWalletAddressFromToken(token);
+                String userId = jwtUtil.getSubjectFromToken(token);
 
-                userRepository.findByWalletAddress(walletAddress).ifPresent(user -> {
-                    var auth = new UsernamePasswordAuthenticationToken( walletAddress, null, List.of(new SimpleGrantedAuthority("ROLE_USER"))
+                userRepository.findById(userId).ifPresent(user -> {
+                    var auth = new UsernamePasswordAuthenticationToken( 
+                        userId, 
+                        null, 
+                        List.of(new SimpleGrantedAuthority("ROLE_USER"))
                     );
 
                     SecurityContextHolder.getContext().setAuthentication(auth);
-
                 });
             }
         } catch (Exception e){

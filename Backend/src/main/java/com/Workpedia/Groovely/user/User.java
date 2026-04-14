@@ -20,7 +20,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(name = "wallet_address", unique = true, nullable = false, length = 42)
+    @Column(name = "wallet_address", unique = true, length = 42)
     private String walletAddress;
 
     @Column(name = "display_name")
