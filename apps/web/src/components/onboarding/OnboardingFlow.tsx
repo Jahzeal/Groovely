@@ -126,6 +126,15 @@ export const OnboardingFlow = () => {
       const signature = await signMessageAsync({ message });
       console.log('Step 4 SUCCESS. Signature received substring:', signature?.substring(0, 10));
 
+      // 5. Connect Backend
+      console.log('Step 5: Sending connect POST request to backend...');
+      const connectRes = await fetch(`/api/auth/wallet/connect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress: walletAddr, signature }),
+      });
+      console.log('Step 5 SUCCESS. Backend responded with status:', connectRes.status);
+
       if (!connectRes.ok) throw new Error('Authentication failed');
       const authData = await connectRes.json();
       console.log('Step 5 SUCCESS. authData:', { isNewUser: authData.isNewUser, userId: authData.userId });

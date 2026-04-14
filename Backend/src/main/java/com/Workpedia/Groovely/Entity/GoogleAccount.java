@@ -36,7 +36,7 @@ public class GoogleAccount {
     private User user;
 
     @CreationTimestamp
-    @Column(name="created_at", updatable = false, insertable = false)
+    @Column(name="created_at")
     private LocalDateTime createdAt;
 
     public boolean hasLinnkedWallet(){
