@@ -32,10 +32,12 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
             return;
         }
 
+        String finalFrontendUrl = (frontendUrl != null && !frontendUrl.isBlank()) ? frontendUrl : "http://localhost:3000";
+
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
         GoogleAuthResponse authResponse = googleAuthService.handleGoogleLogin(oAuth2User);
 
-        String targetUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/auth/callback")
+        String targetUrl = UriComponentsBuilder.fromUriString(finalFrontendUrl + "/auth/callback")
                 .queryParam("status", authResponse.getStatus())
                 .queryParam("token", authResponse.getToken())
                 .queryParam("walletAddress", authResponse.getWalletAddress())
