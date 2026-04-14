@@ -15,7 +15,7 @@ import java.util.Date;
 @Slf4j
 @Component
 public class JwtUtil {
-    @Value("${groovely.jwt.secret")
+    @Value("${groovely.jwt.secret}")
     private String jwtSecret;
 
     @Value("${groovely.jwt.expiration}")

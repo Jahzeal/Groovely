@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { ChevronLeft, Search, ShoppingCart, ChevronDown } from 'lucide-react';
 
 export const TopBar = () => {
@@ -22,6 +23,12 @@ export const TopBar = () => {
             className="w-full bg-[#0F0F1A] border border-white/5 rounded-xl py-3 pl-12 pr-4 text-sm font-medium focus:outline-none focus:border-accent-purple/50 transition-all placeholder-zinc-600"
           />
         </div>
+
+        <nav className="hidden md:flex items-center gap-6 ml-4">
+          <Link href="/dashboard/rooms" className="text-sm font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition-colors">
+            Listening Room
+          </Link>
+        </nav>
       </div>
 
       <div className="flex items-center gap-6">

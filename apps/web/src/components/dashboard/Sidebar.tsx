@@ -17,6 +17,8 @@ import {
   MessageSquare,
   LogOut,
   Upload,
+  Settings,
+  Plus
 } from 'lucide-react';
 
 interface NavItemProps {
@@ -51,10 +53,11 @@ const NavItem = ({ icon: Icon, label, href, active, comingSoon }: NavItemProps) 
 };
 
 interface SidebarProps {
-  activePage?: 'dashboard' | 'market' | 'library' | 'earnings' | 'analytics' | string;
+  activePage?: 'dashboard' | 'market' | 'library' | 'earnings' | 'analytics' | 'explore' | string;
+  role?: 'creator' | 'fan';
 }
 
-export const Sidebar = ({ activePage }: SidebarProps = {}) => {
+export const Sidebar = ({ activePage, role = 'creator' }: SidebarProps = {}) => {
   const pathname = usePathname();
   const isMarket = activePage === 'market' || pathname?.startsWith('/dashboard/marketplace');
   const isDashboard = !isMarket && (activePage === 'dashboard' || pathname === '/dashboard');
@@ -66,31 +69,49 @@ export const Sidebar = ({ activePage }: SidebarProps = {}) => {
       </div>
 
       <div className="px-4 mb-8">
-        <Link href="/dashboard/upload" className="w-full">
+        {role === 'creator' ? (
+          <Link href="/dashboard/upload" className="w-full">
+            <button className="w-full bg-accent-purple hover:bg-opacity-90 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(157,0,255,0.2)]">
+              <Upload size={18} />
+              <span>Upload &amp; Mint</span>
+            </button>
+          </Link>
+        ) : (
           <button className="w-full bg-accent-purple hover:bg-opacity-90 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(157,0,255,0.2)]">
-            <Upload size={18} />
-            <span>Upload &amp; Mint</span>
+            <Plus size={18} />
+            <span>Create Playlist</span>
           </button>
-        </Link>
+        )}
       </div>
 
       <nav className="flex-1 space-y-1">
-        <NavItem icon={LayoutDashboard} label="Dashboard"        href="/dashboard"              active={isDashboard} />
-        <NavItem icon={Library}        label="My Library"        href="/dashboard/library" />
-        <NavItem icon={Wallet}         label="Earnings"          href="/dashboard/earnings" />
+        {role === 'creator' ? (
+          <>
+            <NavItem icon={LayoutDashboard} label="Dashboard"        href="/dashboard"              active={isDashboard} />
+            <NavItem icon={Library}        label="My Library"        href="/dashboard/library"      active={pathname === '/dashboard/library'} />
+            <NavItem icon={Wallet}         label="Earnings"          href="/dashboard/earnings"     active={pathname === '/dashboard/earnings'} />
 
-        <div className="h-px bg-white/5 my-6 mx-6" />
+            <div className="h-px bg-white/5 my-6 mx-6" />
 
-        <NavItem icon={Store}          label="Groovely Market"   href="/dashboard/marketplace"  active={isMarket} />
-        <NavItem icon={BarChart3}      label="Analytics"         href="/dashboard/analytics" />
-        <NavItem icon={Sparkles}       label="AI Tools"          comingSoon />
-        <NavItem icon={Headphones}     label="Listening Rooms"   href="/dashboard/rooms" />
+            <NavItem icon={Store}          label="Groovely Market"   href="/dashboard/marketplace"  active={isMarket} />
+            <NavItem icon={BarChart3}      label="Analytics"         href="/dashboard/analytics"    active={pathname === '/dashboard/analytics'} />
+            <NavItem icon={Sparkles}       label="AI Tools"          comingSoon />
+            <NavItem icon={Headphones}     label="Listening Rooms"   href="/dashboard/rooms" />
 
-        <div className="h-px bg-white/5 my-6 mx-6" />
+            <div className="h-px bg-white/5 my-6 mx-6" />
 
-        <NavItem icon={User}           label="Profile"           href="/dashboard/profile" />
-        <NavItem icon={FileText}       label="Licenses"          href="/dashboard/licenses" />
-        <NavItem icon={MessageSquare}  label="Community &amp; Support" href="/dashboard/community" />
+            <NavItem icon={User}           label="Profile"           href="/dashboard/profile"      active={pathname === '/dashboard/profile'} />
+            <NavItem icon={FileText}       label="Licenses"          href="/dashboard/licenses" />
+            <NavItem icon={MessageSquare}  label="Community &amp; Support" href="/dashboard/community" />
+            <NavItem icon={Settings}       label="Settings"          href="/dashboard/settings"     active={pathname === '/dashboard/settings'} />
+          </>
+        ) : (
+          <>
+            <NavItem icon={LayoutDashboard} label="Discover"         href="/dashboard/explore"      active={activePage === 'explore' || pathname === '/dashboard/explore'} />
+            <NavItem icon={Library}         label="My Library"       href="/dashboard/library"      active={pathname === '/dashboard/library'} />
+            <NavItem icon={Store}           label="Groovely Market"  href="/dashboard/marketplace"  active={isMarket} />
+          </>
+        )}
       </nav>
 
       <div className="mt-auto px-4 pb-4">
