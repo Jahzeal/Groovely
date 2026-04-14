@@ -92,26 +92,48 @@ export const OnboardingFlow = () => {
       if (!connector) connector = connectors[0];
 
       // 2. Connect
+      let walletAddr = address;
       if (!isConnected) {
-        await connectAsync({ connector });
+        try {
+          const connectResult = await connectAsync({ connector });
+          // @ts-ignore
+          walletAddr = connectResult.accounts[0];
+        } catch (error: any) {
+          if (error.name === 'ConnectorAlreadyConnectedError') {
+            const accounts = await connector.getAccounts();
+            // @ts-ignore
+            walletAddr = accounts[0];
+          } else {
+            throw error;
+          }
+        }
+      }
+
+      if (!walletAddr) {
+        throw new Error('Could not determine wallet address');
       }
 
       // 3. Fetch Nonce
-      const walletAddr = address || (await connectAsync({ connector })).accounts[0];
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.groovely.io';
-      const nonceRes = await fetch(`${apiUrl}/api/auth/nonce/${walletAddr}`);
+      console.log('Step 3: Fetching nonce...');
+      // Use a relative URL so the Next.js proxy handles routing (no CORS).
+      const nonceRes = await fetch(`/api/auth/nonce/${walletAddr}`);
       if (!nonceRes.ok) throw new Error('Failed to fetch nonce');
       const { nonce, message } = await nonceRes.json();
+      console.log('Step 3 SUCCESS. Nonce data:', { nonce, messageLength: message?.length });
 
       // 4. Sign Message
+      console.log('Step 4: Requesting signature from wallet...');
       const signature = await signMessageAsync({ message });
+      console.log('Step 4 SUCCESS. Signature received substring:', signature?.substring(0, 10));
 
       // 5. Connect Backend
-      const connectRes = await fetch(`${apiUrl}/api/auth/wallet/connect`, {
+      console.log('Step 5: Sending connect POST request to backend...');
+      const connectRes = await fetch(`/api/auth/wallet/connect`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ walletAddress: walletAddr, signature }),
       });
+      console.log('Step 5 SUCCESS. Backend responded with status:', connectRes.status);
 
       if (!connectRes.ok) throw new Error('Authentication failed');
       const authData = await connectRes.json();
@@ -123,7 +145,10 @@ export const OnboardingFlow = () => {
       // Move to Step 3
       setStep(3);
     } catch (err: any) {
-      console.error('Connection error:', err);
+      console.error('Connection error step trace:', err);
+      if (err instanceof Error) {
+        console.error(err.stack);
+      }
       setError(err.message || 'Something went wrong');
     } finally {
       setLoading(false);
@@ -135,8 +160,7 @@ export const OnboardingFlow = () => {
     setError(null);
     try {
       const token = localStorage.getItem('groovely_token');
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.groovely.io';
-      const res = await fetch(`${apiUrl}/api/users/me`, {
+      const res = await fetch(`/api/users/me`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

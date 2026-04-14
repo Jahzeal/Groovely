@@ -14,8 +14,8 @@ export const Hero = () => {
              key={i} 
              className="sparkle opacity-30" 
              style={{ 
-               top: `${Math.random() * 80}%`, 
-               left: `${Math.random() * 100}%`,
+               top: `${[33, 66, 62, 19, 34, 14, 46, 56][i]}%`, 
+               left: `${[95, 46, 33, 73, 3, 58, 58, 36][i]}%`,
                animationDelay: `${i * 0.5}s` 
              }} 
            />
