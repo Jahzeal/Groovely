@@ -28,7 +28,7 @@ public class GoogleAccount {
     @Column(name = "display_name")
     private String displayName;
 
-    @Column(name="created_at", nullable = false)
+    @Column(name = "avatar_url")
     private String avatarUrl;
 
     @OneToOne(fetch = FetchType.LAZY)

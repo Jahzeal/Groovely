@@ -43,7 +43,7 @@ public class GoogleAuthService {
         String googleId = oAuth2User.getAttribute("sub");
         String email = oAuth2User.getAttribute("email");
         String displayName = oAuth2User.getAttribute("name");
-        String avatarUrl = oAuth2User.getAttribute("piture");
+        String avatarUrl = oAuth2User.getAttribute("picture");
 
         GoogleAccount googleAccount = googleAccountRepository.findByGoogleId(googleId)
                 .orElseGet(() -> {
