@@ -78,7 +78,7 @@ public class SecurityConfig {
                      userRequest.getClientRegistration().getRegistrationId());
             try {
                 OAuth2User user = delegate.loadUser(userRequest);
-                log.info("Successfully loaded user info for: {}", user.getAttribute("email"));
+                log.info("Successfully loaded user info for: {}", (Object) user.getAttribute("email"));
                 return user;
             } catch (Exception e) {
                 log.error("Failed to load user info from Google: {}", e.getMessage(), e);
