@@ -44,10 +44,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneral(Exception ex){
-        log.error("Unhandled Exception", ex);
+        log.error("CRITICAL: Unhandled Exception in backend: {}", ex.getMessage(), ex);
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse(500, "Unexpected error occurred", null));
+                .body(new ErrorResponse(500, "Internal Server Error: " + ex.getMessage(), null));
     }
 
 
