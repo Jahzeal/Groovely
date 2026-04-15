@@ -8,13 +8,19 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import lombok.extern.slf4j.Slf4j;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
+@Slf4j
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
@@ -50,8 +56,12 @@ public class SecurityConfig {
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .authorizationEndpoint(a -> a.baseUri("/oauth2/authorization"))
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(this.oauth2UserService())
+                        )
                         .successHandler(customOAuth2SuccessHandler)
                         .failureHandler((request, response, exception) -> {
+                            log.error("OAuth2 Login Failed: {}", exception.getMessage(), exception);
                             String error = exception.getMessage();
                             String finalFrontendUrl = (System.getenv("FRONTEND_URL") != null) ? System.getenv("FRONTEND_URL") : "https://grovely.io";
                             response.sendRedirect(finalFrontendUrl + "/auth/error?error=" + java.net.URLEncoder.encode(error, "UTF-8"));
@@ -59,5 +69,21 @@ public class SecurityConfig {
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
+    }
+
+    private OAuth2UserService<OAuth2UserRequest, OAuth2User> oauth2UserService() {
+        DefaultOAuth2UserService delegate = new DefaultOAuth2UserService();
+        return (userRequest) -> {
+            log.info("Attempting to load user info from Google for registration: {}", 
+                     userRequest.getClientRegistration().getRegistrationId());
+            try {
+                OAuth2User user = delegate.loadUser(userRequest);
+                log.info("Successfully loaded user info for: {}", user.getAttribute("email"));
+                return user;
+            } catch (Exception e) {
+                log.error("Failed to load user info from Google: {}", e.getMessage(), e);
+                throw e;
+            }
+        };
     }
 }
