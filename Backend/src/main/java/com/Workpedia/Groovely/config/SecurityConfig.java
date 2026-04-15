@@ -51,6 +51,11 @@ public class SecurityConfig {
                 .oauth2Login(oauth2 -> oauth2
                         .authorizationEndpoint(a -> a.baseUri("/oauth2/authorization"))
                         .successHandler(customOAuth2SuccessHandler)
+                        .failureHandler((request, response, exception) -> {
+                            String error = exception.getMessage();
+                            String finalFrontendUrl = (System.getenv("FRONTEND_URL") != null) ? System.getenv("FRONTEND_URL") : "https://grovely.io";
+                            response.sendRedirect(finalFrontendUrl + "/auth/error?error=" + java.net.URLEncoder.encode(error, "UTF-8"));
+                        })
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
