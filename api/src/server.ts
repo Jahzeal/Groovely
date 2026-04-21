@@ -34,8 +34,18 @@ app.use('/api/auth', authRoutes);
 app.use('/api/creator', creatorRoutes);
 app.use('/api/fan', fanRoutes);
 
+// Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Root endpoint - welcome message
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Groovely API is running',
+    timestamp: new Date().toISOString()
+  });
 });
 
 const PORT = config.port;
