@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
 import passport from './config/passport';
-import { config } from './config/env';
+import { config, corsConfig } from './config/env';
 import authRoutes from './routes/authRoutes';
 import creatorRoutes from './routes/creatorRoutes';
 import fanRoutes from './routes/fanRoutes';
@@ -25,14 +25,7 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// CORS
-app.use(cors({
-  origin: '*',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-}));
-
+app.use(cors(corsConfig));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -41,18 +34,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/creator', creatorRoutes);
 app.use('/api/fan', fanRoutes);
 
-// Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-// Root endpoint - welcome message
-app.get('/', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'Groovely API is running',
-    timestamp: new Date().toISOString()
-  });
 });
 
 const PORT = config.port;
