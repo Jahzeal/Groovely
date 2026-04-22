@@ -6,6 +6,7 @@ import { config, corsConfig } from './config/env';
 import authRoutes from './routes/authRoutes';
 import creatorRoutes from './routes/creatorRoutes';
 import fanRoutes from './routes/fanRoutes';
+import profileRoutes from './routes/profileRoutes';
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/creator', creatorRoutes);
 app.use('/api/fan', fanRoutes);
+app.use('/api', profileRoutes);
 
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
