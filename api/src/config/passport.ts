@@ -38,14 +38,9 @@ passport.serializeUser((user: any, done) => {
 passport.deserializeUser(async (id: number, done) => {
   try {
     const user = await findUserById(id);
-    if (!user) {
-      // User not found - return false instead of error
-      return done(null, false);
-    }
     done(null, user);
   } catch (error) {
-    // On database error, return false
-    return done(null, false);
+    done(error, null);
   }
 });
 
