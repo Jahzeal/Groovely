@@ -7,6 +7,7 @@ import authRoutes from './routes/authRoutes';
 import creatorRoutes from './routes/creatorRoutes';
 import fanRoutes from './routes/fanRoutes';
 import profileRoutes from './routes/profileRoutes';
+import trackRoutes from './routes/trackRoutes';
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/creator', creatorRoutes);
+app.use('/api/creator', trackRoutes);
 app.use('/api/fan', fanRoutes);
 app.use('/api', profileRoutes);
 
