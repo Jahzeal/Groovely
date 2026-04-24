@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import passport from '../config/passport';
 import { 
-  walletAuthController, 
-  googleAuthController,
+  walletSignup,
+  googleSignup,
+  walletLogin,
+  googleLogin,
   getMeController 
 } from '../controllers/authController';
 import { authMiddleware } from '../middlewares/auth';
@@ -10,25 +12,35 @@ import { generateToken } from '../utils/jwt';
 
 const router = Router();
 
-// Wallet auth
-router.post('/wallet', walletAuthController);
+// ============================================
+// SIGNUP (Create new account)
+// ============================================
+router.post('/signup/wallet', walletSignup);
+router.post('/signup/google', googleSignup);
 
-// Simple Google auth (POST with email) - for testing
-router.post('/google', googleAuthController);
+// ============================================
+// LOGIN (Existing account only)
+// ============================================
+router.post('/login/wallet', walletLogin);
+router.post('/login/google', googleLogin);
 
-// Real Google OAuth - redirects to Google
+// ============================================
+// GOOGLE OAUTH (Redirect flows)
+// ============================================
 router.get('/google',
   (req, res, next) => {
-    const { role } = req.query;
+    const { role, prompt } = req.query;
     if (role) {
       (req.session as any).googleRole = role;
+    }
+    if (prompt) {
+      (req.session as any).googlePrompt = prompt;
     }
     next();
   },
   passport.authenticate('google', { scope: ['profile', 'email'] })
 );
 
-// Google OAuth callback
 router.get('/google/callback',
   passport.authenticate('google', { failureRedirect: '/api/auth/google/failure' }),
   async (req, res) => {
@@ -59,6 +71,9 @@ router.get('/google/failure', (req, res) => {
   res.status(401).json({ success: false, error: 'Google authentication failed' });
 });
 
+// ============================================
+// GET CURRENT USER 
+// ============================================
 router.get('/me', authMiddleware, getMeController);
 
 export default router;

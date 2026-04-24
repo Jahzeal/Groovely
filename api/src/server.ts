@@ -2,11 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
 import passport from './config/passport';
+import fileUpload from 'express-fileupload';
 import { config, corsConfig } from './config/env';
 import authRoutes from './routes/authRoutes';
 import creatorRoutes from './routes/creatorRoutes';
 import fanRoutes from './routes/fanRoutes';
 import profileRoutes from './routes/profileRoutes';
+import trackRoutes from './routes/trackRoutes';
 
 const app = express();
 
@@ -29,10 +31,14 @@ app.use(passport.session());
 app.use(cors(corsConfig));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(fileUpload({
+  limits: { fileSize: 25 * 1024 * 1024 }, // 25MB max file size
+}));
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/creator', creatorRoutes);
+app.use('/api/creator', trackRoutes);
 app.use('/api/fan', fanRoutes);
 app.use('/api', profileRoutes);
 
