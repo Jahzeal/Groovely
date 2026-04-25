@@ -30,12 +30,13 @@ export const walletAuth = async (walletAddress: string, role: string) => {
   return { token, user: userResponse };
 };
 
-export const googleAuth = async (email: string, role: string) => {
+export const googleAuth = async (email: string, role?: string) => {
   let user = await findUserByEmail(email);
 
   if (!user) {
-    user = await createUserWithGoogle(email, role);
+        user = await createUserWithGoogle(email, role || 'fan');
   }
+  // Existing user - keep their existing role, ignore the role parameter
 
   const token = generateToken(user.id, user.role, user.wallet, user.email);
 
