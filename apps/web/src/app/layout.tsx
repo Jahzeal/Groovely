@@ -18,6 +18,7 @@ export const metadata: Metadata = {
 };
 
 import { Web3Provider } from "@/components/providers/web3-provider";
+import { Toaster } from 'react-hot-toast';
 
 export default function RootLayout({
   children,
@@ -32,6 +33,17 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <Web3Provider>
           {children}
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              style: {
+                background: '#1A1A24',
+                color: '#fff',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '12px',
+              },
+            }}
+          />
         </Web3Provider>
       </body>
     </html>

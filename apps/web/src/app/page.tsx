@@ -20,11 +20,14 @@ export default function Home() {
       {/* Navigation */}
       <nav className="fixed top-0 z-50 flex w-full items-center justify-between px-6 lg:px-12 py-6 backdrop-blur-md bg-black/40 border-b border-white/5">
         <Logo />
-        <div className="flex items-center gap-6 lg:gap-12">
+        <div className="flex items-center gap-4 lg:gap-6">
           <Link href="/login" className="text-zinc-500 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest">
-            Login/Signup
+            Login
           </Link>
-          <Link href="/onboarding" className="rounded-xl bg-accent-purple px-6 py-2.5 text-white text-xs font-bold hover:bg-accent-purple/90 transition-all uppercase tracking-widest shadow-[0_0_15px_rgba(139,92,246,0.3)]">
+          <Link href="/onboarding" className="rounded-xl border border-white/10 bg-white/5 px-6 py-2.5 text-white text-xs font-bold hover:bg-white/10 transition-all uppercase tracking-widest">
+            Sign Up
+          </Link>
+          <Link href="/dashboard/marketplace" className="rounded-xl bg-accent-purple px-6 py-2.5 text-white text-xs font-bold hover:bg-accent-purple/90 transition-all uppercase tracking-widest shadow-[0_0_15px_rgba(139,92,246,0.3)]">
             Explore Groovely
           </Link>
         </div>
@@ -101,9 +104,12 @@ export default function Home() {
             </h2>
             <div className="flex flex-col sm:flex-row justify-center items-center gap-6">
               <Link href="/login" className="w-full sm:w-auto rounded-xl border border-white/10 bg-white/5 px-12 py-5 text-white font-bold text-sm hover:bg-white/10 transition-all uppercase tracking-widest">
-                Log In/Sign Up
+                Log In
               </Link>
-              <Link href="/onboarding" className="w-full sm:w-auto rounded-xl bg-accent-purple px-12 py-5 text-white font-bold text-sm hover:bg-accent-purple/90 transition-all shadow-[0_0_25px_rgba(139,92,246,0.3)] hover:scale-105 uppercase tracking-widest">
+              <Link href="/onboarding" className="w-full sm:w-auto rounded-xl border border-accent-purple/50 bg-transparent px-12 py-5 text-accent-purple font-bold text-sm hover:bg-accent-purple/10 transition-all uppercase tracking-widest">
+                Sign Up
+              </Link>
+              <Link href="/dashboard/marketplace" className="w-full sm:w-auto rounded-xl bg-accent-purple px-12 py-5 text-white font-bold text-sm hover:bg-accent-purple/90 transition-all shadow-[0_0_25px_rgba(139,92,246,0.3)] hover:scale-105 uppercase tracking-widest">
                 Explore Groovely
               </Link>
             </div>

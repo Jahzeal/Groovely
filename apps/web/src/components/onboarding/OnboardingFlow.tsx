@@ -9,6 +9,7 @@ import { ProgressBar } from '../ui/ProgressBar';
 import { SelectionCard } from './SelectionCard';
 import { WalletCard } from './WalletCard';
 import { Twitter as XIcon, Instagram as InstagramIcon, SoundCloud as SoundCloudIcon, Google as GoogleIcon } from '../ui/SocialIcons';
+import toast from 'react-hot-toast';
 
 export const MetaMaskIcon = () => (
   <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="MetaMask" className="w-16 h-16" />
@@ -23,10 +24,7 @@ export const WalletConnectIcon = () => (
 );
 
 export const PhantomIcon = () => (
-  <svg width="64" height="64" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect width="128" height="128" rx="32" fill="#AB9FF2" />
-    <path fillRule="evenodd" clipRule="evenodd" d="M47.7923 93L47.7818 92.9897L47.7288 92.9376L47.7923 83.25V47.5C47.7923 45.4289 49.4712 43.75 51.5423 43.75H73.0423C85.5898 43.75 95.7923 53.9525 95.7923 66.5V93L87.7923 85L79.7923 93L71.7923 85L63.7923 93L55.7923 85L47.7923 93ZM81.5423 58.75C81.5423 61.5114 79.3037 63.75 76.5423 63.75C73.7809 63.75 71.5423 61.5114 71.5423 58.75C71.5423 55.9886 73.7809 53.75 76.5423 53.75C79.3037 53.75 81.5423 55.9886 81.5423 58.75ZM66.5423 58.75C66.5423 61.5114 64.3037 63.75 61.5423 63.75C58.7809 63.75 56.5423 61.5114 56.5423 58.75C56.5423 55.9886 58.7809 53.75 61.5423 53.75C64.3037 53.75 66.5423 55.9886 66.5423 58.75Z" fill="white" />
-  </svg>
+  <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADoAAAAyCAYAAAAN6MhFAAAFiklEQVR4Adxa3VYiRxCu6oHchrOw19EnCF4maiJPEH2CyF2O4pE3cH0C3bPo2Tv1CTRPgMni5lLfQPdayZLbMDO19bUwDAwDyK/QZ5qu7q6uqa+ru6Z/MPSKws7bm+zum0pxL31zVshUbnffVu41lSCmP31V+raQubkEH/gHVX/mQAuZTxsWmIIwIrds6EhYthVAloWWKByYU5rNEskm+MC/m67c76RvwK9V8c9MgBZT5ZRa5aCg4Ii4bIE9g6CXBmZaMixnAPxHqtzeMSFhUwXaBOg6iXu1yjsaElxI/4AE4EQieb+bqRSDwhAxFaCTBBjCYkkmOtpN//O7zYR+Jg60kP68OQkLhjBESGbvvNNRTQwo5kshUykT+5fjHKIRVDEF7MslRlKzeiJA4UkTTuJWX7KhcSYP5qybSATzdexA9zKVI1JPOgsrUiTwftOqYwMKgRiqQhT0Is0+pOqJpP3GjgUo5mPdSc50qMb1qXrh31A3MlCAdJxkGXMCAl9hzGK0jQR0J1XOwumMFaRIjYXPSfiqT6ddg0+EHqh3SKlTyg4NFCCNk9DPB2P92ftVA9ZCaddzVz5UV/Ol6uqW69aXURZtLoelp7Uc+E6qa8u6yjqM8rRKhHg4oJMASRpUocOPtVxgIUsLvdeq4AHw0tP6u6BACZsXqlFMYJalF1sUc5Kd5EQWAd95/0eGa9Kvn4f1ZyN/hvMtWi5adDvFvvn+RUABcoKOp3Zcy0WsEimLsxxTpC01grzUoro7uByr42koQmSJrnMdHtPWNn+YuvKRxJTTcxjYos8rHtJNL00sYOnYKdx1nPZlpPCPnTw2z/yrTWN+BgJaePN5X4imsOLho6JuyqkRQAuZo0a2mWx0bsOgn1bGGkF1/68vUMxLMv6xCprGk8UKC+dBiKC7TRXWbdheunK29/bvbT1ZOOunnxH+2hconM80EDbfAWA4D7JRj0ma5Z2pMG2LmDPlt2vZzvpwXtj/0hNoIXNzoIJiz2HCwl41LXIXC9QOWZK2D/OrBtNDOd84DyauftpDNk6PcZSfPq52t+ienpMuxJB97qVrJBGLYsj6JAeoXIwofwFHBGgykdxfIGsCY9SisKZMZWGA908+itCD7myiQNUBLdCQJdLhakGiS5VGEsT2dWVQPJ+EZzjYywZAF8zTwjJ3+KyAQAyACss+ChYl+tKyJjBZoHBCmold/WvdXD2iTui0utp2MmGBOia5OVdI+igrxIedLBYoG7KHvJ2Vzfw8pd2sCf0NNrdKLIy39bx6TvFEHoPD3Ujp3BZI23FpGIYRnyfihDCESCj2ZI4GCFbGAHyWReRKV0Gx20qDw13LOOYflXtBcSd2A7yLhdRr+nZBTn0COiThuflebHBGP/RiGKqO5T3prn6ottoIite9esRzalXkAS/mZeT8t4PT0Bj/GQLZeHHpcb2onrz7+SuYekW9ZILiuI4w5ARr1a5NdLgmvfoKeLvWhwpNiB6ZBEgoObQgBel7bq6puF4i6a2ajo6oQO0AyZWq61v9LNlsakT8L83MSKkqKV59q6lkve6pMoNLRCcB5GktdxdupWCKvssrzH4e0XWd5ZLepJWe1l8k3zDxSJ6xpZSTDyvZADyoMteefv/C7VtyiU5rq3cfHn85R/xY+ym4bQvz9KMNMV3RKEEtSYRh9HNEjt5v5mGpOPGo08V3vqQWanRMHOvI5SbhunfDfu+sojqnSjHDCMqfVNeWWThPzzfY1zYVzDvJoe602r74HhlRjABzXMvVVOGBXHmbDP2EwOPFDbcwL5wKbrBLajmbVteLpZjOCbcbJ20g7OTfNb1bkUHB6ryTHD4h6CS0n4dogUJR7WFdPklOvfCF5gPPJ0yY/ACnHaEAYZUpW4PGEL4BAAD///g9j6kAAAAGSURBVAMA+FBS6yZZf7AAAAAASUVORK5CYII=" alt="Phantom" className="w-16 h-16 object-contain" />
 );
 
 
@@ -131,15 +129,26 @@ export const OnboardingFlow = () => {
       // 5. Connect Backend
       console.log('Step 5: Sending auth request to backend...');
       
-      const connectRes = await fetch(`/api/auth/wallet/connect`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ walletAddress: walletAddr, signature }),
-      });
+      let connectRes;
+
+      if (role === 'creator') {
+        connectRes = await fetch('https://groovely-github-repo.onrender.com/api/auth/signup/wallet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          // Including signature as well, even if not explicitly mentioned, to maintain security
+          body: JSON.stringify({ walletAddress: walletAddr, role: 'creator', signature }),
+        });
+      } else {
+        connectRes = await fetch(`/api/auth/wallet/connect`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ walletAddress: walletAddr, signature }),
+        });
+      }
       
       const authData = await connectRes.json();
 
-      if (!connectRes.ok) throw new Error(authData.message || 'Authentication failed');
+      if (!connectRes.ok) throw new Error(authData.error || authData.message || 'Authentication failed');
       console.log('Step 5 SUCCESS. authData:', { isNewUser: authData.isNewUser, userId: authData.userId });
 
       // 6. Store JWT
@@ -158,7 +167,9 @@ export const OnboardingFlow = () => {
       if (err instanceof Error) {
         console.error(err.stack);
       }
-      setError(err.message || 'Something went wrong');
+      const errorMessage = err.message || 'Something went wrong';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

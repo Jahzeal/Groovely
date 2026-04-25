@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { WalletCard } from '@/components/onboarding/WalletCard';
 import { MetaMaskIcon, WalletConnectIcon, PhantomIcon } from '@/components/onboarding/OnboardingFlow';
 import { Google as GoogleIcon } from '@/components/ui/SocialIcons';
+import toast from 'react-hot-toast';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -68,29 +69,29 @@ export default function LoginPage() {
       const signature = await signMessageAsync({ message });
 
       // 5. Connect Backend
-      const connectRes = await fetch(`/api/auth/wallet/connect`, {
+      const connectRes = await fetch(`https://groovely-github-repo.onrender.com/api/auth/login/wallet`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ walletAddress: walletAddr, signature }),
       });
 
-      if (!connectRes.ok) throw new Error('Authentication failed');
       const authData = await connectRes.json();
+      if (!connectRes.ok) throw new Error(authData.error || authData.message || 'Authentication failed');
 
-      // 6. Store JWT
-      localStorage.setItem('groovely_token', authData.token);
-      localStorage.setItem('groovely_user_id', authData.userId);
-      localStorage.setItem('groovely_wallet', walletAddr);
+      // 6. Store JWT — response shape: { success, data: { token, user: { id, wallet, role } } }
+      const { token, user } = authData.data;
+      localStorage.setItem('groovely_token', token);
+      localStorage.setItem('groovely_user_id', String(user.id));
+      localStorage.setItem('groovely_wallet', user.wallet ?? walletAddr);
+      localStorage.setItem('groovely_role', user.role ?? '');
 
-      // Redirect based on user status
-      if (authData.isNewUser) {
-        router.push('/onboarding');
-      } else {
-        router.push('/dashboard');
-      }
+      // Redirect based on user role / new user flag
+      router.push('/dashboard');
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(err.message || 'Something went wrong during login');
+      const errorMessage = err.message || 'Something went wrong during login';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
