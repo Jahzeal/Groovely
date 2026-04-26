@@ -7,6 +7,7 @@ import {
   ChevronLeft, Search, ShoppingCart, ChevronDown,
   Copy, LogOut, User, Settings, CheckCheck, ExternalLink
 } from 'lucide-react';
+import { handleLogout } from '@/lib/api';
 
 export const TopBar = () => {
   const router = useRouter();
@@ -52,10 +53,7 @@ export const TopBar = () => {
   };
 
   const handleDisconnect = () => {
-    localStorage.removeItem('groovely_token');
-    localStorage.removeItem('groovely_user_id');
-    localStorage.removeItem('groovely_wallet');
-    router.push('/login');
+    handleLogout();
   };
 
   return (

@@ -29,12 +29,12 @@ export default function UploadPage() {
   const [category, setCategory] = useState('Music');
 
   return (
-    <div className="flex min-h-screen bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
+    <div className="flex h-screen overflow-hidden bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
       {/* Sidebar */}
       <Sidebar />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col relative pb-24">
+      <div className="flex-1 flex flex-col relative pb-24 overflow-y-auto">
         {/* Top Header */}
         <header className="flex items-center justify-between px-10 py-6 border-b border-white/5 bg-[#050510]/80 backdrop-blur-xl sticky top-0 z-50">
           <div className="flex items-center gap-6">
@@ -61,9 +61,8 @@ export default function UploadPage() {
         <div className="max-w-6xl mx-auto w-full px-10 pt-10">
           <div className="flex items-center gap-12 mb-12">
             {[
-              { id: 1, label: 'Upload Audio' },
-              { id: 2, label: 'Add Metadata & Licensing' },
-              { id: 3, label: 'Mint Track' }
+              { id: 1, label: 'Upload Audio, Add Metadata & Licensing' },
+              { id: 2, label: 'Mint Track' }
             ].map((s) => (
               <div key={s.id} className="flex items-center gap-4 group cursor-pointer" onClick={() => setStep(s.id)}>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all shadow-[0_0_15px_rgba(157,0,255,0.1)] 
@@ -74,7 +73,7 @@ export default function UploadPage() {
                 <span className={`text-sm font-bold tracking-wide transition-colors ${step >= s.id ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-300'}`}>
                   {s.label}
                 </span>
-                {s.id < 3 && <div className="ml-8 text-zinc-800 font-light select-none">
+                {s.id < 2 && <div className="ml-8 text-zinc-800 font-light select-none">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-800"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 </div>}
               </div>

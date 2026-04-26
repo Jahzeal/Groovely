@@ -6,7 +6,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
-const API_BASE = 'https://groovely-github-repo.onrender.com';
+import { apiFetch, API_BASE } from '@/lib/api';
 
 const PRESET_CREATOR_TYPES = ['skit makers', 'podcasters', 'artists', 'producers'];
 
@@ -41,9 +41,8 @@ export default function SettingsPage() {
         const token = localStorage.getItem('groovely_token');
         if (!token) { setFetchError('Not authenticated'); setLoadingProfile(false); return; }
 
-        const res = await fetch(`${API_BASE}/api/creator/profile`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await apiFetch('/api/creator/profile');
+        if (!res) return;
         const json = await res.json();
         if (!res.ok) throw new Error(json.message || json.error || 'Failed to load profile');
 
@@ -89,12 +88,8 @@ export default function SettingsPage() {
       const token = localStorage.getItem('groovely_token');
       if (!token) throw new Error('Not authenticated. Please log in.');
 
-      const res = await fetch(`${API_BASE}/api/creator/profile`, {
+      const res = await apiFetch('/api/creator/profile', {
         method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           displayName,
           username,
@@ -106,6 +101,7 @@ export default function SettingsPage() {
         }),
       });
 
+      if (!res) return;
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || json.error || 'Failed to save profile');
 
@@ -128,7 +124,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
+    <div className="flex h-screen overflow-hidden bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
       <Sidebar activePage="settings" />
 
       <div className="flex-1 flex flex-col overflow-hidden">

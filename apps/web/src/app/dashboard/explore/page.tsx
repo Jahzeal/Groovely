@@ -92,7 +92,7 @@ const RECENTLY_ADDED = [
 export default function ExplorePage() {
   return (
     <CartProvider>
-      <div className="flex min-h-screen bg-[#050510] text-white font-sans selection:bg-accent-purple selection:text-white">
+      <div className="flex h-screen overflow-hidden bg-[#050510] text-white font-sans selection:bg-accent-purple selection:text-white">
         {/* We use role="fan" here to show the correct menu */}
         <Sidebar activePage="explore" role="fan" />
 

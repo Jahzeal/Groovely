@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
-const API_BASE = 'https://groovely-github-repo.onrender.com';
+import { apiFetch, API_BASE } from '@/lib/api';
 
 interface CreatorProfile {
   id: number;
@@ -47,12 +47,8 @@ export default function ProfilePage() {
           return;
         }
 
-        const res = await fetch(`${API_BASE}/api/creator/profile`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
+        const res = await apiFetch('/api/creator/profile');
+        if (!res) return; // handleLogout already called
 
         const json = await res.json();
 
@@ -76,7 +72,7 @@ export default function ProfilePage() {
     `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile?.username ?? 'creator'}`;
 
   return (
-    <div className="flex min-h-screen bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
+    <div className="flex h-screen overflow-hidden bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
       <Sidebar activePage="profile" />
 
       <div className="flex-1 flex flex-col overflow-hidden">

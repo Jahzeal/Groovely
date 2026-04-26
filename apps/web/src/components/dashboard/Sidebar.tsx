@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Logo } from '../ui/Logo';
 import {
   LayoutDashboard,
@@ -20,6 +20,7 @@ import {
   Settings,
   Plus
 } from 'lucide-react';
+import { handleLogout } from '@/lib/api';
 
 interface NavItemProps {
   icon: React.ElementType;
@@ -59,11 +60,25 @@ interface SidebarProps {
 
 export const Sidebar = ({ activePage, role = 'creator' }: SidebarProps = {}) => {
   const pathname = usePathname();
+  const router = useRouter();
   const isMarket = activePage === 'market' || pathname?.startsWith('/dashboard/marketplace');
   const isDashboard = !isMarket && (activePage === 'dashboard' || pathname === '/dashboard');
 
+  const handleSignOut = () => {
+    handleLogout();
+  };
+
+  useEffect(() => {
+    const token = localStorage.getItem('groovely_token');
+    if (!token && !pathname?.includes('/login') && !pathname?.includes('/onboarding') && pathname !== '/') {
+      // If we're in the dashboard and there's no token, redirect to login
+      // We don't show the "expired" message here because it might just be a fresh visit
+      router.push('/login');
+    }
+  }, [pathname, router]);
+
   return (
-    <aside className="w-64 min-h-screen bg-[#0F0F1A] border-r border-white/5 flex flex-col py-8 shrink-0">
+    <aside className="w-64 h-screen sticky top-0 bg-[#0F0F1A] border-r border-white/5 flex flex-col py-8 shrink-0">
       <div className="px-8 mb-10">
         <Logo />
       </div>
@@ -84,7 +99,7 @@ export const Sidebar = ({ activePage, role = 'creator' }: SidebarProps = {}) => 
         )}
       </div>
 
-      <nav className="flex-1 space-y-1">
+      <nav className="flex-1 space-y-1 overflow-y-auto custom-scrollbar">
         {role === 'creator' ? (
           <>
             <NavItem icon={LayoutDashboard} label="Dashboard"        href="/dashboard"              active={isDashboard} />
@@ -115,7 +130,10 @@ export const Sidebar = ({ activePage, role = 'creator' }: SidebarProps = {}) => 
       </nav>
 
       <div className="mt-auto px-4 pb-4">
-        <button className="w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white font-bold py-4 rounded-xl border border-white/5 transition-all">
+        <button 
+          onClick={handleSignOut}
+          className="w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white font-bold py-4 rounded-xl border border-white/5 transition-all"
+        >
           <LogOut size={18} />
           <span>Sign Out</span>
         </button>

@@ -198,7 +198,7 @@ export default function EarningsPage() {
   const [activeChartTab, setActiveChartTab] = useState<'licenses' | 'sales'>('licenses');
 
   return (
-    <div className="flex min-h-screen bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
+    <div className="flex h-screen overflow-hidden bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
       <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">

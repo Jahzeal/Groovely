@@ -67,7 +67,7 @@ import { CartProvider } from '@/components/marketplace/CartContext';
 export default function MarketplacePage() {
   return (
     <CartProvider>
-      <div className="flex min-h-screen bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
+      <div className="flex h-screen overflow-hidden bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
         <Sidebar activePage="market" />
 
         <div className="flex-1 flex flex-col min-w-0">

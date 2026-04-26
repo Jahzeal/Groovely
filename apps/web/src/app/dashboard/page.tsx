@@ -19,7 +19,7 @@ import { Twitter, Instagram } from '@/components/ui/SocialIcons';
 
 export default function DashboardPage() {
   return (
-    <div className="flex min-h-screen bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
+    <div className="flex h-screen overflow-hidden bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
       {/* Sidebar */}
       <Sidebar />
 
