@@ -2,12 +2,12 @@
 
 import React, { useState } from 'react';
 import { Sidebar } from '@/components/dashboard/Sidebar';
-import { 
-  ChevronLeft, 
-  Cloud, 
-  HelpCircle, 
-  Info, 
-  ChevronDown, 
+import {
+  ChevronLeft,
+  Cloud,
+  HelpCircle,
+  Info,
+  ChevronDown,
   RefreshCw,
   Plus,
   Trash2,
@@ -17,16 +17,122 @@ import {
   Mic2,
   Radio,
   Drum,
-  Search
+  Search,
+  CheckCircle2
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { apiFetch } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 export default function UploadPage() {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [isPublic, setIsPublic] = useState(true);
   const [explicit, setExplicit] = useState(false);
   const [category, setCategory] = useState('Music');
+
+  // Form State
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [genre, setGenre] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
+  const [usageRights, setUsageRights] = useState<string[]>(['Personal Use']);
+  const [bpm, setBpm] = useState('');
+  const [key, setKey] = useState('');
+  const [isrc, setIsrc] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleAudioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setAudioFile(file);
+  };
+
+  const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCoverFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCoverPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const toggleUsageRight = (right: string) => {
+    setUsageRights(prev =>
+      prev.includes(right) ? prev.filter(r => r !== right) : [...prev, right]
+    );
+  };
+
+  const handleAddTag = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && tagInput.trim()) {
+      e.preventDefault();
+      if (!tags.includes(tagInput.trim().toLowerCase())) {
+        setTags([...tags, tagInput.trim().toLowerCase()]);
+      }
+      setTagInput('');
+    }
+  };
+
+  const handleNext = async () => {
+    if (!audioFile) {
+      toast.error('Please upload an audio file');
+      return;
+    }
+    if (!title) {
+      toast.error('Please enter a track title');
+      return;
+    }
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('description', description);
+    formData.append('audio', audioFile);
+    if (coverFile) formData.append('cover', coverFile);
+    formData.append('visibility', isPublic ? 'public' : 'private');
+    formData.append('explicit', String(explicit));
+    formData.append('category', category.toLowerCase());
+    formData.append('genre', genre);
+    formData.append('tags', JSON.stringify(tags));
+    if (bpm) formData.append('bpm', bpm);
+    if (key) formData.append('key', key);
+    if (isrc) formData.append('isrc', isrc);
+    formData.append('usage_rights', JSON.stringify(usageRights));
+
+    try {
+      const res = await apiFetch('/api/creator/tracks', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res) return;
+
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.message || json.error || 'Failed to upload track');
+      }
+
+      // Store track data for next steps
+      localStorage.setItem('pending_track_id', json.data.id);
+      localStorage.setItem('pending_track_title', json.data.title);
+      localStorage.setItem('pending_track_cover', json.data.cover_url);
+
+      toast.success('Track uploaded successfully!');
+      router.push('/dashboard/upload/metadata');
+    } catch (error: any) {
+      toast.error(error.message || 'Upload failed');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
@@ -50,10 +156,10 @@ export default function UploadPage() {
           </div>
 
           <div className="flex items-center gap-4">
-             <div className="w-10 h-10 rounded-full bg-accent-purple/20 border border-accent-purple/30 flex items-center justify-center cursor-pointer hover:bg-accent-purple/30 transition-all overflow-hidden">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Uzor" alt="User Profile" className="w-full h-full object-cover" />
-             </div>
-             <ChevronDown size={16} className="text-zinc-500" />
+            <div className="w-10 h-10 rounded-full bg-accent-purple/20 border border-accent-purple/30 flex items-center justify-center cursor-pointer hover:bg-accent-purple/30 transition-all overflow-hidden">
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Uzor" alt="User Profile" className="w-full h-full object-cover" />
+            </div>
+            <ChevronDown size={16} className="text-zinc-500" />
           </div>
         </header>
 
@@ -89,51 +195,79 @@ export default function UploadPage() {
                   Audio
                   <Info size={14} className="text-zinc-600" />
                 </h3>
-                <div className="aspect-square border-2 border-dashed border-white/10 rounded-[24px] flex flex-col items-center justify-center text-center p-8 transition-all hover:bg-white/5 hover:border-accent-purple/50 group cursor-pointer">
-                  <div className="w-16 h-20 bg-accent-purple rounded-xl flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(157,0,255,0.6)] group-hover:scale-110 transition-transform">
-                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
-                  </div>
-                  <p className="text-lg font-bold mb-2">Drag & drop your audio file here</p>
-                  <p className="text-zinc-500 font-medium mb-2">or</p>
-                  <button className="text-accent-purple font-black text-xl hover:text-[#B14BFF] transition-colors">Browse files</button>
+                <div
+                  onClick={() => document.getElementById('audio-input')?.click()}
+                  className="aspect-square border-2 border-dashed border-white/10 rounded-[24px] flex flex-col items-center justify-center text-center p-8 transition-all hover:bg-white/5 hover:border-accent-purple/50 group cursor-pointer overflow-hidden"
+                >
+                  <input
+                    type="file"
+                    id="audio-input"
+                    accept="audio/*"
+                    onChange={handleAudioChange}
+                    className="hidden"
+                  />
+                  {audioFile ? (
+                    <div className="flex flex-col items-center">
+                      <div className="w-16 h-20 bg-[#00FF85] rounded-xl flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(0,255,133,0.4)] transition-transform">
+                        <Music size={32} className="text-black" />
+                      </div>
+                      <p className="text-lg font-bold mb-2 truncate max-w-full px-4">{audioFile.name}</p>
+                      <p className="text-zinc-500 font-medium text-xs">{(audioFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="w-16 h-20 bg-accent-purple rounded-xl flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(157,0,255,0.6)] group-hover:scale-110 transition-transform">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                      </div>
+                      <p className="text-lg font-bold mb-2">Drag & drop your audio file here</p>
+                      <p className="text-zinc-500 font-medium mb-2">or</p>
+                      <span className="text-accent-purple font-black text-xl hover:text-[#B14BFF] transition-colors">Browse files</span>
+                    </>
+                  )}
                 </div>
                 <div className="mt-8 pt-8 border-t border-white/5 text-center">
-                  <p className="text-zinc-500 font-medium text-sm italic">No Audio Uploaded Yet</p>
+                  <p className="text-zinc-500 font-medium text-sm italic">
+                    {audioFile ? 'Audio Ready for Upload' : 'No Audio Uploaded Yet'}
+                  </p>
                 </div>
               </div>
 
               {/* Track Details */}
               <div className="bg-white/5 border border-white/5 rounded-[32px] p-8 space-y-8">
-                 <h3 className="text-sm font-black uppercase tracking-widest text-white flex items-center gap-2">
-                   Track Details
-                 </h3>
-                 <div className="space-y-6">
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 ml-1">Title</label>
-                      <input 
-                        type="text" 
-                        placeholder="Title" 
-                        className="w-full bg-[#0F0F1A] border border-white/10 rounded-xl px-5 py-4 text-sm font-medium placeholder:text-zinc-700 outline-none focus:border-accent-purple/50 transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 ml-1">Description (Optional)</label>
-                      <textarea 
-                        rows={5} 
-                        placeholder="Write a short description" 
-                        className="w-full bg-[#0F0F1A] border border-white/10 rounded-xl px-5 py-3 text-sm font-medium placeholder:text-zinc-700 outline-none focus:border-accent-purple/50 transition-all resize-none"
-                      />
-                    </div>
-                    <div className="flex items-center justify-between py-2">
-                       <span className="text-sm font-bold text-zinc-300">Explicit Content</span>
-                       <button 
-                         onClick={() => setExplicit(!explicit)}
-                         className={`w-12 h-6 rounded-full transition-all relative ${explicit ? 'bg-accent-purple' : 'bg-zinc-800'}`}
-                       >
-                         <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${explicit ? 'left-7' : 'left-1'}`} />
-                       </button>
-                    </div>
-                 </div>
+                <h3 className="text-sm font-black uppercase tracking-widest text-white flex items-center gap-2">
+                  Track Details
+                </h3>
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 ml-1">Title</label>
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="Title"
+                      className="w-full bg-[#0F0F1A] border border-white/10 rounded-xl px-5 py-4 text-sm font-medium placeholder:text-zinc-700 outline-none focus:border-accent-purple/50 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 ml-1">Description (Optional)</label>
+                    <textarea
+                      rows={5}
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Write a short description"
+                      className="w-full bg-[#0F0F1A] border border-white/10 rounded-xl px-5 py-3 text-sm font-medium placeholder:text-zinc-700 outline-none focus:border-accent-purple/50 transition-all resize-none"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between py-2">
+                    <span className="text-sm font-bold text-zinc-300">Explicit Content</span>
+                    <button
+                      onClick={() => setExplicit(!explicit)}
+                      className={`w-12 h-6 rounded-full transition-all relative ${explicit ? 'bg-accent-purple' : 'bg-zinc-800'}`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${explicit ? 'left-7' : 'left-1'}`} />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -145,14 +279,35 @@ export default function UploadPage() {
                   Cover Art
                   <Info size={14} className="text-zinc-600" />
                 </h3>
-                <div className="aspect-square bg-[#0F0F1A] rounded-[24px] flex items-center justify-center p-12 mb-6">
-                   <div className="w-full h-full rounded-full border-[10px] border-zinc-900 border-t-zinc-800 flex items-center justify-center">
+                <div className="aspect-square bg-[#0F0F1A] rounded-[24px] flex items-center justify-center p-12 mb-6 overflow-hidden">
+                  {coverPreview ? (
+                    <img src={coverPreview} alt="Cover Preview" className="w-full h-full object-cover rounded-xl" />
+                  ) : (
+                    <div className="w-full h-full rounded-full border-[10px] border-zinc-900 border-t-zinc-800 flex items-center justify-center">
                       <div className="w-4 h-4 bg-zinc-800 rounded-full" />
-                   </div>
+                    </div>
+                  )}
                 </div>
                 <div className="grid grid-cols-1 gap-4">
-                  <Button className="w-full bg-accent-purple hover:bg-[#B14BFF] py-4">Upload image</Button>
-                  <button className="text-red-500 font-bold text-sm py-2 hover:opacity-80 transition-opacity">Delete</button>
+                  <input
+                    type="file"
+                    id="cover-input"
+                    accept="image/*"
+                    onChange={handleCoverChange}
+                    className="hidden"
+                  />
+                  <Button
+                    onClick={() => document.getElementById('cover-input')?.click()}
+                    className="w-full bg-accent-purple hover:bg-[#B14BFF] py-4"
+                  >
+                    Upload image
+                  </Button>
+                  <button
+                    onClick={() => { setCoverFile(null); setCoverPreview(null); }}
+                    className="text-red-500 font-bold text-sm py-2 hover:opacity-80 transition-opacity"
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
 
@@ -160,20 +315,20 @@ export default function UploadPage() {
               <div className="bg-white/5 border border-white/5 rounded-[32px] p-8">
                 <h3 className="text-sm font-black uppercase tracking-widest text-white mb-6">Visibility Settings</h3>
                 <div className="flex gap-8">
-                   <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setIsPublic(true)}>
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${isPublic ? 'border-accent-purple bg-accent-purple/20' : 'border-zinc-700 bg-transparent group-hover:border-zinc-500'}`}>
-                         {isPublic && <div className="w-2 h-2 bg-accent-purple rounded-full" />}
-                      </div>
-                      <Globe size={18} className={isPublic ? 'text-accent-purple' : 'text-zinc-600'} />
-                      <span className={`text-sm font-bold ${isPublic ? 'text-white' : 'text-zinc-500'}`}>Public</span>
-                   </div>
-                   <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setIsPublic(false)}>
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${!isPublic ? 'border-accent-purple bg-accent-purple/20' : 'border-zinc-700 bg-transparent group-hover:border-zinc-500'}`}>
-                         {!isPublic && <div className="w-2 h-2 bg-accent-purple rounded-full" />}
-                      </div>
-                      <Lock size={18} className={!isPublic ? 'text-accent-purple' : 'text-zinc-600'} />
-                      <span className={`text-sm font-bold ${!isPublic ? 'text-white' : 'text-zinc-500'}`}>Private</span>
-                   </div>
+                  <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setIsPublic(true)}>
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${isPublic ? 'border-accent-purple bg-accent-purple/20' : 'border-zinc-700 bg-transparent group-hover:border-zinc-500'}`}>
+                      {isPublic && <div className="w-2 h-2 bg-accent-purple rounded-full" />}
+                    </div>
+                    <Globe size={18} className={isPublic ? 'text-accent-purple' : 'text-zinc-600'} />
+                    <span className={`text-sm font-bold ${isPublic ? 'text-white' : 'text-zinc-500'}`}>Public</span>
+                  </div>
+                  <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setIsPublic(false)}>
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${!isPublic ? 'border-accent-purple bg-accent-purple/20' : 'border-zinc-700 bg-transparent group-hover:border-zinc-500'}`}>
+                      {!isPublic && <div className="w-2 h-2 bg-accent-purple rounded-full" />}
+                    </div>
+                    <Lock size={18} className={!isPublic ? 'text-accent-purple' : 'text-zinc-600'} />
+                    <span className={`text-sm font-bold ${!isPublic ? 'text-white' : 'text-zinc-500'}`}>Private</span>
+                  </div>
                 </div>
               </div>
 
@@ -187,29 +342,40 @@ export default function UploadPage() {
                   <div>
                     <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 ml-1">Genre</label>
                     <div className="relative">
-                      <select className="w-full bg-[#0F0F1A] border border-white/10 rounded-xl pl-5 pr-10 py-4 text-sm font-medium text-zinc-400 outline-none focus:border-accent-purple/50 appearance-none cursor-pointer">
-                        <option>Select a genre</option>
-                        <option>Afrobeats</option>
-                        <option>Hip Hop</option>
-                        <option>R&B</option>
+                      <select
+                        value={genre}
+                        onChange={(e) => setGenre(e.target.value)}
+                        className="w-full bg-[#0F0F1A] border border-white/10 rounded-xl pl-5 pr-10 py-4 text-sm font-medium text-zinc-400 outline-none focus:border-accent-purple/50 appearance-none cursor-pointer"
+                      >
+                        <option value="">Select a genre</option>
+                        <option value="afrobeats">Afrobeats</option>
+                        <option value="hip-hop">Hip Hop</option>
+                        <option value="r&b">R&B</option>
                       </select>
                       <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none" />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 ml-1">Tags (Optional)</label>
                     <div className="relative">
-                      <select className="w-full bg-[#0F0F1A] border border-white/10 rounded-xl pl-5 pr-10 py-4 text-sm font-medium text-zinc-400 outline-none focus:border-accent-purple/50 appearance-none cursor-pointer">
-                        <option>Choose your tags</option>
-                      </select>
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-0.5 pointer-events-none">
-                         <ChevronLeft size={14} className="text-zinc-600 rotate-90" />
-                         <ChevronLeft size={14} className="text-zinc-600 -rotate-90" />
-                      </div>
+                      <input
+                        type="text"
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value)}
+                        onKeyDown={handleAddTag}
+                        placeholder="Type and press Enter"
+                        className="w-full bg-[#0F0F1A] border border-white/10 rounded-xl px-5 py-4 text-sm font-medium text-zinc-400 outline-none focus:border-accent-purple/50 transition-all"
+                      />
                     </div>
                   </div>
-                  <div className="text-center py-10 border-2 border-dashed border-white/5 rounded-2xl">
-                     <p className="text-zinc-600 text-xs font-bold uppercase tracking-widest">No Tags Added Yet</p>
+                  <div className="flex flex-wrap gap-2 min-h-[100px] p-4 border-2 border-dashed border-white/5 rounded-2xl">
+                    {tags.length > 0 ? tags.map((tag) => (
+                      <span key={tag} className="bg-accent-purple/20 border border-accent-purple/30 text-accent-purple px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
+                        {tag}
+                        <button onClick={() => setTags(tags.filter(t => t !== tag))} className="hover:text-white">×</button>
+                      </span>
+                    )) : (
+                      <p className="text-zinc-600 text-xs font-bold uppercase tracking-widest m-auto">No Tags Added Yet</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -219,133 +385,148 @@ export default function UploadPage() {
             <div className="xl:col-span-4 space-y-10">
               {/* Licensing */}
               <div className="bg-white/5 border border-white/10 rounded-[32px] p-8 shadow-[0_0_40px_rgba(0,0,0,0.5)]">
-                 <h3 className="text-sm font-black uppercase tracking-widest text-white mb-8">Licensing</h3>
-                 
-                 <div className="space-y-8">
-                   {/* Usage Rights */}
-                   <div>
-                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-5 ml-1">Usage Rights</p>
-                     <div className="space-y-4">
-                       {['Personal Use', 'Remix Allowed', 'Commercial use', 'Distribution Allowed'].map((right) => (
-                         <div key={right} className="flex items-center gap-3 cursor-pointer group">
-                           <div className="w-5 h-5 rounded border-2 border-zinc-700 bg-[#0F0F1A] flex items-center justify-center transition-all group-hover:border-zinc-500">
-                              {/* Checkbox state logic can be added */}
-                           </div>
-                           <span className="text-sm font-bold text-zinc-300">{right}</span>
-                         </div>
-                       ))}
-                     </div>
-                   </div>
+                <h3 className="text-sm font-black uppercase tracking-widest text-white mb-8">Licensing</h3>
 
-                   {/* Payment Model */}
-                   <div className="pt-8 border-t border-white/5">
-                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-6 ml-1">Payment Model</p>
-                     <div className="space-y-6">
-                        <div className="flex items-center justify-between gap-4">
-                           <div className="flex items-center gap-3">
-                              <div className="w-5 h-5 rounded-full border-2 border-accent-purple bg-accent-purple/20 flex items-center justify-center">
-                                 <div className="w-2 h-2 bg-accent-purple rounded-full" />
-                              </div>
-                              <span className="text-sm font-bold">Fixed License Price</span>
-                           </div>
-                           <div className="w-24 relative">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 text-sm">$</span>
-                              <input type="text" value="0.00" readOnly className="w-full bg-transparent border border-white/10 rounded-lg pl-6 pr-3 py-2 text-sm text-zinc-500 font-bold text-right" />
-                           </div>
-                        </div>
-
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between gap-4">
-                             <div className="flex items-center gap-3">
-                                <div className="w-5 h-5 rounded-full border-2 border-zinc-700 bg-transparent flex items-center justify-center"></div>
-                                <span className="text-sm font-bold text-zinc-600">Royalty</span>
-                             </div>
-                             <div className="w-24 relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 text-sm">%</span>
-                                <input type="text" value="0.00" readOnly className="w-full bg-transparent border border-white/10 rounded-lg pl-6 pr-3 py-2 text-sm text-zinc-500 font-bold text-right" />
-                             </div>
+                <div className="space-y-8">
+                  {/* Usage Rights */}
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-5 ml-1">Usage Rights</p>
+                    <div className="space-y-4">
+                      {['Personal Use', 'Remix Allowed', 'Commercial use', 'Distribution Allowed'].map((right) => (
+                        <div
+                          key={right}
+                          onClick={() => toggleUsageRight(right)}
+                          className="flex items-center gap-3 cursor-pointer group"
+                        >
+                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${usageRights.includes(right) ? 'bg-accent-purple border-accent-purple' : 'border-zinc-700 bg-[#0F0F1A] group-hover:border-zinc-500'}`}>
+                            {usageRights.includes(right) && <CheckCircle2 size={12} className="text-white" />}
                           </div>
-                          <div className="px-2 relative pt-2">
-                             <div className="h-2 bg-zinc-800 rounded-full w-full">
-                                <div className="h-full bg-accent-purple w-[10%] rounded-full relative">
-                                   <div className="absolute -right-3 -top-8 bg-zinc-800 border border-white/10 px-1.5 py-1 rounded-md text-[10px] font-black text-white shadow-xl">
-                                      10%
-                                      <div className="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-zinc-800 border-r border-b border-white/10 rotate-45" />
-                                   </div>
-                                   <div className="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)] cursor-pointer" />
-                                </div>
-                             </div>
-                          </div>
+                          <span className={`text-sm font-bold ${usageRights.includes(right) ? 'text-white' : 'text-zinc-300'}`}>{right}</span>
                         </div>
+                      ))}
+                    </div>
+                  </div>
 
+                  {/* Payment Model */}
+                  <div className="pt-8 border-t border-white/5">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-6 ml-1">Payment Model</p>
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                           <div className="w-5 h-5 rounded-full border-2 border-zinc-700 bg-transparent flex items-center justify-center"></div>
-                           <span className="text-sm font-bold text-zinc-600">No License Fee</span>
+                          <div className="w-5 h-5 rounded-full border-2 border-accent-purple bg-accent-purple/20 flex items-center justify-center">
+                            <div className="w-2 h-2 bg-accent-purple rounded-full" />
+                          </div>
+                          <span className="text-sm font-bold">Fixed License Price</span>
                         </div>
-                     </div>
-                   </div>
-
-                   <div className="pt-8 border-t border-white/5">
-                      <div className="flex items-start gap-4 cursor-pointer group">
-                         <div className="w-5 h-5 rounded border-2 border-zinc-700 bg-[#0F0F1A] flex items-center justify-center transition-all group-hover:border-zinc-500 mt-0.5">
-                         </div>
-                         <p className="text-[10px] font-bold text-zinc-500 leading-normal">
-                           I confirm I own the rights to this audio and agree to Groovely's <span className="text-accent-purple">Terms & Conditions</span>
-                         </p>
+                        <div className="w-24 relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 text-sm">$</span>
+                          <input type="text" value="0.00" readOnly className="w-full bg-transparent border border-white/10 rounded-lg pl-6 pr-3 py-2 text-sm text-zinc-500 font-bold text-right" />
+                        </div>
                       </div>
-                   </div>
-                 </div>
+
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-5 h-5 rounded-full border-2 border-zinc-700 bg-transparent flex items-center justify-center"></div>
+                            <span className="text-sm font-bold text-zinc-600">Royalty</span>
+                          </div>
+                          <div className="w-24 relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 text-sm">%</span>
+                            <input type="text" value="0.00" readOnly className="w-full bg-transparent border border-white/10 rounded-lg pl-6 pr-3 py-2 text-sm text-zinc-500 font-bold text-right" />
+                          </div>
+                        </div>
+                        <div className="px-2 relative pt-2">
+                          <div className="h-2 bg-zinc-800 rounded-full w-full">
+                            <div className="h-full bg-accent-purple w-[10%] rounded-full relative">
+                              <div className="absolute -right-3 -top-8 bg-zinc-800 border border-white/10 px-1.5 py-1 rounded-md text-[10px] font-black text-white shadow-xl">
+                                10%
+                                <div className="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-zinc-800 border-r border-b border-white/10 rotate-45" />
+                              </div>
+                              <div className="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)] cursor-pointer" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <div className="w-5 h-5 rounded-full border-2 border-zinc-700 bg-transparent flex items-center justify-center"></div>
+                        <span className="text-sm font-bold text-zinc-600">No License Fee</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-8 border-t border-white/5">
+                    <div className="flex items-start gap-4 cursor-pointer group">
+                      <div className="w-5 h-5 rounded border-2 border-zinc-700 bg-[#0F0F1A] flex items-center justify-center transition-all group-hover:border-zinc-500 mt-0.5">
+                      </div>
+                      <p className="text-[10px] font-bold text-zinc-500 leading-normal">
+                        I confirm I own the rights to this audio and agree to Groovely's <span className="text-accent-purple">Terms & Conditions</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Category */}
               <div className="bg-white/5 border border-white/5 rounded-[32px] p-8">
-                 <h3 className="text-sm font-black uppercase tracking-widest text-white mb-6">Category</h3>
-                 <div className="flex flex-wrap gap-2">
-                    {['Music', 'Podcast', 'Skit', 'Beat'].map((cat) => (
-                      <button 
-                         key={cat}
-                         onClick={() => setCategory(cat)}
-                         className={`px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all ${category === cat ? 'bg-accent-purple text-white' : 'bg-white/5 text-zinc-500 border border-white/5 hover:bg-white/10'}`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
-                 </div>
+                <h3 className="text-sm font-black uppercase tracking-widest text-white mb-6">Category</h3>
+                <div className="flex flex-wrap gap-2">
+                  {['Music', 'Podcast', 'Skit', 'Beat'].map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setCategory(cat)}
+                      className={`px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all ${category === cat ? 'bg-accent-purple text-white' : 'bg-white/5 text-zinc-500 border border-white/5 hover:bg-white/10'}`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Advanced Details */}
               <div className="bg-white/5 border border-white/5 rounded-[32px] p-8 space-y-8">
-                 <h3 className="text-sm font-black uppercase tracking-widest text-white flex items-center justify-between">
-                   Advanced Details (Optional)
-                   <ChevronDown size={16} className="text-zinc-600" />
-                 </h3>
-                 <div className="space-y-6">
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 ml-1">BPM (for producers)</label>
-                      <input 
-                        type="text" 
-                        placeholder="0-300" 
-                        className="w-full bg-[#0F0F1A] border border-white/10 rounded-xl px-5 py-4 text-sm font-medium placeholder:text-zinc-700 outline-none focus:border-accent-purple/50 transition-all"
-                      />
+                <h3 className="text-sm font-black uppercase tracking-widest text-white flex items-center justify-between">
+                  Advanced Details (Optional)
+                  <ChevronDown size={16} className="text-zinc-600" />
+                </h3>
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 ml-1">BPM (for producers)</label>
+                    <input
+                      type="number"
+                      value={bpm}
+                      onChange={(e) => setBpm(e.target.value)}
+                      placeholder="0-300"
+                      className="w-full bg-[#0F0F1A] border border-white/10 rounded-xl px-5 py-4 text-sm font-medium placeholder:text-zinc-700 outline-none focus:border-accent-purple/50 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 ml-1">Key</label>
+                    <div className="relative">
+                      <select
+                        value={key}
+                        onChange={(e) => setKey(e.target.value)}
+                        className="w-full bg-[#0F0F1A] border border-white/10 rounded-xl pl-5 pr-10 py-4 text-sm font-medium text-zinc-400 outline-none focus:border-accent-purple/50 appearance-none cursor-pointer"
+                      >
+                        <option value="">Select a key</option>
+                        <option value="C Major">C Major</option>
+                        <option value="A Minor">A Minor</option>
+                        <option value="G Major">G Major</option>
+                      </select>
+                      <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none" />
                     </div>
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 ml-1">Key</label>
-                      <div className="relative">
-                        <select className="w-full bg-[#0F0F1A] border border-white/10 rounded-xl pl-5 pr-10 py-4 text-sm font-medium text-zinc-400 outline-none focus:border-accent-purple/50 appearance-none cursor-pointer">
-                          <option>Select a key</option>
-                        </select>
-                        <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 ml-1">ISRC (If available)</label>
-                      <input 
-                        type="text" 
-                        placeholder="AB-123-456-7890" 
-                        className="w-full bg-[#0F0F1A] border border-white/10 rounded-xl px-5 py-4 text-sm font-medium placeholder:text-zinc-700 outline-none focus:border-accent-purple/50 transition-all"
-                      />
-                    </div>
-                 </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 ml-1">ISRC (If available)</label>
+                    <input
+                      type="text"
+                      value={isrc}
+                      onChange={(e) => setIsrc(e.target.value)}
+                      placeholder="AB-123-456-7890"
+                      className="w-full bg-[#0F0F1A] border border-white/10 rounded-xl px-5 py-4 text-sm font-medium placeholder:text-zinc-700 outline-none focus:border-accent-purple/50 transition-all"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -353,10 +534,17 @@ export default function UploadPage() {
 
         {/* Sticky Footer */}
         <footer className="fixed bottom-0 right-0 left-64 bg-[#0F0F1A]/80 backdrop-blur-xl border-t border-white/5 px-10 py-6 flex items-center justify-end gap-4 z-40">
-           <Button variant="secondary" className="px-10">Save as Draft</Button>
-           <Link href="/dashboard/upload/metadata">
-             <Button variant="primary" className="px-12 bg-accent-purple shadow-[0_0_20px_rgba(157,0,255,0.3)]">Next</Button>
-           </Link>
+          <Button variant="secondary" className="px-10" disabled={isUploading}>Save as Draft</Button>
+          <Button
+            variant="primary"
+            onClick={handleNext}
+            disabled={isUploading}
+            className="px-12 bg-accent-purple shadow-[0_0_20px_rgba(157,0,255,0.3)] min-w-[140px]"
+          >
+            {isUploading ? (
+              <RefreshCw size={18} className="animate-spin" />
+            ) : 'Next'}
+          </Button>
         </footer>
       </div>
     </div>

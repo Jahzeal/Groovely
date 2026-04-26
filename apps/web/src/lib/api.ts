@@ -5,8 +5,10 @@ export const API_BASE = 'https://groovely-github-repo.onrender.com';
 export async function apiFetch(endpoint: string, options: RequestInit = {}) {
   const token = localStorage.getItem('groovely_token');
   
+  const isFormData = options.body instanceof FormData;
+  
   const headers = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     ...options.headers,
   };

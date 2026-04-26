@@ -37,6 +37,16 @@ export default function MintPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mintStatus, setMintStatus] = useState<'idle' | 'confirming' | 'minting' | 'success'>('idle');
 
+  const [trackTitle, setTrackTitle] = useState('Title');
+  const [trackCover, setTrackCover] = useState('');
+
+  React.useEffect(() => {
+    const title = localStorage.getItem('pending_track_title');
+    const cover = localStorage.getItem('pending_track_cover');
+    if (title) setTrackTitle(title);
+    if (cover) setTrackCover(cover);
+  }, []);
+
   const handleStartMinting = () => {
     setIsModalOpen(true);
     setMintStatus('confirming');
@@ -237,14 +247,14 @@ export default function MintPage() {
                  <div className="bg-[#0F0F1A]/80 border border-white/5 rounded-3xl p-6">
                     <div className="flex gap-6">
                        <div className="w-24 h-24 bg-zinc-800 rounded-2xl shrink-0 overflow-hidden relative group">
-                          <img src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="Track Cover" />
+                          <img src={trackCover || "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="Track Cover" />
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                              <Music size={24} className="text-white" />
                           </div>
                        </div>
                        <div className="flex-1 space-y-4">
                           <div>
-                             <h4 className="text-xl font-black mb-1">Title</h4>
+                             <h4 className="text-xl font-black mb-1">{trackTitle}</h4>
                              <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Ready to mint</p>
                           </div>
                           <div className="grid grid-cols-2 gap-4">
