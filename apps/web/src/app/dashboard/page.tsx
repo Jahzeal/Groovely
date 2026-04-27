@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { TopBar } from '@/components/dashboard/TopBar';
 import { StatCard } from '@/components/dashboard/StatCard';
@@ -13,11 +13,53 @@ import {
   UploadCloud, 
   Headphones,
   Send,
-  Disc
+  Disc,
+  Loader2
 } from 'lucide-react';
 import { Twitter, Instagram } from '@/components/ui/SocialIcons';
+import { apiFetch } from '@/lib/api';
+
+interface DashboardStats {
+  streams: {
+    total: string;
+    change: string | null;
+    changeType: 'up' | 'down' | null;
+  };
+  earnings: {
+    total: string;
+    change: string | null;
+    changeType: 'up' | 'down' | null;
+  };
+  uploads: {
+    total: string;
+    change: string | null;
+    changeType: 'up' | 'down' | null;
+  };
+}
 
 export default function DashboardPage() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const res = await apiFetch('/api/creator/dashboard/stats');
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data.success && data.data) {
+            setStats(data.data);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch dashboard stats', error);
+      } finally {
+        setIsLoadingStats(false);
+      }
+    }
+    fetchStats();
+  }, []);
+
   return (
     <div className="flex h-screen overflow-hidden bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
       {/* Sidebar */}
@@ -36,30 +78,41 @@ export default function DashboardPage() {
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-             <StatCard 
-               icon={Radio} 
-               label="Streams" 
-               value="1,230" 
-               change={15} 
-             />
-             <StatCard 
-               icon={Wallet} 
-               label="Earnings" 
-               value="$1,032.60" 
-               change={10.5} 
-             />
-             <StatCard 
-               icon={UploadCloud} 
-               label="Uploads" 
-               value="10" 
-               change={-0.5} 
-             />
-             <StatCard 
-               icon={Headphones} 
-               label="Listening Rooms" 
-               value="20" 
-               change={-1} 
-             />
+            {isLoadingStats ? (
+              <div className="col-span-full flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 text-accent-purple animate-spin" />
+              </div>
+            ) : (
+              <>
+                 <StatCard 
+                   icon={Radio} 
+                   label="Streams" 
+                   value={stats?.streams?.total || "0"} 
+                   change={stats?.streams?.change ? parseFloat(stats.streams.change) : null} 
+                   changeType={stats?.streams?.changeType}
+                 />
+                 <StatCard 
+                   icon={Wallet} 
+                   label="Earnings" 
+                   value={stats?.earnings?.total ? `$${parseFloat(stats.earnings.total).toFixed(4)}` : "$0.00"} 
+                   change={stats?.earnings?.change ? parseFloat(stats.earnings.change) : null} 
+                   changeType={stats?.earnings?.changeType}
+                 />
+                 <StatCard 
+                   icon={UploadCloud} 
+                   label="Uploads" 
+                   value={stats?.uploads?.total || "0"} 
+                   change={stats?.uploads?.change ? parseFloat(stats.uploads.change) : null} 
+                   changeType={stats?.uploads?.changeType}
+                 />
+                 <StatCard 
+                   icon={Headphones} 
+                   label="Listening Rooms" 
+                   value="0" 
+                   comingSoon
+                 />
+              </>
+            )}
           </div>
 
           {/* Tracks and Active Room Grid */}
