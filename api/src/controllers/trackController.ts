@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { AuthRequest } from '../types/request';
+import { query } from '../config/database';
 import {
   validateAudioFile,
   validateImageFile,
@@ -11,6 +12,7 @@ import {
 } from '../services/trackService';
 import { sendSuccess, sendBadRequest, sendNotFound, sendInternalError } from '../helpers/response';
 
+
 const getTrackId = (req: AuthRequest): number | null => {
   const id = req.params.id;
   if (typeof id !== 'string') {
@@ -19,6 +21,7 @@ const getTrackId = (req: AuthRequest): number | null => {
   const parsedId = parseInt(id);
   return isNaN(parsedId) ? null : parsedId;
 };
+
 
 export const uploadTrack = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -37,6 +40,7 @@ export const uploadTrack = async (req: AuthRequest, res: Response): Promise<void
       usageRights
     } = req.body;
 
+    
     if (!title) {
       sendBadRequest(res, 'Title is required');
       return;
@@ -47,6 +51,7 @@ export const uploadTrack = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
+  
     const audioFile = files?.audio;
     const coverFile = files?.cover;
 
@@ -62,11 +67,14 @@ export const uploadTrack = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
+
     const parsedTags = tags ? JSON.parse(tags) : null;
     const parsedUsageRights = usageRights ? JSON.parse(usageRights) : [];
 
+
     const parsedBpm = bpm ? parseInt(bpm) : null;
     
+  
     const parsedKey = key || null;
     
     const parsedIsrc = isrc || null;
@@ -94,16 +102,31 @@ export const uploadTrack = async (req: AuthRequest, res: Response): Promise<void
   }
 };
 
+
 export const getMyTracks = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
-    const tracks = await getCreatorTracks(userId);
-    sendSuccess(res, tracks, 'Tracks retrieved successfully');
+    
+    const result = await query(
+      `SELECT 
+        t.*,
+        u.id as user_id,
+        u.display_name as artist_name,
+        u.username as artist_username
+       FROM tracks t
+       JOIN users u ON t.user_id = u.id
+       WHERE t.user_id = $1
+       ORDER BY t.created_at DESC`,
+      [userId]
+    );
+    
+    sendSuccess(res, { tracks: result.rows }, 'Tracks retrieved successfully');
   } catch (error) {
     console.error('Get tracks error:', error);
     sendInternalError(res);
   }
 };
+
 
 export const getTrack = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -115,8 +138,24 @@ export const getTrack = async (req: AuthRequest, res: Response): Promise<void> =
       return;
     }
 
-    const track = await getTrackDetails(trackId, userId);
-    sendSuccess(res, track, 'Track retrieved successfully');
+    const result = await query(
+      `SELECT 
+        t.*,
+        u.id as user_id,
+        u.display_name as artist_name,
+        u.username as artist_username
+       FROM tracks t
+       JOIN users u ON t.user_id = u.id
+       WHERE t.id = $1 AND t.user_id = $2`,
+      [trackId, userId]
+    );
+    
+    if (result.rows.length === 0) {
+      sendNotFound(res, 'Track not found');
+      return;
+    }
+
+    sendSuccess(res, result.rows[0], 'Track retrieved successfully');
   } catch (error) {
     if (error instanceof Error && error.message === 'Track not found') {
       sendNotFound(res, error.message);
