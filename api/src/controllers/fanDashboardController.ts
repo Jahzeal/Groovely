@@ -3,6 +3,7 @@ import { AuthRequest } from '../types/request';
 import { query } from '../config/database';
 import { sendSuccess, sendBadRequest, sendNotFound, sendInternalError } from '../helpers/response';
 
+
 const getUserId = (req: AuthRequest): number | null => {
   const id = req.params.id;
   if (typeof id !== 'string') {
@@ -11,6 +12,7 @@ const getUserId = (req: AuthRequest): number | null => {
   const parsedId = parseInt(id);
   return isNaN(parsedId) ? null : parsedId;
 };
+
 
 export const getTrendingTracks = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -22,14 +24,14 @@ export const getTrendingTracks = async (req: AuthRequest, res: Response): Promis
         t.title,
         t.cover_url,
         t.category,
-        u.name as artist_name,
+        u.display_name as artist_name,
         u.username as artist_username,
         COUNT(ts.id) as stream_count
        FROM tracks t
        JOIN users u ON t.user_id = u.id
        LEFT JOIN track_streams ts ON t.id = ts.track_id AND ts.played_at >= NOW() - INTERVAL '7 days'
        WHERE t.visibility = 'public'
-       GROUP BY t.id, u.name, u.username
+       GROUP BY t.id, u.display_name, u.username
        ORDER BY stream_count DESC
        LIMIT $1`,
       [limit]
@@ -53,7 +55,7 @@ export const getRecentTracks = async (req: AuthRequest, res: Response): Promise<
         t.cover_url,
         t.category,
         t.created_at,
-        u.name as artist_name,
+        u.display_name as artist_name,
         u.username as artist_username
        FROM tracks t
        JOIN users u ON t.user_id = u.id
@@ -70,6 +72,7 @@ export const getRecentTracks = async (req: AuthRequest, res: Response): Promise<
   }
 };
 
+
 export const getCreators = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
@@ -78,7 +81,7 @@ export const getCreators = async (req: AuthRequest, res: Response): Promise<void
     const result = await query(
       `SELECT 
         u.id,
-        u.name,
+        u.display_name as name,
         u.username,
         u.bio,
         u.display_name,
@@ -142,6 +145,7 @@ export const followCreator = async (req: AuthRequest, res: Response): Promise<vo
   }
 };
 
+
 export const unfollowCreator = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const followerId = req.userId;
@@ -169,6 +173,7 @@ export const unfollowCreator = async (req: AuthRequest, res: Response): Promise<
   }
 };
 
+
 export const getRecommendations = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
@@ -180,7 +185,7 @@ export const getRecommendations = async (req: AuthRequest, res: Response): Promi
         t.title,
         t.cover_url,
         t.category,
-        u.name as artist_name,
+        u.display_name as artist_name,
         u.username as artist_username,
         CASE WHEN f.id IS NOT NULL THEN true ELSE false END as follows_artist
        FROM tracks t
