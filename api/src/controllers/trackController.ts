@@ -11,7 +11,6 @@ import {
 } from '../services/trackService';
 import { sendSuccess, sendBadRequest, sendNotFound, sendInternalError } from '../helpers/response';
 
-// Helper to get id from params
 const getTrackId = (req: AuthRequest): number | null => {
   const id = req.params.id;
   if (typeof id !== 'string') {
@@ -21,7 +20,6 @@ const getTrackId = (req: AuthRequest): number | null => {
   return isNaN(parsedId) ? null : parsedId;
 };
 
-// Upload a new track
 export const uploadTrack = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
@@ -39,7 +37,6 @@ export const uploadTrack = async (req: AuthRequest, res: Response): Promise<void
       usageRights
     } = req.body;
 
-    // Validate required fields
     if (!title) {
       sendBadRequest(res, 'Title is required');
       return;
@@ -50,7 +47,6 @@ export const uploadTrack = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
-    // Validate files
     const audioFile = files?.audio;
     const coverFile = files?.cover;
 
@@ -66,11 +62,15 @@ export const uploadTrack = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
-    // Parse JSON fields
     const parsedTags = tags ? JSON.parse(tags) : null;
     const parsedUsageRights = usageRights ? JSON.parse(usageRights) : [];
 
-    // Create track
+    const parsedBpm = bpm ? parseInt(bpm) : null;
+    
+    const parsedKey = key || null;
+    
+    const parsedIsrc = isrc || null;
+
     const track = await createNewTrack(
       userId,
       title,
@@ -81,9 +81,9 @@ export const uploadTrack = async (req: AuthRequest, res: Response): Promise<void
       explicit === 'true' || explicit === true,
       category,
       parsedTags,
-      bpm ? parseInt(bpm) : null,
-      key || null,
-      isrc || null,
+      parsedBpm,
+      parsedKey,
+      parsedIsrc,
       parsedUsageRights
     );
 
@@ -94,7 +94,6 @@ export const uploadTrack = async (req: AuthRequest, res: Response): Promise<void
   }
 };
 
-// Get all tracks for the authenticated creator
 export const getMyTracks = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
@@ -106,7 +105,6 @@ export const getMyTracks = async (req: AuthRequest, res: Response): Promise<void
   }
 };
 
-// Get a single track by ID
 export const getTrack = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
@@ -129,7 +127,6 @@ export const getTrack = async (req: AuthRequest, res: Response): Promise<void> =
   }
 };
 
-// Update a track
 export const updateTrackController = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
@@ -153,7 +150,6 @@ export const updateTrackController = async (req: AuthRequest, res: Response): Pr
   }
 };
 
-// Delete a track
 export const deleteTrackController = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
