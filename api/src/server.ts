@@ -10,6 +10,7 @@ import fanRoutes from './routes/fanRoutes';
 import profileRoutes from './routes/profileRoutes';
 import trackRoutes from './routes/trackRoutes';
 import streamRoutes from './routes/streamRoutes';
+import fanDashboardRoutes from './routes/fanDashboardRoutes';
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/creator', creatorRoutes);
 app.use('/api/creator', trackRoutes);
 app.use('/api/fan', fanRoutes);
+app.use('/api/fan', fanDashboardRoutes);
 app.use('/api', profileRoutes);
 app.use('/api', streamRoutes);  
 
