@@ -9,6 +9,7 @@ import creatorRoutes from './routes/creatorRoutes';
 import fanRoutes from './routes/fanRoutes';
 import profileRoutes from './routes/profileRoutes';
 import trackRoutes from './routes/trackRoutes';
+import streamRoutes from './routes/streamRoutes';
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.use('/api/creator', creatorRoutes);
 app.use('/api/creator', trackRoutes);
 app.use('/api/fan', fanRoutes);
 app.use('/api', profileRoutes);
+app.use('/api', streamRoutes);  
 
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
