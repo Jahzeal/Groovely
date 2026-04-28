@@ -85,8 +85,12 @@ export default function LoginPage() {
       localStorage.setItem('groovely_wallet', user.wallet ?? walletAddr);
       localStorage.setItem('groovely_role', user.role ?? '');
 
-      // Redirect based on user role / new user flag
-      router.push('/dashboard');
+      // Redirect based on user role
+      if (user.role === 'fan') {
+        router.push('/explore');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err: any) {
       console.error('Login error:', err);
       const errorMessage = err.message || 'Something went wrong during login';
@@ -114,7 +118,7 @@ export default function LoginPage() {
       {/* Navigation */}
       <nav className="relative z-20 flex w-full items-center justify-between px-12 py-8">
         <Logo />
-        <button 
+        <button
           onClick={() => router.push('/')}
           className="text-zinc-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-[0.2em]"
         >
@@ -127,7 +131,7 @@ export default function LoginPage() {
         <div className="w-full max-w-[500px] p-8 sm:p-12 bg-black/40 backdrop-blur-3xl rounded-[40px] border border-white/5 shadow-2xl relative overflow-hidden group">
           {/* Subtle Background Inner Glow */}
           <div className="absolute -top-24 -right-24 w-64 h-64 bg-accent-purple/10 blur-[80px] rounded-full pointer-events-none transition-all group-hover:bg-accent-purple/20" />
-          
+
           <div className="relative z-10">
             <h1 className="text-3xl font-black tracking-tight mb-2 text-white uppercase text-center">
               Welcome Back
@@ -144,7 +148,7 @@ export default function LoginPage() {
 
             {/* Wallet Selection */}
             <div className="grid grid-cols-3 gap-4 mb-8">
-              <div 
+              <div
                 onClick={() => setWallet('metamask')}
                 className={`flex flex-col items-center justify-center aspect-square rounded-2xl border transition-all cursor-pointer ${wallet === 'metamask' ? 'bg-accent-purple/10 border-accent-purple shadow-[0_0_15px_rgba(139,92,246,0.2)]' : 'bg-white/5 border-white/5 hover:border-white/10'}`}
               >
@@ -152,7 +156,7 @@ export default function LoginPage() {
                   <MetaMaskIcon />
                 </div>
               </div>
-              <div 
+              <div
                 onClick={() => setWallet('walletconnect')}
                 className={`flex flex-col items-center justify-center aspect-square rounded-2xl border transition-all cursor-pointer ${wallet === 'walletconnect' ? 'bg-[#3B99FC]/10 border-[#3B99FC] shadow-[0_0_15px_rgba(59,153,252,0.2)]' : 'bg-white/5 border-white/5 hover:border-white/10'}`}
               >
@@ -160,7 +164,7 @@ export default function LoginPage() {
                   <WalletConnectIcon />
                 </div>
               </div>
-              <div 
+              <div
                 onClick={() => setWallet('phantom')}
                 className={`flex flex-col items-center justify-center aspect-square rounded-2xl border transition-all cursor-pointer ${wallet === 'phantom' ? 'bg-[#AB9FF2]/10 border-[#AB9FF2] shadow-[0_0_15px_rgba(171,159,242,0.2)]' : 'bg-white/5 border-white/5 hover:border-white/10'}`}
               >
@@ -182,7 +186,7 @@ export default function LoginPage() {
                 <div className="flex-grow h-[1px] bg-white/5" />
               </div>
 
-              <button 
+              <button
                 onClick={handleGoogleLogin}
                 className="w-full flex items-center justify-center gap-3 bg-white/5 border border-white/10 hover:bg-white/10 transition-all rounded-full py-4 group active:scale-[0.98]"
               >

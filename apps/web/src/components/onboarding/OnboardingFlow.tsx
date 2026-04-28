@@ -131,20 +131,12 @@ export const OnboardingFlow = () => {
       
       let connectRes;
 
-      if (role === 'creator') {
-        connectRes = await fetch('https://groovely-github-repo.onrender.com/api/auth/signup/wallet', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          // Including signature as well, even if not explicitly mentioned, to maintain security
-          body: JSON.stringify({ walletAddress: walletAddr, role: 'creator', signature }),
-        });
-      } else {
-        connectRes = await fetch(`/api/auth/wallet/connect`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ walletAddress: walletAddr, signature }),
-        });
-      }
+      const payloadRole = role === 'creator' ? 'creator' : 'fan';
+      connectRes = await fetch('https://groovely-github-repo.onrender.com/api/auth/signup/wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress: walletAddr, role: payloadRole, signature }),
+      });
       
       const authData = await connectRes.json();
 
