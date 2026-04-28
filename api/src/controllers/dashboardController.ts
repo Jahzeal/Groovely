@@ -91,6 +91,7 @@ export const getDashboardTracksController = async (req: AuthRequest, res: Respon
         t.status,
         t.created_at,
         t.cover_url,
+        t.audio_url,
         COALESCE(SUM(ts.earnings), 0) as earnings,
         COUNT(ts.id) as streams,
         u.display_name as artist_name,
@@ -99,7 +100,7 @@ export const getDashboardTracksController = async (req: AuthRequest, res: Respon
        JOIN users u ON t.user_id = u.id
        LEFT JOIN track_streams ts ON t.id = ts.track_id
        WHERE t.user_id = $1
-       GROUP BY t.id, u.display_name, u.username
+       GROUP BY t.id, u.display_name, u.username, t.audio_url
        ORDER BY t.created_at DESC`,
       [userId]
     );
@@ -113,6 +114,7 @@ export const getDashboardTracksController = async (req: AuthRequest, res: Respon
       status: track.status,
       created_at: track.created_at,
       cover_url: track.cover_url,
+      audio_url: track.audio_url,
       artist_name: track.artist_name,
       artist_username: track.artist_username
     }));
