@@ -5,8 +5,21 @@ import { SkipBack, Play, Pause, SkipForward, Volume2 } from 'lucide-react';
 import { useMusicPlayer } from './MusicPlayerContext';
 
 export const MusicPlayer = () => {
-  const { currentTrack, isPlaying, togglePlay, progress, duration, currentTime, seek } = useMusicPlayer();
+  const { 
+    currentTrack, 
+    isPlaying, 
+    togglePlay, 
+    progress, 
+    duration, 
+    currentTime, 
+    seek, 
+    volume, 
+    setVolume, 
+    playNext, 
+    playPrevious 
+  } = useMusicPlayer();
   const barRef = useRef<HTMLDivElement>(null);
+  const volumeRef = useRef<HTMLDivElement>(null);
 
   if (!currentTrack) return null;
 
@@ -15,6 +28,13 @@ export const MusicPlayer = () => {
     const rect = barRef.current.getBoundingClientRect();
     const pct = (e.clientX - rect.left) / rect.width;
     seek(pct * duration);
+  };
+
+  const handleVolumeClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!volumeRef.current) return;
+    const rect = volumeRef.current.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    setVolume(Math.max(0, Math.min(1, pct)));
   };
 
   const fmt = (s: number) => {
@@ -41,7 +61,10 @@ export const MusicPlayer = () => {
       <div className="flex-1 flex flex-col items-center gap-3">
         {/* Buttons */}
         <div className="flex items-center gap-8">
-          <button className="text-zinc-500 hover:text-white transition-all hover:scale-110 active:scale-95">
+          <button 
+            onClick={playPrevious}
+            className="text-zinc-500 hover:text-white transition-all hover:scale-110 active:scale-95"
+          >
             <SkipBack size={20} fill="currentColor" />
           </button>
           <button
@@ -53,7 +76,10 @@ export const MusicPlayer = () => {
               : <Play size={20} fill="white" className="text-white ml-1" />
             }
           </button>
-          <button className="text-zinc-500 hover:text-white transition-all hover:scale-110 active:scale-95">
+          <button 
+            onClick={playNext}
+            className="text-zinc-500 hover:text-white transition-all hover:scale-110 active:scale-95"
+          >
             <SkipForward size={20} fill="currentColor" />
           </button>
         </div>
@@ -80,9 +106,18 @@ export const MusicPlayer = () => {
       {/* Volume / Extra Controls */}
       <div className="flex items-center justify-end gap-4 w-72 shrink-0">
         <div className="flex items-center gap-3 w-32">
-            <Volume2 size={18} className="text-zinc-500" />
-            <div className="flex-1 h-1 bg-white/10 rounded-full relative overflow-hidden">
-                <div className="absolute inset-y-0 left-0 w-2/3 bg-white/40 rounded-full" />
+            <button onClick={() => setVolume(volume === 0 ? 0.7 : 0)}>
+                <Volume2 size={18} className={volume === 0 ? "text-red-500" : "text-zinc-500 hover:text-white"} />
+            </button>
+            <div 
+                ref={volumeRef}
+                onClick={handleVolumeClick}
+                className="flex-1 h-1 bg-white/10 rounded-full relative cursor-pointer group"
+            >
+                <div 
+                    className="absolute inset-y-0 left-0 bg-accent-purple group-hover:bg-accent-cyan transition-colors rounded-full" 
+                    style={{ width: `${volume * 100}%` }}
+                />
             </div>
         </div>
       </div>

@@ -150,6 +150,14 @@ export default function MarketplacePage() {
     fetchBeatsTracks();
   }, []);
 
+  const mapTracksToQueue = (tracks: any[]) => tracks.map(t => ({
+    id: t.id,
+    title: t.title,
+    artist: t.artist_name || t.artistName || t.creatorName || t.creator || 'Unknown',
+    image: t.cover_url || t.coverArt || t.image || '',
+    audioUrl: t.audio_url || t.audioUrl || t.preview_url
+  }));
+
   return (
     <CartProvider>
       <div className="flex h-screen overflow-hidden bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
@@ -188,9 +196,11 @@ export default function MarketplacePage() {
                       title={track.title}
                       creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
                       image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
+                      audioUrl={track.audio_url || track.audioUrl || track.preview_url}
                       licenseTypes={track.license_types || track.licenseTypes || ['License']}
                       price={track.price || '0.00 ETH'}
                       currency={track.currency || track.fiat_price || '$0'}
+                      queue={mapTracksToQueue(forYou)}
                     />
                   ))}
                 </div>
@@ -224,9 +234,11 @@ export default function MarketplacePage() {
                       title={track.title}
                       creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
                       image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
+                      audioUrl={track.audio_url || track.audioUrl || track.preview_url}
                       licenseTypes={track.license_types || track.licenseTypes || ['License']}
                       price={track.price || '0.00 ETH'}
                       currency={track.currency || track.fiat_price || '$0'}
+                      queue={mapTracksToQueue(allTracks)}
                     />
                   ))}
                 </div>
@@ -256,9 +268,11 @@ export default function MarketplacePage() {
                       title={track.title}
                       creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
                       image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
+                      audioUrl={track.audio_url || track.audioUrl || track.preview_url}
                       licenseTypes={track.license_types || track.licenseTypes || ['Music']}
                       price={track.price || '0.05 ETH'}
                       currency={track.currency || track.fiat_price || '$84'}
+                      queue={mapTracksToQueue(musicTracks)}
                     />
                   ))}
                 </div>
@@ -288,9 +302,11 @@ export default function MarketplacePage() {
                       title={track.title}
                       creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
                       image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1478737270197-497851a1f29d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
+                      audioUrl={track.audio_url || track.audioUrl || track.preview_url}
                       licenseTypes={track.license_types || track.licenseTypes || ['Podcast']}
                       price={track.price || '0.02 ETH'}
                       currency={track.currency || track.fiat_price || '$33'}
+                      queue={mapTracksToQueue(podcastTracks)}
                     />
                   ))}
                 </div>
@@ -320,9 +336,11 @@ export default function MarketplacePage() {
                       title={track.title}
                       creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
                       image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
+                      audioUrl={track.audio_url || track.audioUrl || track.preview_url}
                       licenseTypes={track.license_types || track.licenseTypes || ['Skit']}
                       price={track.price || '0.01 ETH'}
                       currency={track.currency || track.fiat_price || '$16'}
+                      queue={mapTracksToQueue(skitTracks)}
                     />
                   ))}
                 </div>
@@ -352,9 +370,11 @@ export default function MarketplacePage() {
                       title={track.title}
                       creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
                       image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
+                      audioUrl={track.audio_url || track.audioUrl || track.preview_url}
                       licenseTypes={track.license_types || track.licenseTypes || ['Beat', 'Lease']}
                       price={track.price || '0.08 ETH'}
                       currency={track.currency || track.fiat_price || '$134'}
+                      queue={mapTracksToQueue(beatsTracks)}
                     />
                   ))}
                 </div>

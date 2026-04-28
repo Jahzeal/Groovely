@@ -2,16 +2,21 @@
 
 import React, { useState } from 'react';
 import { Play } from 'lucide-react';
+import { useMusicPlayer } from '@/components/marketplace/MusicPlayerContext';
 
 interface ExploreCardProps {
+  id?: string | number;
   title: string;
   artist: string;
   image: string;
+  audioUrl?: string;
+  queue?: any[];
   type?: string; 
 }
 
-export const ExploreCard = ({ title, artist, image }: ExploreCardProps) => {
+export const ExploreCard = ({ id, title, artist, image, audioUrl, queue }: ExploreCardProps) => {
   const [hovered, setHovered] = useState(false);
+  const { playTrack } = useMusicPlayer();
 
   return (
     <div
@@ -28,7 +33,11 @@ export const ExploreCard = ({ title, artist, image }: ExploreCardProps) => {
 
       {/* Play button */}
       <button
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        onClick={(e) => { 
+          e.preventDefault(); 
+          e.stopPropagation(); 
+          playTrack({ id: id || title, title, artist, image, audioUrl }, queue);
+        }}
         className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-all duration-300
           ${hovered ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}
       >

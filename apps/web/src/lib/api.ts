@@ -2,7 +2,7 @@ import toast from 'react-hot-toast';
 
 export const API_BASE = 'https://groovely-github-repo.onrender.com';
 
-export async function apiFetch(endpoint: string, options: RequestInit = {}) {
+export async function apiFetch(endpoint: string, options: RequestInit & { skipAuthRedirect?: boolean } = {}) {
   const token = localStorage.getItem('groovely_token');
   
   const isFormData = options.body instanceof FormData;
@@ -19,7 +19,7 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
       headers,
     });
 
-    if (response.status === 401) {
+    if (response.status === 401 && !options.skipAuthRedirect) {
       handleLogout();
       return null;
     }

@@ -7,6 +7,7 @@ interface FeaturedTrack {
   title: string;
   creator: string;
   image: string;
+  audioUrl?: string;
   licenseType: string;
   price: string;
   currency: string;
@@ -18,6 +19,7 @@ const FEATURED: FeaturedTrack[] = [
     title: 'Neon Soul',
     creator: 'Midnight Vibe',
     image: 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
     licenseType: 'Exclusive License',
     price: '0.25 ETH',
     currency: '$420',
@@ -27,6 +29,7 @@ const FEATURED: FeaturedTrack[] = [
     title: 'Lagos at 2AM',
     creator: 'Groove Master',
     image: 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
     licenseType: 'Non-Exclusive',
     price: '0.05 ETH',
     currency: '$84',
@@ -36,6 +39,7 @@ const FEATURED: FeaturedTrack[] = [
     title: 'Cosmic Drift',
     creator: 'Synth Wave',
     image: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
     licenseType: 'Stems Included',
     price: '0.12 ETH',
     currency: '$202',
@@ -45,6 +49,7 @@ const FEATURED: FeaturedTrack[] = [
     title: 'After Rain',
     creator: 'Static Echo',
     image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
     licenseType: 'Beat Lease',
     price: '0.03 ETH',
     currency: '$50',
@@ -85,7 +90,19 @@ export const FeaturedCarousel = () => {
           </Link>
           
           <button
-            onClick={() => playTrack({ id: track.id, title: track.title, artist: track.creator, image: track.image })}
+            onClick={() => playTrack({ 
+              id: track.id, 
+              title: track.title, 
+              artist: track.creator, 
+              image: track.image,
+              audioUrl: track.audioUrl
+            }, FEATURED.map(t => ({
+              id: t.id,
+              title: t.title,
+              artist: t.creator,
+              image: t.image,
+              audioUrl: t.audioUrl
+            })))}
             className="w-16 h-16 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_25px_rgba(139,92,246,0.5)] hover:scale-110 hover:shadow-[0_0_40px_rgba(139,92,246,0.7)] transition-all active:scale-95 shrink-0"
           >
             <Play size={24} fill="white" className="text-white ml-1" />

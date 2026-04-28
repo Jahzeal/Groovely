@@ -11,12 +11,14 @@ interface TrackCardProps {
   title: string;
   creator: string;
   image: string;
+  audioUrl?: string;
   licenseTypes: string[];
   price: string;
   currency: string;
+  queue?: any[];
 }
 
-export const TrackCard = ({ id, title, creator, image, licenseTypes, price, currency }: TrackCardProps) => {
+export const TrackCard = ({ id, title, creator, image, audioUrl, licenseTypes, price, currency, queue }: TrackCardProps) => {
   const [liked, setLiked] = useState(false);
   const [hovered, setHovered] = useState(false);
   const { openCart } = useCart();
@@ -53,7 +55,7 @@ export const TrackCard = ({ id, title, creator, image, licenseTypes, price, curr
           onClick={(e) => { 
             e.preventDefault(); 
             e.stopPropagation(); 
-            playTrack({ id: id || title, title, artist: creator, image });
+            playTrack({ id: id || title, title, artist: creator, image, audioUrl }, queue);
           }}
           className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-all duration-300
             ${hovered ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}

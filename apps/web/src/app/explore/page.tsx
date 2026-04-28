@@ -113,6 +113,14 @@ export default function ExplorePage() {
     fetchRecent();
   }, []);
 
+  const mapTracksToQueue = (tracks: any[]) => tracks.map(t => ({
+    id: t.id,
+    title: t.title,
+    artist: t.artist_name || t.artistName || t.creatorName || t.artist || 'Unknown Artist',
+    image: t.cover_url || t.coverArt || t.image || '',
+    audioUrl: t.audio_url || t.audioUrl || t.preview_url
+  }));
+
   const handleFollow = async (id: string | number, currentStatus: boolean) => {
     try {
       const method = currentStatus ? 'DELETE' : 'POST';
@@ -169,9 +177,12 @@ export default function ExplorePage() {
                     {trending.map((track, i) => (
                       <ExploreCard 
                         key={track.id || i} 
+                        id={track.id}
                         title={track.title}
                         artist={track.artist_name || track.artistName || track.creatorName || track.artist || 'Unknown Artist'}
                         image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
+                        audioUrl={track.audio_url || track.audioUrl || track.preview_url}
+                        queue={mapTracksToQueue(trending)}
                       />
                     ))}
                   </div>
@@ -233,9 +244,12 @@ export default function ExplorePage() {
                     {recommended.map((track, i) => (
                       <ExploreCard 
                         key={track.id || i} 
+                        id={track.id}
                         title={track.title}
                         artist={track.artist_name || track.artistName || track.creatorName || track.artist || 'Unknown Artist'}
                         image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
+                        audioUrl={track.audio_url || track.audioUrl || track.preview_url}
+                        queue={mapTracksToQueue(recommended)}
                       />
                     ))}
                   </div>
@@ -262,9 +276,12 @@ export default function ExplorePage() {
                     {recent.map((track, i) => (
                       <ExploreCard 
                         key={track.id || i} 
+                        id={track.id}
                         title={track.title}
                         artist={track.artist_name || track.artistName || track.creatorName || track.artist || 'Unknown Artist'}
                         image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1485603348612-40db7f90bbbe?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
+                        audioUrl={track.audio_url || track.audioUrl || track.preview_url}
+                        queue={mapTracksToQueue(recent)}
                       />
                     ))}
                   </div>
