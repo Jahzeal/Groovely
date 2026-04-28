@@ -38,7 +38,8 @@ app.use(fileUpload({
   limits: { fileSize: 25 * 1024 * 1024 }, // 25MB max file size
 }));
 
-// Routes
+
+app.use('/api/market', marketplaceRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/creator', creatorRoutes);
 app.use('/api/creator', trackRoutes);
@@ -46,7 +47,6 @@ app.use('/api/fan', fanRoutes);
 app.use('/api/fan', fanDashboardRoutes);
 app.use('/api', profileRoutes);
 app.use('/api', streamRoutes);
-app.use('/api/market', marketplaceRoutes);
 
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
