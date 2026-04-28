@@ -11,6 +11,7 @@ import profileRoutes from './routes/profileRoutes';
 import trackRoutes from './routes/trackRoutes';
 import streamRoutes from './routes/streamRoutes';
 import fanDashboardRoutes from './routes/fanDashboardRoutes';
+import marketplaceRoutes from './routes/marketplaceRoutes';
 
 const app = express();
 
@@ -44,7 +45,8 @@ app.use('/api/creator', trackRoutes);
 app.use('/api/fan', fanRoutes);
 app.use('/api/fan', fanDashboardRoutes);
 app.use('/api', profileRoutes);
-app.use('/api', streamRoutes);  
+app.use('/api', streamRoutes);
+app.use('/api/market', marketplaceRoutes);
 
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
