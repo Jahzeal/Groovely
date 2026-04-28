@@ -1,9 +1,8 @@
-import { Response } from 'express';
-import { AuthRequest } from '../types/request';
+import { Request, Response } from 'express';
 import { query } from '../config/database';
 import { sendSuccess, sendInternalError } from '../helpers/response';
 
-export const getTrendingTracks = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getTrendingTracks = async (req: Request, res: Response): Promise<void> => {
   try {
     const limit = parseInt(req.query.limit as string) || 10;
     
@@ -32,56 +31,27 @@ export const getTrendingTracks = async (req: AuthRequest, res: Response): Promis
   }
 };
 
-export const getForYouTracks = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getForYouTracks = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = req.userId;
     const limit = parseInt(req.query.limit as string) || 10;
     
-    let result;
-    
-    if (userId) {
-
-      result = await query(
-        `SELECT 
-          t.id,
-          t.title,
-          t.cover_url,
-          t.price,
-          t.currency,
-          t.usage_rights as license_types,
-          u.display_name as creator,
-          u.username as creator_username,
-          CASE WHEN f.id IS NOT NULL THEN true ELSE false END as follows_creator
-         FROM tracks t
-         JOIN users u ON t.user_id = u.id
-         LEFT JOIN follows f ON f.following_id = u.id AND f.follower_id = $1
-         WHERE t.visibility = 'public'
-         ORDER BY 
-           CASE WHEN f.id IS NOT NULL THEN 1 ELSE 2 END,
-           t.created_at DESC
-         LIMIT $2`,
-        [userId, limit]
-      );
-    } else {
-
-      result = await query(
-        `SELECT 
-          t.id,
-          t.title,
-          t.cover_url,
-          t.price,
-          t.currency,
-          t.usage_rights as license_types,
-          u.display_name as creator,
-          u.username as creator_username
-         FROM tracks t
-         JOIN users u ON t.user_id = u.id
-         WHERE t.visibility = 'public'
-         ORDER BY t.created_at DESC
-         LIMIT $1`,
-        [limit]
-      );
-    }
+    const result = await query(
+      `SELECT 
+        t.id,
+        t.title,
+        t.cover_url,
+        t.price,
+        t.currency,
+        t.usage_rights as license_types,
+        u.display_name as creator,
+        u.username as creator_username
+       FROM tracks t
+       JOIN users u ON t.user_id = u.id
+       WHERE t.visibility = 'public'
+       ORDER BY t.created_at DESC
+       LIMIT $1`,
+      [limit]
+    );
     
     sendSuccess(res, { tracks: result.rows }, 'Recommended tracks retrieved successfully');
   } catch (error) {
@@ -90,7 +60,7 @@ export const getForYouTracks = async (req: AuthRequest, res: Response): Promise<
   }
 };
 
-export const getTracksByCategory = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getTracksByCategory = async (req: Request, res: Response): Promise<void> => {
   try {
     const category = req.params.category;
     const limit = parseInt(req.query.limit as string) || 20;
