@@ -18,6 +18,7 @@ export const metadata: Metadata = {
 };
 
 import { Web3Provider } from "@/components/providers/web3-provider";
+import { MusicPlayerProvider } from "@/components/marketplace/MusicPlayerContext";
 import { Toaster } from 'react-hot-toast';
 
 export default function RootLayout({
@@ -32,7 +33,9 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <Web3Provider>
-          {children}
+          <MusicPlayerProvider>
+            {children}
+          </MusicPlayerProvider>
           <Toaster
             position="top-center"
             toastOptions={{

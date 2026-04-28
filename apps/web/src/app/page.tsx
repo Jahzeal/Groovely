@@ -27,7 +27,7 @@ export default function Home() {
           <Link href="/onboarding" className="rounded-xl border border-white/10 bg-white/5 px-6 py-2.5 text-white text-xs font-bold hover:bg-white/10 transition-all uppercase tracking-widest">
             Sign Up
           </Link>
-          <Link href="/dashboard/marketplace" className="rounded-xl bg-accent-purple px-6 py-2.5 text-white text-xs font-bold hover:bg-accent-purple/90 transition-all uppercase tracking-widest shadow-[0_0_15px_rgba(139,92,246,0.3)]">
+          <Link href="/marketplace" className="rounded-xl bg-accent-purple px-6 py-2.5 text-white text-xs font-bold hover:bg-accent-purple/90 transition-all uppercase tracking-widest shadow-[0_0_15px_rgba(139,92,246,0.3)]">
             Explore Groovely
           </Link>
         </div>
@@ -109,7 +109,7 @@ export default function Home() {
               <Link href="/onboarding" className="w-full sm:w-auto rounded-xl border border-accent-purple/50 bg-transparent px-12 py-5 text-accent-purple font-bold text-sm hover:bg-accent-purple/10 transition-all uppercase tracking-widest">
                 Sign Up
               </Link>
-              <Link href="/dashboard/marketplace" className="w-full sm:w-auto rounded-xl bg-accent-purple px-12 py-5 text-white font-bold text-sm hover:bg-accent-purple/90 transition-all shadow-[0_0_25px_rgba(139,92,246,0.3)] hover:scale-105 uppercase tracking-widest">
+              <Link href="/marketplace" className="w-full sm:w-auto rounded-xl bg-accent-purple px-12 py-5 text-white font-bold text-sm hover:bg-accent-purple/90 transition-all shadow-[0_0_25px_rgba(139,92,246,0.3)] hover:scale-105 uppercase tracking-widest">
                 Explore Groovely
               </Link>
             </div>

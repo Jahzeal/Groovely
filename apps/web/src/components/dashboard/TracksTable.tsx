@@ -11,6 +11,8 @@ interface TrackRow {
   name?: string;
   title?: string;
   artist?: string;
+  artist_name?: string;
+  artist_username?: string;
   content?: string;
   category?: string;
   streams?: string | number;
@@ -114,7 +116,9 @@ export const TracksTable = () => {
                       <img src={track.image || track.cover_url || track.coverImage || "https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=100&q=80"} alt={track.name || track.title || "Track"} className="w-10 h-10 rounded-lg object-cover" />
                       <div className="flex flex-col">
                          <span className="text-sm font-bold text-white group-hover:text-accent-purple transition-colors">{track.name || track.title || "Untitled Track"}</span>
-                         <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider mt-1">{track.artist || "Unknown Artist"}</span>
+                         <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider mt-1">
+                           {track.artist_name || track.artist || (track.artist_username ? `@${track.artist_username}` : "Unknown Artist")}
+                         </span>
                       </div>
                     </div>
                   </td>

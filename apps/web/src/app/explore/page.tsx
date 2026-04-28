@@ -143,7 +143,7 @@ export default function ExplorePage() {
     <CartProvider>
       <div className="flex h-screen overflow-hidden bg-[#050510] text-white font-sans selection:bg-accent-purple selection:text-white">
         {/* We use role="fan" here to show the correct menu */}
-        <Sidebar activePage="explore" role="fan" />
+        <Sidebar activePage="explore" />
 
         <div className="flex-1 flex flex-col min-w-0">
           <MarketTopBar />

@@ -58,24 +58,41 @@ interface SidebarProps {
   role?: 'creator' | 'fan';
 }
 
-export const Sidebar = ({ activePage, role = 'creator' }: SidebarProps = {}) => {
+export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) => {
   const pathname = usePathname();
   const router = useRouter();
-  const isMarket = activePage === 'market' || pathname?.startsWith('/dashboard/marketplace');
+  const [role, setRole] = React.useState<'creator' | 'fan'>(initialRole || 'creator');
+
+  React.useEffect(() => {
+    if (initialRole) {
+      setRole(initialRole);
+    } else {
+      const storedRole = localStorage.getItem('groovely_role');
+      if (storedRole === 'fan' || storedRole === 'creator') {
+        setRole(storedRole);
+      }
+    }
+  }, [initialRole]);
+  const isMarket = activePage === 'market' || pathname?.startsWith('/marketplace');
   const isDashboard = !isMarket && (activePage === 'dashboard' || pathname === '/dashboard');
 
   const handleSignOut = () => {
     handleLogout();
   };
 
+  const token = typeof window !== 'undefined' ? localStorage.getItem('groovely_token') : null;
+  const isPublicRoute = pathname?.startsWith('/marketplace') || pathname?.startsWith('/explore') || pathname?.includes('/login') || pathname?.includes('/onboarding') || pathname === '/';
+
   useEffect(() => {
-    const token = localStorage.getItem('groovely_token');
-    if (!token && !pathname?.includes('/login') && !pathname?.includes('/onboarding') && pathname !== '/') {
+    if (!token && !isPublicRoute) {
       // If we're in the dashboard and there's no token, redirect to login
-      // We don't show the "expired" message here because it might just be a fresh visit
       router.push('/login');
     }
-  }, [pathname, router]);
+  }, [pathname, router, token, isPublicRoute]);
+
+  if (!token && isPublicRoute) {
+    return null;
+  }
 
   return (
     <aside className="w-64 h-screen sticky top-0 bg-[#0F0F1A] border-r border-white/5 flex flex-col py-8 shrink-0">
@@ -103,12 +120,12 @@ export const Sidebar = ({ activePage, role = 'creator' }: SidebarProps = {}) => 
         {role === 'creator' ? (
           <>
             <NavItem icon={LayoutDashboard} label="Dashboard"        href="/dashboard"              active={isDashboard} />
-            <NavItem icon={Library}        label="My Library"        href="/dashboard/library"      active={pathname === '/dashboard/library'} />
+            <NavItem icon={Library}        label="My Library"        href="/library"                active={pathname === '/library'} />
             <NavItem icon={Wallet}         label="Earnings"          href="/dashboard/earnings"     active={pathname === '/dashboard/earnings'} />
 
             <div className="h-px bg-white/5 my-6 mx-6" />
 
-            <NavItem icon={Store}          label="Groovely Market"   href="/dashboard/marketplace"  active={isMarket} />
+            <NavItem icon={Store}          label="Groovely Market"   href="/marketplace"            active={isMarket} />
             <NavItem icon={BarChart3}      label="Analytics"         href="/dashboard/analytics"    active={pathname === '/dashboard/analytics'} />
             <NavItem icon={Sparkles}       label="AI Tools"          comingSoon />
             <NavItem icon={Headphones}     label="Listening Rooms"   href="/dashboard/rooms" />
@@ -122,9 +139,9 @@ export const Sidebar = ({ activePage, role = 'creator' }: SidebarProps = {}) => 
           </>
         ) : (
           <>
-            <NavItem icon={LayoutDashboard} label="Discover"         href="/dashboard/explore"      active={activePage === 'explore' || pathname === '/dashboard/explore'} />
-            <NavItem icon={Library}         label="My Library"       href="/dashboard/library"      active={pathname === '/dashboard/library'} />
-            <NavItem icon={Store}           label="Groovely Market"  href="/dashboard/marketplace"  active={isMarket} />
+            <NavItem icon={LayoutDashboard} label="Discover"         href="/explore"                active={activePage === 'explore' || pathname === '/explore'} />
+            <NavItem icon={Library}         label="My Library"       href="/library"                active={pathname === '/library'} />
+            <NavItem icon={Store}           label="Groovely Market"  href="/marketplace"            active={isMarket} />
           </>
         )}
       </nav>

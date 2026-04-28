@@ -4,8 +4,10 @@ import React, { useState } from 'react';
 import { Play, ShoppingCart, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { useCart } from './CartContext';
+import { useMusicPlayer } from './MusicPlayerContext';
 
 interface TrackCardProps {
+  id?: string | number;
   title: string;
   creator: string;
   image: string;
@@ -14,13 +16,14 @@ interface TrackCardProps {
   currency: string;
 }
 
-export const TrackCard = ({ title, creator, image, licenseTypes, price, currency }: TrackCardProps) => {
+export const TrackCard = ({ id, title, creator, image, licenseTypes, price, currency }: TrackCardProps) => {
   const [liked, setLiked] = useState(false);
   const [hovered, setHovered] = useState(false);
   const { openCart } = useCart();
+  const { playTrack } = useMusicPlayer();
 
   return (
-    <Link href={`/dashboard/marketplace/1`}>
+    <Link href={`/marketplace/${id || 1}`}>
       <div
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
@@ -47,7 +50,11 @@ export const TrackCard = ({ title, creator, image, licenseTypes, price, currency
 
         {/* Play button */}
         <button
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onClick={(e) => { 
+            e.preventDefault(); 
+            e.stopPropagation(); 
+            playTrack({ id: id || title, title, artist: creator, image });
+          }}
           className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-all duration-300
             ${hovered ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}
         >

@@ -55,7 +55,7 @@ export const PromoCards = () => {
       </div>
 
       {/* Marketplace CTA Card */}
-      <Link href="/dashboard/marketplace" className="block">
+      <Link href="/marketplace" className="block">
         <div className="relative h-64 rounded-[40px] overflow-hidden group cursor-pointer border border-accent-purple/20 bg-gradient-to-br from-accent-purple/20 via-[#0F0F1A] to-accent-cyan/10">
           {/* Animated glow orbs */}
           <div className="absolute top-6 right-6 w-32 h-32 bg-accent-purple/20 rounded-full blur-[40px] group-hover:bg-accent-purple/40 transition-all duration-700" />

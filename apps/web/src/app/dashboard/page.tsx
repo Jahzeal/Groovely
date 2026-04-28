@@ -40,6 +40,7 @@ interface DashboardStats {
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [displayName, setDisplayName] = useState<string>('Creator');
 
   useEffect(() => {
     async function fetchStats() {
@@ -57,7 +58,24 @@ export default function DashboardPage() {
         setIsLoadingStats(false);
       }
     }
+
+    async function fetchProfile() {
+      try {
+        const res = await apiFetch('/api/creator/profile');
+        if (res && res.ok) {
+          const data = await res.json();
+          const profile = data.data ?? data;
+          if (profile.display_name) {
+            setDisplayName(profile.display_name);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch profile', error);
+      }
+    }
+
     fetchStats();
+    fetchProfile();
   }, []);
 
   return (
@@ -72,7 +90,7 @@ export default function DashboardPage() {
         <main className="flex-1 p-10 overflow-y-auto">
           {/* Welcome Message */}
           <div className="mb-12 translate-y-0 opacity-100 transition-all duration-500">
-            <h1 className="text-4xl font-black tracking-tight text-white mb-2">Hello, Uzor! 👋</h1>
+            <h1 className="text-4xl font-black tracking-tight text-white mb-2">Hello, {displayName}! 👋</h1>
             <p className="text-zinc-500 font-medium">Welcome back to your creator command center.</p>
           </div>
 

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface FeaturedTrack {
   id: number;
@@ -53,9 +52,12 @@ const FEATURED: FeaturedTrack[] = [
 ];
 
 import Link from 'next/link';
+import { useMusicPlayer } from './MusicPlayerContext';
+import { ShoppingCart, ChevronLeft, ChevronRight, Play } from 'lucide-react';
 
 export const FeaturedCarousel = () => {
   const [active, setActive] = useState(0);
+  const { playTrack } = useMusicPlayer();
 
   const prev = () => setActive(i => (i === 0 ? FEATURED.length - 1 : i - 1));
   const next = () => setActive(i => (i === FEATURED.length - 1 ? 0 : i + 1));
@@ -76,10 +78,19 @@ export const FeaturedCarousel = () => {
 
       {/* Content */}
       <div className="absolute inset-0 flex flex-col justify-end p-8">
-        <Link href={`/dashboard/marketplace/${track.id}`} className="block group/link">
-          <h2 className="text-4xl font-black text-white tracking-tight mb-1 drop-shadow-lg group-hover/link:text-accent-purple transition-colors">{track.title}</h2>
-          <p className="text-zinc-400 text-sm font-medium mb-5">{track.creator}</p>
-        </Link>
+        <div className="flex items-center justify-between mb-4">
+          <Link href="/marketplace" className="block group/link">
+            <h2 className="text-4xl font-black text-white tracking-tight mb-1 drop-shadow-lg group-hover/link:text-accent-purple transition-colors">{track.title}</h2>
+            <p className="text-zinc-400 text-sm font-medium">{track.creator}</p>
+          </Link>
+          
+          <button
+            onClick={() => playTrack({ id: track.id, title: track.title, artist: track.creator, image: track.image })}
+            className="w-16 h-16 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_25px_rgba(139,92,246,0.5)] hover:scale-110 hover:shadow-[0_0_40px_rgba(139,92,246,0.7)] transition-all active:scale-95 shrink-0"
+          >
+            <Play size={24} fill="white" className="text-white ml-1" />
+          </button>
+        </div>
 
         <div className="flex items-center gap-3">
           {/* License pill */}
@@ -93,10 +104,10 @@ export const FeaturedCarousel = () => {
             <p className="text-xs font-bold text-white">{track.price}</p>
           </div>
           {/* Buy */}
-          <button className="ml-1 flex items-center gap-2 bg-accent-purple hover:bg-accent-purple/90 text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow-[0_0_20px_rgba(139,92,246,0.4)] transition-all hover:scale-105 active:scale-95">
+          <Link href="/marketplace" className="ml-1 flex items-center gap-2 bg-white text-black hover:bg-zinc-200 font-bold text-sm px-6 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95">
             <ShoppingCart size={15} />
             Buy {track.currency}
-          </button>
+          </Link>
         </div>
       </div>
 

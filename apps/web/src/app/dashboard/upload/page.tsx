@@ -48,20 +48,67 @@ export default function UploadPage() {
   const [isrc, setIsrc] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
-  const handleAudioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) setAudioFile(file);
+  const [isDraggingAudio, setIsDraggingAudio] = useState(false);
+  const [isDraggingCover, setIsDraggingCover] = useState(false);
+
+  const handleAudioChange = (e: React.ChangeEvent<HTMLInputElement> | React.DragEvent) => {
+    let file: File | null = null;
+    if ('files' in e.target && e.target.files?.[0]) {
+      file = e.target.files[0];
+    } else if ('dataTransfer' in e && e.dataTransfer.files?.[0]) {
+      file = e.dataTransfer.files[0];
+    }
+    
+    if (file && file.type.startsWith('audio/')) {
+      setAudioFile(file);
+    } else if (file) {
+      toast.error('Please upload a valid audio file');
+    }
   };
 
-  const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+  const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement> | React.DragEvent) => {
+    let file: File | null = null;
+    if ('files' in (e.target as any) && (e.target as any).files?.[0]) {
+      file = (e.target as any).files[0];
+    } else if ('dataTransfer' in e && (e as React.DragEvent).dataTransfer.files?.[0]) {
+      file = (e as React.DragEvent).dataTransfer.files[0];
+    }
+
+    if (file && file.type.startsWith('image/')) {
       setCoverFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setCoverPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+    } else if (file) {
+      toast.error('Please upload a valid image file');
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent, type: 'audio' | 'cover') => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (type === 'audio') setIsDraggingAudio(true);
+    else setIsDraggingCover(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent, type: 'audio' | 'cover') => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (type === 'audio') setIsDraggingAudio(false);
+    else setIsDraggingCover(false);
+  };
+
+  const handleDrop = (e: React.DragEvent, type: 'audio' | 'cover') => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (type === 'audio') {
+      setIsDraggingAudio(false);
+      handleAudioChange(e);
+    } else {
+      setIsDraggingCover(false);
+      handleCoverChange(e);
     }
   };
 
@@ -197,7 +244,12 @@ export default function UploadPage() {
                 </h3>
                 <div
                   onClick={() => document.getElementById('audio-input')?.click()}
-                  className="aspect-square border-2 border-dashed border-white/10 rounded-[24px] flex flex-col items-center justify-center text-center p-8 transition-all hover:bg-white/5 hover:border-accent-purple/50 group cursor-pointer overflow-hidden"
+                  onDragOver={(e) => handleDragOver(e, 'audio')}
+                  onDragLeave={(e) => handleDragLeave(e, 'audio')}
+                  onDrop={(e) => handleDrop(e, 'audio')}
+                  className={`aspect-square border-2 border-dashed rounded-[24px] flex flex-col items-center justify-center text-center p-8 transition-all hover:bg-white/5 group cursor-pointer overflow-hidden
+                    ${isDraggingAudio ? 'border-accent-purple bg-accent-purple/10 scale-[1.02]' : 'border-white/10 hover:border-accent-purple/50'}
+                  `}
                 >
                   <input
                     type="file"
@@ -279,12 +331,20 @@ export default function UploadPage() {
                   Cover Art
                   <Info size={14} className="text-zinc-600" />
                 </h3>
-                <div className="aspect-square bg-[#0F0F1A] rounded-[24px] flex items-center justify-center p-12 mb-6 overflow-hidden">
+                <div 
+                  onClick={() => document.getElementById('cover-input')?.click()}
+                  onDragOver={(e) => handleDragOver(e, 'cover')}
+                  onDragLeave={(e) => handleDragLeave(e, 'cover')}
+                  onDrop={(e) => handleDrop(e, 'cover')}
+                  className={`aspect-square bg-[#0F0F1A] rounded-[24px] flex items-center justify-center p-12 mb-6 overflow-hidden border-2 border-transparent transition-all cursor-pointer group
+                    ${isDraggingCover ? 'border-accent-purple bg-accent-purple/10 scale-[1.02]' : 'hover:border-white/10'}
+                  `}
+                >
                   {coverPreview ? (
                     <img src={coverPreview} alt="Cover Preview" className="w-full h-full object-cover rounded-xl" />
                   ) : (
-                    <div className="w-full h-full rounded-full border-[10px] border-zinc-900 border-t-zinc-800 flex items-center justify-center">
-                      <div className="w-4 h-4 bg-zinc-800 rounded-full" />
+                    <div className="w-full h-full rounded-full border-[10px] border-zinc-900 border-t-zinc-800 flex items-center justify-center group-hover:border-t-zinc-700 transition-colors">
+                      <div className="w-4 h-4 bg-zinc-800 group-hover:bg-zinc-700 rounded-full" />
                     </div>
                   )}
                 </div>
