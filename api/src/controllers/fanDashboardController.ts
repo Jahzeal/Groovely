@@ -3,7 +3,7 @@ import { AuthRequest } from '../types/request';
 import { query } from '../config/database';
 import { sendSuccess, sendBadRequest, sendNotFound, sendInternalError } from '../helpers/response';
 
-
+// Helper to get id from params
 const getUserId = (req: AuthRequest): number | null => {
   const id = req.params.id;
   if (typeof id !== 'string') {
@@ -13,7 +13,7 @@ const getUserId = (req: AuthRequest): number | null => {
   return isNaN(parsedId) ? null : parsedId;
 };
 
-
+// Get trending tracks (most streams in last 7 days)
 export const getTrendingTracks = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const limit = parseInt(req.query.limit as string) || 10;
@@ -23,6 +23,7 @@ export const getTrendingTracks = async (req: AuthRequest, res: Response): Promis
         t.id,
         t.title,
         t.cover_url,
+        t.audio_url,
         t.category,
         u.display_name as artist_name,
         u.username as artist_username,
@@ -44,6 +45,7 @@ export const getTrendingTracks = async (req: AuthRequest, res: Response): Promis
   }
 };
 
+// Get recently added tracks
 export const getRecentTracks = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const limit = parseInt(req.query.limit as string) || 10;
@@ -53,6 +55,7 @@ export const getRecentTracks = async (req: AuthRequest, res: Response): Promise<
         t.id,
         t.title,
         t.cover_url,
+        t.audio_url,
         t.category,
         t.created_at,
         u.display_name as artist_name,
@@ -72,7 +75,7 @@ export const getRecentTracks = async (req: AuthRequest, res: Response): Promise<
   }
 };
 
-
+// Get creators list with follow status for the logged-in user
 export const getCreators = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
@@ -102,6 +105,7 @@ export const getCreators = async (req: AuthRequest, res: Response): Promise<void
   }
 };
 
+// Follow a creator
 export const followCreator = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const followerId = req.userId;
@@ -145,7 +149,7 @@ export const followCreator = async (req: AuthRequest, res: Response): Promise<vo
   }
 };
 
-
+// Unfollow a creator
 export const unfollowCreator = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const followerId = req.userId;
@@ -173,7 +177,7 @@ export const unfollowCreator = async (req: AuthRequest, res: Response): Promise<
   }
 };
 
-
+// Get recommendations for user
 export const getRecommendations = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
@@ -184,6 +188,7 @@ export const getRecommendations = async (req: AuthRequest, res: Response): Promi
         t.id,
         t.title,
         t.cover_url,
+        t.audio_url,
         t.category,
         u.display_name as artist_name,
         u.username as artist_username,
