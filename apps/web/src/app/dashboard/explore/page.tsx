@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { MarketTopBar } from '@/components/marketplace/MarketTopBar';
 import { ExploreNav } from '@/components/explore/ExploreNav';
@@ -10,86 +10,135 @@ import { CreatorCard } from '@/components/explore/CreatorCard';
 import { MusicPlayer } from '@/components/marketplace/MusicPlayer';
 import { CartProvider } from '@/components/marketplace/CartContext';
 import { Twitter, Instagram } from '@/components/ui/SocialIcons';
-import { Send, Disc } from 'lucide-react';
-
-const TRENDING_NOW = [
-  {
-    title: 'Ripples in the Sand Dunes',
-    artist: 'The Owl',
-    image: 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    title: 'Paper Cranes in the Wind',
-    artist: 'The Professor',
-    image: 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    title: 'Frozen Symphony of the Winter...',
-    artist: 'Gentleman',
-    image: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    title: 'Puzzle',
-    artist: 'Cowboy',
-    image: 'https://images.unsplash.com/photo-1478737270197-497851a1f29d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-  },
-];
-
-const CREATORS = [
-  { name: 'Seyi Phantom', role: 'Producer', image: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80' },
-  { name: 'Luca Blaze', role: 'Musician', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80' },
-  { name: 'Oba', role: 'Skit Maker', image: 'https://images.unsplash.com/photo-1618077360395-f3068be8e001?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80' },
-  { name: 'Felix', role: 'Podcaster', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80' },
-  { name: 'Damian Flux', role: 'DJ', image: 'https://images.unsplash.com/photo-1611042553365-9b101441c135?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80' },
-];
-
-const RECOMMENDED = [
-  {
-    title: 'Waltzing with Shadows',
-    artist: 'Action Dan',
-    image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    title: 'Conversations with Moonlit Owls',
-    artist: 'Miami',
-    image: 'https://images.unsplash.com/photo-1526218626217-dc65a29bb444?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    title: 'Rustic Symphony in the Forest',
-    artist: 'Devilfish',
-    image: 'https://images.unsplash.com/photo-1453090927415-5f45085b65c0?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    title: 'The Haunting',
-    artist: 'El Matador',
-    image: 'https://images.unsplash.com/photo-1493225457224-ca2cf0012543?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-  },
-];
-
-const RECENTLY_ADDED = [
-  {
-    title: 'The Unwritten Letters of Venice',
-    artist: 'Gigabet',
-    image: 'https://images.unsplash.com/photo-1485603348612-40db7f90bbbe?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    title: 'Flickering Neon Love',
-    artist: 'The Mathematician',
-    image: 'https://images.unsplash.com/photo-1483392707171-cb3e46b04889?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    title: 'Whirlwind Symphony',
-    artist: 'The Shark',
-    image: 'https://images.unsplash.com/photo-1478737270197-497851a1f29d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    title: 'Ballad',
-    artist: 'Kid Poker',
-    image: 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-  },
-];
+import { Send, Disc, Loader2 } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
+import { toast } from 'react-hot-toast';
 
 export default function ExplorePage() {
+  const [trending, setTrending] = useState<any[]>([]);
+  const [isLoadingTrending, setIsLoadingTrending] = useState(true);
+  const [creators, setCreators] = useState<any[]>([]);
+  const [isLoadingCreators, setIsLoadingCreators] = useState(true);
+  const [recommended, setRecommended] = useState<any[]>([]);
+  const [isLoadingRecommended, setIsLoadingRecommended] = useState(true);
+  const [recent, setRecent] = useState<any[]>([]);
+  const [isLoadingRecent, setIsLoadingRecent] = useState(true);
+
+  useEffect(() => {
+    async function fetchTrending() {
+      try {
+        const res = await apiFetch('/api/fan/trending?limit=10');
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data.success && data.data) {
+            if (Array.isArray(data.data.tracks)) {
+              setTrending(data.data.tracks);
+            } else if (Array.isArray(data.data)) {
+              setTrending(data.data);
+            }
+          } else if (Array.isArray(data)) {
+            setTrending(data);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch trending tracks', error);
+      } finally {
+        setIsLoadingTrending(false);
+      }
+    }
+
+    async function fetchCreators() {
+      try {
+        const res = await apiFetch('/api/fan/creators?limit=20');
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data.success && data.data) {
+            if (Array.isArray(data.data.creators)) {
+              setCreators(data.data.creators);
+            } else if (Array.isArray(data.data)) {
+              setCreators(data.data);
+            }
+          } else if (Array.isArray(data)) {
+            setCreators(data);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch creators', error);
+      } finally {
+        setIsLoadingCreators(false);
+      }
+    }
+
+    async function fetchRecommended() {
+      try {
+        const res = await apiFetch('/api/fan/recommendations?limit=10');
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data.success && data.data) {
+            const tracks = data.data.tracks || data.data.recommendations || data.data.data || (Array.isArray(data.data) ? data.data : []);
+            setRecommended(tracks);
+          } else if (Array.isArray(data)) {
+            setRecommended(data);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch recommendations', error);
+      } finally {
+        setIsLoadingRecommended(false);
+      }
+    }
+
+    async function fetchRecent() {
+      try {
+        const res = await apiFetch('/api/fan/recent?limit=10');
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data.success && data.data) {
+            const tracks = data.data.tracks || data.data.recent || data.data.data || (Array.isArray(data.data) ? data.data : []);
+            setRecent(tracks);
+          } else if (Array.isArray(data)) {
+            setRecent(data);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch recent tracks', error);
+      } finally {
+        setIsLoadingRecent(false);
+      }
+    }
+
+    fetchTrending();
+    fetchCreators();
+    fetchRecommended();
+    fetchRecent();
+  }, []);
+
+  const handleFollow = async (id: string | number, currentStatus: boolean) => {
+    try {
+      const method = currentStatus ? 'DELETE' : 'POST';
+      const res = await apiFetch(`/api/fan/creators/${id}/follow`, {
+        method,
+      });
+      
+      if (res && res.ok) {
+        const nextStatus = !currentStatus;
+        toast.success(nextStatus ? 'Successfully followed creator!' : 'Unfollowed creator');
+        setCreators(prev => prev.map(c => c.id === id ? { ...c, is_following: nextStatus, isFollowing: nextStatus } : c));
+      } else {
+        const data = await res?.json();
+        // If we get "Already following" but we were trying to follow, just sync state
+        if (data?.error === 'Already following this creator' && !currentStatus) {
+           setCreators(prev => prev.map(c => c.id === id ? { ...c, is_following: true, isFollowing: true } : c));
+           return;
+        }
+        toast.error(data?.message || data?.error || 'Action failed');
+      }
+    } catch (error) {
+      console.error('Toggle follow error:', error);
+      toast.error('Something went wrong');
+    }
+  };
+
   return (
     <CartProvider>
       <div className="flex h-screen overflow-hidden bg-[#050510] text-white font-sans selection:bg-accent-purple selection:text-white">
@@ -106,44 +155,124 @@ export default function ExplorePage() {
 
               {/* Trending Now */}
               <div className="mb-12">
-                <h2 className="text-xl font-black text-white mb-6 tracking-tight">Trending Now</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {TRENDING_NOW.map((item, i) => (
-                    <ExploreCard key={i} {...item} />
-                  ))}
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-black text-white tracking-tight">Trending Now</h2>
+                  <button className="text-xs font-bold text-accent-purple uppercase tracking-widest hover:text-white transition-colors">View All</button>
                 </div>
+                
+                {isLoadingTrending ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 text-accent-purple animate-spin" />
+                  </div>
+                ) : trending.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {trending.map((track, i) => (
+                      <ExploreCard 
+                        key={track.id || i} 
+                        title={track.title}
+                        artist={track.artist_name || track.artistName || track.creatorName || track.artist || 'Unknown Artist'}
+                        image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 bg-white/5 rounded-2xl border border-white/5">
+                    <p className="text-zinc-500 font-medium">No trending tracks found at the moment.</p>
+                  </div>
+                )}
               </div>
 
               {/* Creators */}
               <div className="mb-12">
-                <h2 className="text-xl font-black text-white mb-6 tracking-tight">Creators</h2>
-                <div className="flex items-center gap-6 overflow-x-auto no-scrollbar pb-4">
-                  {CREATORS.map((creator, i) => (
-                    <div key={i} className="min-w-[140px] shrink-0">
-                      <CreatorCard {...creator} />
-                    </div>
-                  ))}
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-black text-white tracking-tight">Creators</h2>
+                  <button className="text-xs font-bold text-accent-purple uppercase tracking-widest hover:text-white transition-colors">Discover More</button>
                 </div>
+                
+                {isLoadingCreators ? (
+                  <div className="flex items-center gap-6 overflow-x-auto no-scrollbar pb-4">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div key={i} className="min-w-[140px] h-[200px] bg-white/5 rounded-full animate-pulse" />
+                    ))}
+                  </div>
+                ) : creators.length > 0 ? (
+                  <div className="flex items-center gap-10 overflow-x-auto no-scrollbar pb-6 px-2">
+                    {creators.map((creator, i) => (
+                      <div key={creator.id || i} className="shrink-0">
+                        <CreatorCard 
+                          id={creator.id}
+                          name={creator.displayName || creator.display_name || creator.name || 'Unknown'}
+                          role={creator.creatorType || creator.creator_type || creator.role || 'Creator'}
+                          image={creator.profileUrl || creator.profile_url || creator.image || 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'}
+                          isFollowing={creator.isFollowing || creator.is_following}
+                          onFollow={(id) => handleFollow(id, !!(creator.isFollowing || creator.is_following))}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-10 bg-white/5 rounded-2xl border border-white/5">
+                    <p className="text-zinc-500 font-medium">No creators featured today.</p>
+                  </div>
+                )}
               </div>
 
               {/* Recommended For You */}
               <div className="mb-12">
-                <h2 className="text-xl font-black text-white mb-6 tracking-tight">Recommended For You</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {RECOMMENDED.map((item, i) => (
-                    <ExploreCard key={i} {...item} />
-                  ))}
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-black text-white tracking-tight">Recommended For You</h2>
+                  <button className="text-xs font-bold text-accent-purple uppercase tracking-widest hover:text-white transition-colors">See More</button>
                 </div>
+                
+                {isLoadingRecommended ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 text-accent-purple animate-spin" />
+                  </div>
+                ) : recommended.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {recommended.map((track, i) => (
+                      <ExploreCard 
+                        key={track.id || i} 
+                        title={track.title}
+                        artist={track.artist_name || track.artistName || track.creatorName || track.artist || 'Unknown Artist'}
+                        image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 bg-white/5 rounded-2xl border border-white/5">
+                    <p className="text-zinc-500 font-medium">Listening to more tracks helps us improve your recommendations!</p>
+                  </div>
+                )}
               </div>
 
               {/* Recently Added */}
               <div className="mb-16">
-                <h2 className="text-xl font-black text-white mb-6 tracking-tight">Recently Added</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {RECENTLY_ADDED.map((item, i) => (
-                    <ExploreCard key={i} {...item} />
-                  ))}
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-black text-white tracking-tight">Recently Added</h2>
+                  <button className="text-xs font-bold text-accent-purple uppercase tracking-widest hover:text-white transition-colors">View Newest</button>
                 </div>
+                
+                {isLoadingRecent ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 text-accent-purple animate-spin" />
+                  </div>
+                ) : recent.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {recent.map((track, i) => (
+                      <ExploreCard 
+                        key={track.id || i} 
+                        title={track.title}
+                        artist={track.artist_name || track.artistName || track.creatorName || track.artist || 'Unknown Artist'}
+                        image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1485603348612-40db7f90bbbe?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 bg-white/5 rounded-2xl border border-white/5">
+                    <p className="text-zinc-500 font-medium">New content is uploaded every day. Check back soon!</p>
+                  </div>
+                )}
               </div>
 
               {/* Footer */}
