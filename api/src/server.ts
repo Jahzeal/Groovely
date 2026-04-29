@@ -12,6 +12,7 @@ import trackRoutes from './routes/trackRoutes';
 import streamRoutes from './routes/streamRoutes';
 import fanDashboardRoutes from './routes/fanDashboardRoutes';
 import marketplaceRoutes from './routes/marketplaceRoutes';
+import libraryRoutes from './routes/libraryRoutes';
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.use('/api/creator', creatorRoutes);
 app.use('/api/creator', trackRoutes);
 app.use('/api/fan', fanRoutes);
 app.use('/api/fan', fanDashboardRoutes);
+app.use('/api/library', libraryRoutes);
 app.use('/api', profileRoutes);
 app.use('/api', streamRoutes);
 
