@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Play, ShoppingCart, Heart } from 'lucide-react';
+import { Play, ShoppingCart, Heart, Loader2, Pause } from 'lucide-react';
 import Link from 'next/link';
 import { useCart } from './CartContext';
 import { useMusicPlayer } from './MusicPlayerContext';
+import { apiFetch } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 interface TrackCardProps {
   id?: string | number;
@@ -20,9 +22,40 @@ interface TrackCardProps {
 
 export const TrackCard = ({ id, title, creator, image, audioUrl, licenseTypes, price, currency, queue }: TrackCardProps) => {
   const [liked, setLiked] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [hovered, setHovered] = useState(false);
   const { openCart } = useCart();
-  const { playTrack } = useMusicPlayer();
+  const { playTrack, currentTrack, isPlaying } = useMusicPlayer();
+
+  const isThisTrackPlaying = currentTrack?.id === id && isPlaying;
+
+  const handleSave = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!id) return;
+    
+    setIsSaving(true);
+    try {
+      const method = liked ? 'DELETE' : 'POST';
+      const res = await apiFetch(`/api/library/save/${id}`, {
+        method
+      });
+      
+      if (res && res.ok) {
+        setLiked(!liked);
+        toast.success(liked ? 'Removed from library' : 'Saved to library');
+      } else {
+        const errorData = await res?.json();
+        throw new Error(errorData?.error || 'Action failed');
+      }
+    } catch (error: any) {
+      console.error('Library action error:', error);
+      toast.error(error.message || 'Action failed');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <Link href={`/marketplace/${id || 1}`}>
@@ -42,12 +75,18 @@ export const TrackCard = ({ id, title, creator, image, audioUrl, licenseTypes, p
 
         {/* Like button */}
         <button
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setLiked(l => !l); }}
+          onClick={handleSave}
+          disabled={isSaving}
           className={`absolute top-3 right-3 w-8 h-8 rounded-full backdrop-blur-md border flex items-center justify-center transition-all duration-300
             ${liked ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-black/40 border-white/10 text-zinc-500 hover:text-white'}
-            ${hovered ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1'}`}
+            ${hovered ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1'}
+            disabled:opacity-50`}
         >
-          <Heart size={13} fill={liked ? 'currentColor' : 'none'} />
+          {isSaving ? (
+            <Loader2 size={13} className="animate-spin" />
+          ) : (
+            <Heart size={13} fill={liked ? 'currentColor' : 'none'} />
+          )}
         </button>
 
         {/* Play button */}
@@ -60,7 +99,11 @@ export const TrackCard = ({ id, title, creator, image, audioUrl, licenseTypes, p
           className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-all duration-300
             ${hovered ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}
         >
-          <Play size={16} fill="white" className="text-white ml-0.5" />
+          {isThisTrackPlaying ? (
+            <Pause size={16} fill="white" className="text-white" />
+          ) : (
+            <Play size={16} fill="white" className="text-white ml-0.5" />
+          )}
         </button>
 
         {/* Footer info */}

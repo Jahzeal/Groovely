@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Logo } from '../ui/Logo';
@@ -61,9 +61,14 @@ interface SidebarProps {
 export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) => {
   const pathname = usePathname();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+  const [token, setToken] = React.useState<string | null>(null);
   const [role, setRole] = React.useState<'creator' | 'fan'>(initialRole || 'creator');
 
   React.useEffect(() => {
+    setMounted(true);
+    setToken(localStorage.getItem('groovely_token'));
+    
     if (initialRole) {
       setRole(initialRole);
     } else {
@@ -73,6 +78,7 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
       }
     }
   }, [initialRole]);
+
   const isMarket = activePage === 'market' || pathname?.startsWith('/marketplace');
   const isDashboard = !isMarket && (activePage === 'dashboard' || pathname === '/dashboard');
 
@@ -80,16 +86,16 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
     handleLogout();
   };
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('groovely_token') : null;
   const isPublicRoute = pathname?.startsWith('/marketplace') || pathname?.startsWith('/explore') || pathname?.includes('/login') || pathname?.includes('/onboarding') || pathname === '/';
 
   useEffect(() => {
-    if (!token && !isPublicRoute) {
+    if (mounted && !token && !isPublicRoute) {
       // If we're in the dashboard and there's no token, redirect to login
       router.push('/login');
     }
-  }, [pathname, router, token, isPublicRoute]);
+  }, [pathname, router, token, isPublicRoute, mounted]);
 
+  if (!mounted) return null;
   if (!token && isPublicRoute) {
     return null;
   }

@@ -1,6 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
+import { useMusicPlayer } from './MusicPlayerContext';
+import { ShoppingCart, ChevronLeft, ChevronRight, Play, Heart, Loader2, Pause } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 interface FeaturedTrack {
   id: number;
@@ -56,17 +61,45 @@ const FEATURED: FeaturedTrack[] = [
   },
 ];
 
-import Link from 'next/link';
-import { useMusicPlayer } from './MusicPlayerContext';
-import { ShoppingCart, ChevronLeft, ChevronRight, Play } from 'lucide-react';
-
 export const FeaturedCarousel = () => {
   const [active, setActive] = useState(0);
-  const { playTrack } = useMusicPlayer();
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedIds, setSavedIds] = useState<number[]>([]);
+  const { playTrack, currentTrack, isPlaying } = useMusicPlayer();
 
   const prev = () => setActive(i => (i === 0 ? FEATURED.length - 1 : i - 1));
   const next = () => setActive(i => (i === FEATURED.length - 1 ? 0 : i + 1));
   const track = FEATURED[active];
+
+  const handleSave = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const isCurrentlySaved = savedIds.includes(track.id);
+    setIsSaving(true);
+    try {
+      const res = await apiFetch(`/api/library/save/${track.id}`, {
+        method: isCurrentlySaved ? 'DELETE' : 'POST'
+      });
+      if (res && res.ok) {
+        if (isCurrentlySaved) {
+          setSavedIds(prev => prev.filter(id => id !== track.id));
+          toast.success('Removed from library');
+        } else {
+          setSavedIds(prev => [...prev, track.id]);
+          toast.success('Saved to library');
+        }
+      } else {
+        const errorData = await res?.json();
+        throw new Error(errorData?.error || 'Action failed');
+      }
+    } catch (error: any) {
+      console.error('Library action error:', error);
+      toast.error(error.message || 'Action failed');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="relative rounded-3xl overflow-hidden h-[300px] shadow-2xl group">
@@ -89,24 +122,37 @@ export const FeaturedCarousel = () => {
             <p className="text-zinc-400 text-sm font-medium">{track.creator}</p>
           </Link>
           
-          <button
-            onClick={() => playTrack({ 
-              id: track.id, 
-              title: track.title, 
-              artist: track.creator, 
-              image: track.image,
-              audioUrl: track.audioUrl
-            }, FEATURED.map(t => ({
-              id: t.id,
-              title: t.title,
-              artist: t.creator,
-              image: t.image,
-              audioUrl: t.audioUrl
-            })))}
-            className="w-16 h-16 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_25px_rgba(139,92,246,0.5)] hover:scale-110 hover:shadow-[0_0_40px_rgba(139,92,246,0.7)] transition-all active:scale-95 shrink-0"
-          >
-            <Play size={24} fill="white" className="text-white ml-1" />
-          </button>
+          <div className="flex items-center gap-4 shrink-0">
+            <button
+              onClick={handleSave}
+              disabled={isSaving || savedIds.includes(track.id)}
+              className={`w-12 h-12 backdrop-blur-md border rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 disabled:opacity-50 ${savedIds.includes(track.id) ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-white/10 border-white/10 text-white hover:bg-white/20'}`}
+            >
+              {isSaving ? <Loader2 size={20} className="animate-spin" /> : <Heart size={20} fill={savedIds.includes(track.id) ? 'currentColor' : 'none'} />}
+            </button>
+            <button
+              onClick={() => playTrack({ 
+                id: track.id, 
+                title: track.title, 
+                artist: track.creator, 
+                image: track.image,
+                audioUrl: track.audioUrl
+              }, FEATURED.map(t => ({
+                id: t.id,
+                title: t.title,
+                artist: t.creator,
+                image: t.image,
+                audioUrl: t.audioUrl
+              })))}
+              className="w-16 h-16 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_25px_rgba(139,92,246,0.5)] hover:scale-110 hover:shadow-[0_0_40px_rgba(139,92,246,0.7)] transition-all active:scale-95"
+            >
+              {currentTrack?.id === track.id && isPlaying ? (
+                <Pause size={24} fill="white" className="text-white" />
+              ) : (
+                <Play size={24} fill="white" className="text-white ml-1" />
+              )}
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">

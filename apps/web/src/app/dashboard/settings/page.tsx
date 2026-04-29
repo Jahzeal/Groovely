@@ -31,11 +31,12 @@ export default function SettingsPage() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const walletAddress = typeof window !== 'undefined' ? localStorage.getItem('groovely_wallet') : null;
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const abbrevWallet = walletAddress ? `${walletAddress.slice(0, 10)}...${walletAddress.slice(-8)}` : '—';
 
   // Load existing profile on mount
   useEffect(() => {
+    setWalletAddress(localStorage.getItem('groovely_wallet'));
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem('groovely_token');

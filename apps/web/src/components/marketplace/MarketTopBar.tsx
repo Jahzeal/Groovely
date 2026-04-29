@@ -13,17 +13,22 @@ export const MarketTopBar = () => {
   const [role, setRole] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setWalletAddress(localStorage.getItem('groovely_wallet'));
-    try {
+    if (typeof window !== 'undefined') {
+      setWalletAddress(localStorage.getItem('groovely_wallet'));
       const token = localStorage.getItem('groovely_token');
       if (token) {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        setRole(payload.role ?? null);
+        setIsAuthenticated(true);
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          setRole(payload.role ?? null);
+        } catch {}
       }
-    } catch {}
+    }
   }, []);
 
   useEffect(() => {
@@ -92,7 +97,7 @@ export const MarketTopBar = () => {
 
       {/* Right side */}
       <div className="flex items-center gap-5 ml-8">
-        {!localStorage.getItem('groovely_token') ? (
+        {!isAuthenticated ? (
           <div className="flex items-center gap-3">
             <Link href="/login">
               <button className="text-zinc-400 hover:text-white font-black text-[10px] uppercase tracking-widest px-5 py-3 transition-all">

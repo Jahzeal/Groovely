@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 export const API_BASE = 'https://groovely-github-repo.onrender.com';
 
 export async function apiFetch(endpoint: string, options: RequestInit & { skipAuthRedirect?: boolean } = {}) {
-  const token = localStorage.getItem('groovely_token');
+  const token = typeof window !== 'undefined' ? localStorage.getItem('groovely_token') : null;
   
   const isFormData = options.body instanceof FormData;
   
@@ -32,18 +32,17 @@ export async function apiFetch(endpoint: string, options: RequestInit & { skipAu
 }
 
 export function handleLogout() {
-  localStorage.removeItem('groovely_token');
-  localStorage.removeItem('groovely_user_id');
-  localStorage.removeItem('groovely_wallet');
-  localStorage.removeItem('groovely_role');
-  
-  // Show the toast
-  toast.error('Login has expired, please login', {
-    id: 'auth-expired', // Prevent duplicate toasts
-  });
-
-  // Redirect to login
   if (typeof window !== 'undefined') {
+    localStorage.removeItem('groovely_token');
+    localStorage.removeItem('groovely_user_id');
+    localStorage.removeItem('groovely_wallet');
+    localStorage.removeItem('groovely_role');
+    
+    // Show the toast
+    toast.error('Login has expired, please login', {
+      id: 'auth-expired', // Prevent duplicate toasts
+    });
+
     window.location.href = '/login';
   }
 }

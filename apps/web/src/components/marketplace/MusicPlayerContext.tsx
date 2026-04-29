@@ -106,7 +106,7 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, [volume]);
 
-  const playTrack = (track: Track, newQueue?: Track[]) => {
+  const playTrack = async (track: Track, newQueue?: Track[]) => {
     if (!audioRef.current) return;
 
     if (newQueue) {
@@ -121,9 +121,18 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setCurrentTrack(track);
     const url = track.audioUrl || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
     
-    audioRef.current.src = url;
-    audioRef.current.play();
-    setIsPlaying(true);
+    try {
+      audioRef.current.src = url;
+      setIsPlaying(true);
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        await playPromise;
+      }
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.error('Playback error:', error);
+      }
+    }
   };
 
   const playNext = () => {
@@ -152,15 +161,25 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     playTrack(queue[currentIndex - 1]);
   };
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
     if (!audioRef.current || !currentTrack) return;
 
-    if (isPlaying) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
+    try {
+      if (isPlaying) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        setIsPlaying(true);
+        const playPromise = audioRef.current.play();
+        if (playPromise !== undefined) {
+          await playPromise;
+        }
+      }
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.error('Toggle play error:', error);
+      }
     }
-    setIsPlaying(!isPlaying);
   };
 
   const seek = (time: number) => {

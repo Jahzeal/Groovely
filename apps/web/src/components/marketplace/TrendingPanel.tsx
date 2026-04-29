@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Play, ShoppingCart, Loader2 } from 'lucide-react';
+import { Play, Pause, ShoppingCart, Loader2, Heart } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { useMusicPlayer } from './MusicPlayerContext';
+import toast from 'react-hot-toast';
 
 interface TrendingTrack {
   id: number;
@@ -20,7 +21,9 @@ export const TrendingPanel = () => {
   const [hoveredId, setHoveredId] = useState<number | null>(null);
   const [trending, setTrending] = useState<TrendingTrack[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { playTrack } = useMusicPlayer();
+  const [savingId, setSavingId] = useState<number | null>(null);
+  const [savedIds, setSavedIds] = useState<number[]>([]);
+  const { playTrack, currentTrack, isPlaying } = useMusicPlayer();
 
   useEffect(() => {
     async function fetchTrending() {
@@ -53,6 +56,36 @@ export const TrendingPanel = () => {
     }
     fetchTrending();
   }, []);
+
+  const handleSave = async (e: React.MouseEvent, trackId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setSavingId(trackId);
+    try {
+      const isCurrentlySaved = savedIds.includes(trackId);
+      const res = await apiFetch(`/api/library/save/${trackId}`, {
+        method: isCurrentlySaved ? 'DELETE' : 'POST'
+      });
+      if (res && res.ok) {
+        if (isCurrentlySaved) {
+          setSavedIds(prev => prev.filter(id => id !== trackId));
+          toast.success('Removed from library');
+        } else {
+          setSavedIds(prev => [...prev, trackId]);
+          toast.success('Saved to library');
+        }
+      } else {
+        const errorData = await res?.json();
+        throw new Error(errorData?.error || 'Action failed');
+      }
+    } catch (error: any) {
+      console.error('Library action error:', error);
+      toast.error(error.message || 'Action failed');
+    } finally {
+      setSavingId(null);
+    }
+  };
 
   return (
     <div className="flex flex-col h-[300px]">
@@ -87,29 +120,47 @@ export const TrendingPanel = () => {
                     <h4 className="text-xs font-black text-white tracking-tight leading-tight truncate">{track.title}</h4>
                     <p className="text-[10px] text-zinc-400 font-medium mt-0.5 truncate">{track.creator}</p>
                   </div>
-                  {/* Play button on hover */}
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      playTrack({
-                        id: track.id,
-                        title: track.title,
-                        artist: track.creator,
-                        image: track.image,
-                        audioUrl: track.audioUrl
-                      }, trending.map(t => ({
-                        id: t.id,
-                        title: t.title,
-                        artist: t.creator,
-                        image: t.image,
-                        audioUrl: t.audioUrl
-                      })));
-                    }}
-                    className={`w-7 h-7 bg-accent-purple rounded-full flex items-center justify-center shadow-lg transition-all duration-300 shrink-0 ${hoveredId === track.id ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}
-                  >
-                    <Play size={10} fill="white" className="text-white ml-0.5" />
-                  </button>
+                  <div className="flex flex-col gap-1.5 shrink-0">
+                    {/* Play button on hover */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        playTrack({
+                          id: track.id,
+                          title: track.title,
+                          artist: track.creator,
+                          image: track.image,
+                          audioUrl: track.audioUrl
+                        }, trending.map(t => ({
+                          id: t.id,
+                          title: t.title,
+                          artist: t.creator,
+                          image: t.image,
+                          audioUrl: t.audioUrl
+                        })));
+                      }}
+                      className={`w-7 h-7 bg-accent-purple rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ${hoveredId === track.id ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}
+                    >
+                      {currentTrack?.id === track.id && isPlaying ? (
+                        <Pause size={10} fill="white" className="text-white" />
+                      ) : (
+                        <Play size={10} fill="white" className="text-white ml-0.5" />
+                      )}
+                    </button>
+                    {/* Save button on hover */}
+                    <button
+                      onClick={(e) => handleSave(e, track.id)}
+                      disabled={savingId === track.id || savedIds.includes(track.id)}
+                      className={`w-7 h-7 backdrop-blur-md border rounded-full flex items-center justify-center shadow-lg transition-all duration-300 hover:scale-110 ${savedIds.includes(track.id) ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-white/10 border-white/10 text-white hover:bg-white/20'} ${hoveredId === track.id ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}
+                    >
+                      {savingId === track.id ? (
+                        <Loader2 size={10} className="animate-spin" />
+                      ) : (
+                        <Heart size={10} fill={savedIds.includes(track.id) ? 'currentColor' : 'none'} />
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex items-end justify-between">

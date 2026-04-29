@@ -9,10 +9,13 @@ import {
   MoreVertical,
   Music,
   Loader2,
-  Filter
+  Filter,
+  Heart,
+  Pause
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { useMusicPlayer } from '@/components/marketplace/MusicPlayerContext';
+import toast from 'react-hot-toast';
 
 interface Track {
   id: number;
@@ -20,6 +23,7 @@ interface Track {
   artist_name?: string;
   artist_username?: string;
   cover_url?: string;
+  audio_url?: string;
   status?: string;
   category?: string;
 }
@@ -35,9 +39,26 @@ const FilterTab = ({ label, active, onClick }: { label: string; active: boolean;
   </button>
 );
 
-const TrackCard = ({ track }: { track: Track }) => {
-  const { playTrack } = useMusicPlayer();
+const TrackCard = ({ track, onSave }: { track: Track, onSave: (id: number, isSaved: boolean) => Promise<boolean> }) => {
+  const { playTrack, currentTrack, isPlaying } = useMusicPlayer();
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   
+  const isThisTrackPlaying = currentTrack?.id === track.id && isPlaying;
+  
+  const handleSave = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setIsSaving(true);
+    try {
+      const success = await onSave(track.id, isSaved);
+      if (success) setIsSaved(!isSaved);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="bg-[#0F0F1A]/40 border border-white/5 rounded-[24px] p-4 flex items-center gap-5 group hover:bg-[#0F0F1A]/60 transition-all duration-300 hover:border-accent-purple/20">
       <div className="relative w-20 h-20 rounded-2xl overflow-hidden shrink-0 shadow-2xl">
@@ -52,11 +73,16 @@ const TrackCard = ({ track }: { track: Track }) => {
               id: track.id,
               title: track.title,
               artist: track.artist_name || track.artist_username || 'Unknown Artist',
-              image: track.cover_url || ''
+              image: track.cover_url || '',
+              audioUrl: track.audio_url
             })}
             className="w-10 h-10 bg-accent-purple rounded-full flex items-center justify-center text-white shadow-xl transform scale-75 group-hover:scale-100 transition-transform duration-300"
           >
-            <Play size={18} fill="white" className="ml-1" />
+            {isThisTrackPlaying ? (
+              <Pause size={18} fill="white" />
+            ) : (
+              <Play size={18} fill="white" className="ml-1" />
+            )}
           </button>
         </div>
       </div>
@@ -74,9 +100,23 @@ const TrackCard = ({ track }: { track: Track }) => {
           </div>
         </div>
       </div>
-      <button className="text-zinc-700 hover:text-white transition-colors p-2 rounded-xl hover:bg-white/5">
-        <MoreVertical size={18} />
-      </button>
+      <div className="flex items-center gap-2">
+        <button 
+          onClick={handleSave}
+          disabled={isSaving || isSaved}
+          className={`transition-colors p-2 rounded-xl hover:bg-white/5 disabled:opacity-50 ${isSaved ? 'text-red-400' : 'text-zinc-700 hover:text-accent-cyan'}`}
+          title="Save track"
+        >
+          {isSaving ? (
+            <Loader2 size={18} className="animate-spin" />
+          ) : (
+            <Heart size={18} fill={isSaved ? 'currentColor' : 'none'} />
+          )}
+        </button>
+        <button className="text-zinc-700 hover:text-white transition-colors p-2 rounded-xl hover:bg-white/5">
+          <MoreVertical size={18} />
+        </button>
+      </div>
     </div>
   );
 };
@@ -87,23 +127,48 @@ export default function LibraryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('All');
 
-  useEffect(() => {
-    async function fetchLibrary() {
-      try {
-        const res = await apiFetch('/api/creator/tracks');
-        if (res && res.ok) {
-          const json = await res.json();
-          const data = json.data || json;
-          setTracks(Array.isArray(data) ? data : []);
-        }
-      } catch (error) {
-        console.error('Failed to fetch library', error);
-      } finally {
-        setLoading(false);
+  const fetchLibrary = async (filter: string) => {
+    setLoading(true);
+    try {
+      const apiFilter = filter.toLowerCase();
+      const res = await apiFetch(`/api/library?filter=${apiFilter}&limit=50`);
+      if (res && res.ok) {
+        const json = await res.json();
+        // The API returns { success: true, data: { tracks: [...] } }
+        const tracksData = json.data?.tracks || (Array.isArray(json.data) ? json.data : json.tracks || json);
+        setTracks(Array.isArray(tracksData) ? tracksData : []);
       }
+    } catch (error) {
+      console.error('Failed to fetch library', error);
+      toast.error('Failed to load tracks');
+    } finally {
+      setLoading(false);
     }
-    fetchLibrary();
-  }, []);
+  };
+
+  useEffect(() => {
+    fetchLibrary(activeTab);
+  }, [activeTab]);
+
+  const handleSaveTrack = async (trackId: number, isCurrentlySaved: boolean): Promise<boolean> => {
+    try {
+      const method = isCurrentlySaved ? 'DELETE' : 'POST';
+      const res = await apiFetch(`/api/library/save/${trackId}`, {
+        method
+      });
+      if (res && res.ok) {
+        toast.success(isCurrentlySaved ? 'Removed from library' : 'Saved to library');
+        return true;
+      } else {
+        const errorData = await res?.json();
+        throw new Error(errorData?.error || 'Action failed');
+      }
+    } catch (error: any) {
+      console.error('Library action error:', error);
+      toast.error(error.message || 'Action failed');
+      return false;
+    }
+  };
 
   const filteredTracks = tracks.filter(t => 
     t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -147,7 +212,7 @@ export default function LibraryPage() {
 
             {/* Filter Tabs */}
             <div className="flex items-center gap-3 mb-10 overflow-x-auto pb-2 no-scrollbar">
-              {['All', 'Music', 'Beats', 'Skits', 'Podcasts'].map(tab => (
+              {['All', 'Played', 'Saved', 'Purchased'].map(tab => (
                 <FilterTab 
                   key={tab} 
                   label={tab} 
@@ -166,7 +231,7 @@ export default function LibraryPage() {
             ) : filteredTracks.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 {filteredTracks.map((track) => (
-                  <TrackCard key={track.id} track={track} />
+                  <TrackCard key={track.id} track={track} onSave={handleSaveTrack} />
                 ))}
               </div>
             ) : (

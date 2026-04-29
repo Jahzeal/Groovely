@@ -18,15 +18,17 @@ export const TopBar = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setWalletAddress(localStorage.getItem('groovely_wallet'));
-    // Decode role from JWT token
-    try {
-      const token = localStorage.getItem('groovely_token');
-      if (token) {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        setRole(payload.role ?? null);
-      }
-    } catch {}
+    if (typeof window !== 'undefined') {
+      setWalletAddress(localStorage.getItem('groovely_wallet'));
+      // Decode role from JWT token
+      try {
+        const token = localStorage.getItem('groovely_token');
+        if (token) {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          setRole(payload.role ?? null);
+        }
+      } catch {}
+    }
   }, []);
 
   // Close dropdown on outside click

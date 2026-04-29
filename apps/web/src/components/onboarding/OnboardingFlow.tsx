@@ -51,6 +51,11 @@ export const OnboardingFlow = () => {
   const [wallet, setWallet] = useState<'metamask' | 'walletconnect' | 'phantom' | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Profile data (Step 3)
   const [displayName, setDisplayName] = useState('');
@@ -344,7 +349,7 @@ export const OnboardingFlow = () => {
                 </div>
 
                 {/* Google Button or Skip button if already on Google */}
-                {localStorage.getItem('groovely_token') && !address ? (
+                {(mounted && localStorage.getItem('groovely_token') && !address) ? (
                   <Button 
                     fullWidth 
                     variant="secondary"
