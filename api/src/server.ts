@@ -9,6 +9,10 @@ import creatorRoutes from './routes/creatorRoutes';
 import fanRoutes from './routes/fanRoutes';
 import profileRoutes from './routes/profileRoutes';
 import trackRoutes from './routes/trackRoutes';
+import streamRoutes from './routes/streamRoutes';
+import fanDashboardRoutes from './routes/fanDashboardRoutes';
+import marketplaceRoutes from './routes/marketplaceRoutes';
+import libraryRoutes from './routes/libraryRoutes';
 
 const app = express();
 
@@ -35,12 +39,16 @@ app.use(fileUpload({
   limits: { fileSize: 25 * 1024 * 1024 }, // 25MB max file size
 }));
 
-// Routes
+
+app.use('/api/market', marketplaceRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/creator', creatorRoutes);
 app.use('/api/creator', trackRoutes);
 app.use('/api/fan', fanRoutes);
+app.use('/api/fan', fanDashboardRoutes);
+app.use('/api/library', libraryRoutes);
 app.use('/api', profileRoutes);
+app.use('/api', streamRoutes);
 
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });

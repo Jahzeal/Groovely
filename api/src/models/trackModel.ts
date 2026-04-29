@@ -20,6 +20,11 @@ export interface Track {
   updated_at: Date;
 }
 
+export interface TrackWithStats extends Track {
+  streams_count: number;
+  total_earnings: number;
+}
+
 export const createTrack = async (
   userId: number,
   title: string,
@@ -46,6 +51,91 @@ export const createTrack = async (
       explicit, category, tags, bpm, key, isrc, usageRights
     ]
   );
+  return result.rows[0];
+};
+
+export const getTracksByUserIdWithStats = async (userId: number) => {
+  const result = await query(
+    `SELECT 
+      t.*,
+      COALESCE(SUM(CASE WHEN ts.played_at >= date_trunc('month', CURRENT_DATE) THEN 1 ELSE 0 END), 0) as streams_this_month,
+      COALESCE(SUM(CASE WHEN ts.played_at >= date_trunc('month', CURRENT_DATE - INTERVAL '1 month') 
+        AND ts.played_at < date_trunc('month', CURRENT_DATE) THEN 1 ELSE 0 END), 0) as streams_last_month,
+      COALESCE(SUM(ts.earnings), 0) as total_earnings,
+      COALESCE(COUNT(ts.id), 0) as streams_count
+     FROM tracks t
+     LEFT JOIN track_streams ts ON t.id = ts.track_id
+     WHERE t.user_id = $1
+     GROUP BY t.id
+     ORDER BY t.created_at DESC`,
+    [userId]
+  );
+  return result.rows;
+};
+
+export const getTrackByIdWithStats = async (id: number, userId: number) => {
+  const result = await query(
+    `SELECT 
+      t.*,
+      COALESCE(SUM(CASE WHEN ts.played_at >= date_trunc('month', CURRENT_DATE) THEN 1 ELSE 0 END), 0) as streams_this_month,
+      COALESCE(SUM(CASE WHEN ts.played_at >= date_trunc('month', CURRENT_DATE - INTERVAL '1 month') 
+        AND ts.played_at < date_trunc('month', CURRENT_DATE) THEN 1 ELSE 0 END), 0) as streams_last_month,
+      COALESCE(SUM(ts.earnings), 0) as total_earnings,
+      COALESCE(COUNT(ts.id), 0) as streams_count
+     FROM tracks t
+     LEFT JOIN track_streams ts ON t.id = ts.track_id
+     WHERE t.id = $1 AND t.user_id = $2
+     GROUP BY t.id`,
+    [id, userId]
+  );
+  return result.rows[0];
+};
+
+export const recordStream = async (trackId: number, userId: number, earnings: number = 0.0001) => {
+  const result = await query(
+    `INSERT INTO track_streams (track_id, user_id, earnings)
+     VALUES ($1, $2, $3)
+     RETURNING *`,
+    [trackId, userId, earnings]
+  );
+  return result.rows[0];
+};
+
+export const getDashboardStats = async (userId: number) => {
+  const result = await query(
+    `SELECT 
+      COALESCE(SUM(CASE WHEN ts.played_at >= date_trunc('month', CURRENT_DATE) THEN 1 ELSE 0 END), 0) as streams_this_month,
+      COALESCE(SUM(CASE WHEN ts.played_at >= date_trunc('month', CURRENT_DATE - INTERVAL '1 month') 
+        AND ts.played_at < date_trunc('month', CURRENT_DATE) THEN 1 ELSE 0 END), 0) as streams_last_month,
+      COALESCE(SUM(ts.earnings), 0) as total_earnings,
+      COALESCE(SUM(CASE WHEN ts.played_at >= date_trunc('month', CURRENT_DATE) THEN ts.earnings ELSE 0 END), 0) as earnings_this_month,
+      COALESCE(SUM(CASE WHEN ts.played_at >= date_trunc('month', CURRENT_DATE - INTERVAL '1 month') 
+        AND ts.played_at < date_trunc('month', CURRENT_DATE) THEN ts.earnings ELSE 0 END), 0) as earnings_last_month,
+      COUNT(DISTINCT t.id) as total_uploads,
+      COALESCE(SUM(CASE WHEN t.created_at >= date_trunc('month', CURRENT_DATE) THEN 1 ELSE 0 END), 0) as uploads_this_month,
+      COALESCE(SUM(CASE WHEN t.created_at >= date_trunc('month', CURRENT_DATE - INTERVAL '1 month') 
+        AND t.created_at < date_trunc('month', CURRENT_DATE) THEN 1 ELSE 0 END), 0) as uploads_last_month
+     FROM users u
+     LEFT JOIN tracks t ON u.id = t.user_id
+     LEFT JOIN track_streams ts ON t.id = ts.track_id
+     WHERE u.id = $1
+     GROUP BY u.id`,
+    [userId]
+  );
+  
+  if (result.rows.length === 0) {
+    return {
+      streams_this_month: 0,
+      streams_last_month: 0,
+      total_earnings: 0,
+      earnings_this_month: 0,
+      earnings_last_month: 0,
+      total_uploads: 0,
+      uploads_this_month: 0,
+      uploads_last_month: 0
+    };
+  }
+  
   return result.rows[0];
 };
 
