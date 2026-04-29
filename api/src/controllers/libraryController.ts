@@ -33,7 +33,9 @@ export const getLibrary = async (req: AuthRequest, res: Response): Promise<void>
             u.display_name as artist_name,
             u.username as artist_username,
             'played' as type,
-            ts.played_at as action_date
+            ts.played_at as action_date,
+            NULL::numeric as amount,
+            NULL::text as currency
           FROM track_streams ts
           JOIN tracks t ON ts.track_id = t.id
           JOIN users u ON t.user_id = u.id
@@ -54,7 +56,9 @@ export const getLibrary = async (req: AuthRequest, res: Response): Promise<void>
             u.display_name as artist_name,
             u.username as artist_username,
             'saved' as type,
-            st.created_at as action_date
+            st.created_at as action_date,
+            NULL::numeric as amount,
+            NULL::text as currency
           FROM saved_tracks st
           JOIN tracks t ON st.track_id = t.id
           JOIN users u ON t.user_id = u.id
@@ -101,8 +105,8 @@ export const getLibrary = async (req: AuthRequest, res: Response): Promise<void>
               u.username as artist_username,
               'played' as type,
               ts.played_at as action_date,
-              NULL as amount,
-              NULL as currency
+              NULL::numeric as amount,
+              NULL::text as currency
             FROM track_streams ts
             JOIN tracks t ON ts.track_id = t.id
             JOIN users u ON t.user_id = u.id
@@ -120,8 +124,8 @@ export const getLibrary = async (req: AuthRequest, res: Response): Promise<void>
               u.username as artist_username,
               'saved' as type,
               st.created_at as action_date,
-              NULL as amount,
-              NULL as currency
+              NULL::numeric as amount,
+              NULL::text as currency
             FROM saved_tracks st
             JOIN tracks t ON st.track_id = t.id
             JOIN users u ON t.user_id = u.id
