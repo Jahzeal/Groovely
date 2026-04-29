@@ -96,7 +96,7 @@ export const googleSignup = async (req: AuthRequest, res: Response): Promise<voi
 
 export const walletLogin = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { walletAddress, role }: WalletAuthRequest = req.body;
+    const { walletAddress } = req.body;
 
     if (!walletAddress) {
       sendBadRequest(res, ErrorMessages.WALLET_REQUIRED);
@@ -108,28 +108,13 @@ export const walletLogin = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
-    if (!role) {
-      sendBadRequest(res, ErrorMessages.INVALID_ROLE);
-      return;
-    }
-
-    if (role !== 'creator' && role !== 'fan') {
-      sendBadRequest(res, ErrorMessages.INVALID_ROLE);
-      return;
-    }
-
     const existingUser = await findUserByWallet(walletAddress);
     if (!existingUser) {
       sendUnauthorized(res, 'No account found with this wallet. Please sign up first.');
       return;
     }
 
-    if (existingUser.role !== role) {
-      sendUnauthorized(res, `This account is registered as a ${existingUser.role}, not a ${role}.`);
-      return;
-    }
-
-    const { token, user } = await walletAuth(walletAddress, role);
+    const { token, user } = await walletAuth(walletAddress, existingUser.role);
 
     sendSuccess(res, { token, user }, SuccessMessages.USER_LOGGED_IN);
   } catch (error) {
@@ -140,7 +125,7 @@ export const walletLogin = async (req: AuthRequest, res: Response): Promise<void
 
 export const googleLogin = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { email, role }: GoogleAuthRequest = req.body;
+    const { email } = req.body;
 
     if (!email) {
       sendBadRequest(res, ErrorMessages.EMAIL_REQUIRED);
@@ -152,28 +137,13 @@ export const googleLogin = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
-    if (!role) {
-      sendBadRequest(res, ErrorMessages.INVALID_ROLE);
-      return;
-    }
-
-    if (role !== 'creator' && role !== 'fan') {
-      sendBadRequest(res, ErrorMessages.INVALID_ROLE);
-      return;
-    }
-
     const existingUser = await findUserByEmail(email);
     if (!existingUser) {
       sendUnauthorized(res, 'No account found with this email. Please sign up first.');
       return;
     }
 
-    if (existingUser.role !== role) {
-      sendUnauthorized(res, `This account is registered as a ${existingUser.role}, not a ${role}.`);
-      return;
-    }
-
-    const { token, user } = await googleAuth(email, role);
+    const { token, user } = await googleAuth(email, existingUser.role);
 
     sendSuccess(res, { token, user }, SuccessMessages.USER_LOGGED_IN);
   } catch (error) {

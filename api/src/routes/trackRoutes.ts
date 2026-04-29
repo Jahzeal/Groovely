@@ -19,7 +19,7 @@ router.post('/tracks', uploadTrack);
 router.get('/tracks', getMyTracks);
 
 router.get('/tracks/:id', getTrack);
-router.put('/tracks/:id', updateTrackController);
+router.patch('/tracks/:id', updateTrackController);
 router.delete('/tracks/:id', deleteTrackController);
 
 export default router;
