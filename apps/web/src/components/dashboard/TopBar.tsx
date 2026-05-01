@@ -15,6 +15,7 @@ export const TopBar = () => {
   const [role, setRole] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,6 +59,12 @@ export const TopBar = () => {
     handleLogout();
   };
 
+  const handleSearch = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      router.push(`/marketplace?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
   return (
     <header className="flex items-center justify-between px-10 py-6 bg-[#050510] border-b border-white/5">
       <div className="flex items-center gap-8 flex-1">
@@ -70,9 +77,12 @@ export const TopBar = () => {
           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-600 group-focus-within:text-white transition-colors">
             <Search size={18} />
           </div>
-          <input
+           <input
             type="text"
             placeholder="Search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleSearch}
             className="w-full bg-[#0F0F1A] border border-white/5 rounded-xl py-3 pl-12 pr-4 text-sm font-medium focus:outline-none focus:border-accent-purple/50 transition-all placeholder-zinc-600"
           />
         </div>

@@ -12,6 +12,7 @@ import { Twitter, Instagram } from '@/components/ui/SocialIcons';
 import { Send, Disc, Loader2 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { CartProvider } from '@/components/marketplace/CartContext';
+import { useSearchParams } from 'next/navigation';
 
 export default function MarketplacePage() {
   const [forYou, setForYou] = useState<any[]>([]);
@@ -26,6 +27,18 @@ export default function MarketplacePage() {
   const [isLoadingSkit, setIsLoadingSkit] = useState(true);
   const [beatsTracks, setBeatsTracks] = useState<any[]>([]);
   const [isLoadingBeats, setIsLoadingBeats] = useState(true);
+  
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.get('q')?.toLowerCase() || '';
+
+  const filterTracks = (tracks: any[]) => {
+    if (!searchQuery) return tracks;
+    return tracks.filter(t => 
+      t.title?.toLowerCase().includes(searchQuery) || 
+      t.creator?.toLowerCase().includes(searchQuery) ||
+      t.category?.toLowerCase().includes(searchQuery)
+    );
+  };
 
   useEffect(() => {
     async function fetchForYou() {
@@ -188,11 +201,12 @@ export default function MarketplacePage() {
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-8 h-8 text-accent-cyan animate-spin" />
                 </div>
-              ) : forYou.length > 0 ? (
+              ) : filterTracks(forYou).length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 mb-16">
-                  {forYou.map((track, i) => (
+                  {filterTracks(forYou).map((track, i) => (
                     <TrackCard 
                       key={track.id || i} 
+                      id={track.id}
                       title={track.title}
                       creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
                       image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
@@ -200,13 +214,15 @@ export default function MarketplacePage() {
                       licenseTypes={track.license_types || track.licenseTypes || ['License']}
                       price={track.price || '0.00 ETH'}
                       currency={track.currency || track.fiat_price || '$0'}
-                      queue={mapTracksToQueue(forYou)}
+                      queue={mapTracksToQueue(filterTracks(forYou))}
                     />
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-12 bg-white/5 rounded-2xl border border-white/5 mb-16">
-                  <p className="text-zinc-500 font-medium">Explore the marketplace to get personalized recommendations!</p>
+                  <p className="text-zinc-500 font-medium">
+                    {searchQuery ? `No results found for "${searchQuery}"` : 'Explore the marketplace to get personalized recommendations!'}
+                  </p>
                 </div>
               )}
 
@@ -226,11 +242,12 @@ export default function MarketplacePage() {
                 <div className="flex items-center justify-center py-20">
                   <Loader2 className="w-10 h-10 text-accent-purple animate-spin" />
                 </div>
-              ) : allTracks.length > 0 ? (
+              ) : filterTracks(allTracks).length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 mb-16">
-                  {allTracks.map((track, i) => (
+                  {filterTracks(allTracks).map((track, i) => (
                     <TrackCard 
                       key={track.id || i} 
+                      id={track.id}
                       title={track.title}
                       creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
                       image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
@@ -238,22 +255,21 @@ export default function MarketplacePage() {
                       licenseTypes={track.license_types || track.licenseTypes || ['License']}
                       price={track.price || '0.00 ETH'}
                       currency={track.currency || track.fiat_price || '$0'}
-                      queue={mapTracksToQueue(allTracks)}
+                      queue={mapTracksToQueue(filterTracks(allTracks))}
                     />
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-20 bg-white/5 rounded-3xl border border-white/5 border-dashed mb-16">
-                  <p className="text-zinc-500 font-medium">No tracks found in the marketplace yet.</p>
+                  <p className="text-zinc-500 font-medium">
+                    {searchQuery ? `No results found for "${searchQuery}"` : 'No tracks found in the marketplace yet.'}
+                  </p>
                 </div>
               )}
 
               {/* Music Category section */}
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-4">
                 <h2 className="text-lg font-black uppercase tracking-widest text-white">Music</h2>
-                <button className="text-accent-purple text-xs font-bold uppercase tracking-widest hover:underline transition-all">
-                  Browse Music
-                </button>
               </div>
 
               {isLoadingMusic ? (
@@ -265,6 +281,7 @@ export default function MarketplacePage() {
                   {musicTracks.map((track, i) => (
                     <TrackCard 
                       key={track.id || i} 
+                      id={track.id}
                       title={track.title}
                       creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
                       image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
@@ -283,11 +300,8 @@ export default function MarketplacePage() {
               )}
 
               {/* Podcast Category section */}
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-4">
                 <h2 className="text-lg font-black uppercase tracking-widest text-white">Podcasts</h2>
-                <button className="text-accent-purple text-xs font-bold uppercase tracking-widest hover:underline transition-all">
-                  Browse Podcasts
-                </button>
               </div>
 
               {isLoadingPodcast ? (
@@ -299,6 +313,7 @@ export default function MarketplacePage() {
                   {podcastTracks.map((track, i) => (
                     <TrackCard 
                       key={track.id || i} 
+                      id={track.id}
                       title={track.title}
                       creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
                       image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1478737270197-497851a1f29d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
@@ -317,11 +332,8 @@ export default function MarketplacePage() {
               )}
 
               {/* Skit Category section */}
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-4">
                 <h2 className="text-lg font-black uppercase tracking-widest text-white">Skits</h2>
-                <button className="text-accent-purple text-xs font-bold uppercase tracking-widest hover:underline transition-all">
-                  Browse Skits
-                </button>
               </div>
 
               {isLoadingSkit ? (
@@ -333,6 +345,7 @@ export default function MarketplacePage() {
                   {skitTracks.map((track, i) => (
                     <TrackCard 
                       key={track.id || i} 
+                      id={track.id}
                       title={track.title}
                       creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
                       image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
@@ -351,11 +364,8 @@ export default function MarketplacePage() {
               )}
 
               {/* Beats Category section */}
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-lg font-black uppercase tracking-widest text-white">Beats & Instrumentals</h2>
-                <button className="text-accent-purple text-xs font-bold uppercase tracking-widest hover:underline transition-all">
-                  Browse Beats
-                </button>
+              <div className="mb-4">
+                <h2 className="text-lg font-black uppercase tracking-widest text-white">Beats</h2>
               </div>
 
               {isLoadingBeats ? (
@@ -367,6 +377,7 @@ export default function MarketplacePage() {
                   {beatsTracks.map((track, i) => (
                     <TrackCard 
                       key={track.id || i} 
+                      id={track.id}
                       title={track.title}
                       creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
                       image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}

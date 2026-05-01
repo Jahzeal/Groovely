@@ -3,12 +3,14 @@ import { Search, ChevronDown, Bell, ShoppingCart, Copy, LogOut, User, Settings, 
 import { useCart } from './CartContext';
 import { handleLogout } from '@/lib/api';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export const MarketTopBar = () => {
   const [sortOpen, setSortOpen] = useState(false);
   const [sortLabel, setSortLabel] = useState('Sort By');
   const { openCart } = useCart();
-  
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState('');
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -55,6 +57,12 @@ export const MarketTopBar = () => {
 
   const sortOptions = ['Most Popular', 'Newest', 'Price: Low to High', 'Price: High to Low', 'Trending'];
 
+  const handleSearch = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      router.push(`/marketplace?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
   return (
     <header className="flex items-center justify-between px-10 py-5 bg-[#050510]/50 backdrop-blur-md border-b border-white/5 sticky top-0 z-40">
       {/* Search + Sort */}
@@ -63,9 +71,12 @@ export const MarketTopBar = () => {
           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-600 group-focus-within:text-accent-purple transition-colors">
             <Search size={17} />
           </div>
-          <input
+           <input
             type="text"
             placeholder="Search beats, podcasts, samples..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleSearch}
             className="w-full bg-[#0F0F1A] border border-white/5 rounded-xl py-3 pl-11 pr-4 text-sm font-medium focus:outline-none focus:border-accent-purple/50 transition-all placeholder-zinc-600"
           />
         </div>

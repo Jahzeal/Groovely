@@ -81,6 +81,7 @@ const TrackCard = ({ track }: { track: typeof libraryTracks[0] }) => (
 export default function LibraryPage() {
   const [activeTab, setActiveTab] = useState('All');
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     setWalletAddress(localStorage.getItem('groovely_wallet'));
@@ -89,6 +90,11 @@ export default function LibraryPage() {
   const abbrevWallet = walletAddress 
     ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-3)}` 
     : '0xc...y69';
+
+  const filteredTracks = libraryTracks.filter(t => 
+    t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.artist.toLowerCase().includes(searchQuery.toLowerCase())
+  ).filter(t => activeTab === 'All' || t.status === activeTab);
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
@@ -99,13 +105,15 @@ export default function LibraryPage() {
         <header className="flex items-center justify-between px-10 py-8 border-b border-white/5 bg-[#050510]/80 backdrop-blur-xl sticky top-0 z-50">
           <h1 className="text-2xl font-black tracking-tighter">My Library</h1>
           
-          <div className="flex-1 max-w-md mx-10 relative group">
+           <div className="flex-1 max-w-md mx-10 relative group">
             <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-600 group-focus-within:text-white transition-colors">
               <Search size={18} />
             </div>
             <input 
               type="text" 
               placeholder="Search your library..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-[#0F0F1A] border border-white/5 rounded-xl py-3 pl-12 pr-4 text-sm font-medium focus:outline-none focus:border-accent-purple/30 transition-all placeholder-zinc-600"
             />
           </div>
@@ -144,11 +152,17 @@ export default function LibraryPage() {
             </button>
           </div>
 
-          {/* Grid */}
+           {/* Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {libraryTracks.map((track) => (
-              <TrackCard key={track.id} track={track} />
-            ))}
+            {filteredTracks.length > 0 ? (
+              filteredTracks.map((track) => (
+                <TrackCard key={track.id} track={track} />
+              ))
+            ) : (
+              <div className="col-span-full py-20 text-center bg-white/5 rounded-3xl border border-white/5 border-dashed">
+                <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">No matching tracks found</p>
+              </div>
+            )}
           </div>
 
           {/* Footer */}

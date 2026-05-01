@@ -114,7 +114,7 @@ export const TrackCard = ({ id, title, creator, image, audioUrl, licenseTypes, p
           <div className="flex items-end justify-between">
             {/* License pills */}
             <div className="flex flex-wrap gap-1">
-              {licenseTypes.map((lt) => (
+              {(licenseTypes || []).map((lt) => (
                 <span
                   key={lt}
                   className="text-[9px] font-black uppercase tracking-wider bg-white/10 border border-white/10 px-2 py-0.5 rounded-md text-zinc-300"

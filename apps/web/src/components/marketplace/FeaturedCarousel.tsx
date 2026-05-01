@@ -117,7 +117,7 @@ export const FeaturedCarousel = () => {
       {/* Content */}
       <div className="absolute inset-0 flex flex-col justify-end p-8">
         <div className="flex items-center justify-between mb-4">
-          <Link href="/marketplace" className="block group/link">
+          <Link href={`/marketplace/${track.id}`} className="block group/link">
             <h2 className="text-4xl font-black text-white tracking-tight mb-1 drop-shadow-lg group-hover/link:text-accent-purple transition-colors">{track.title}</h2>
             <p className="text-zinc-400 text-sm font-medium">{track.creator}</p>
           </Link>
@@ -167,7 +167,7 @@ export const FeaturedCarousel = () => {
             <p className="text-xs font-bold text-white">{track.price}</p>
           </div>
           {/* Buy */}
-          <Link href="/marketplace" className="ml-1 flex items-center gap-2 bg-white text-black hover:bg-zinc-200 font-bold text-sm px-6 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95">
+          <Link href={`/marketplace/${track.id}`} className="ml-1 flex items-center gap-2 bg-white text-black hover:bg-zinc-200 font-bold text-sm px-6 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95">
             <ShoppingCart size={15} />
             Buy {track.currency}
           </Link>

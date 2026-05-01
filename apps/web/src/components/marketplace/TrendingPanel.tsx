@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Play, Pause, ShoppingCart, Loader2, Heart } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { useMusicPlayer } from './MusicPlayerContext';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
 interface TrendingTrack {
@@ -24,6 +25,7 @@ export const TrendingPanel = () => {
   const [savingId, setSavingId] = useState<number | null>(null);
   const [savedIds, setSavedIds] = useState<number[]>([]);
   const { playTrack, currentTrack, isPlaying } = useMusicPlayer();
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchTrending() {
@@ -100,6 +102,7 @@ export const TrendingPanel = () => {
           trending.map((track) => (
             <div
               key={track.id}
+              onClick={() => router.push(`/marketplace/${track.id}`)}
               onMouseEnter={() => setHoveredId(track.id)}
               onMouseLeave={() => setHoveredId(null)}
               className="relative rounded-2xl overflow-hidden h-[110px] shrink-0 group cursor-pointer border border-white/5 hover:border-accent-purple/30 transition-all duration-300"

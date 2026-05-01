@@ -7,6 +7,7 @@ import { Sidebar } from '@/components/dashboard/Sidebar';
 import { MarketTopBar } from '@/components/marketplace/MarketTopBar';
 import { TrackCard } from '@/components/marketplace/TrackCard';
 import { MusicPlayer } from '@/components/marketplace/MusicPlayer';
+import { useMusicPlayer } from '@/components/marketplace/MusicPlayerContext';
 import { Button } from '@/components/ui/Button';
 import {
   ChevronLeft,
@@ -15,68 +16,92 @@ import {
   Bell,
   ChevronDown,
   Play,
+  Pause,
   Share2,
   ExternalLink,
   Copy,
   Info
 } from 'lucide-react';
 import { CartProvider, useCart } from '@/components/marketplace/CartContext';
+import { use } from 'react';
+import { apiFetch } from '@/lib/api';
 
-const MOCK_TRACK = {
-  id: '1',
-  title: 'Slow Lights on Third Street',
-  creator: 'Midnight Vibe',
-  handle: '@midnightvibe',
-  image: 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
-  description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
-  price: '0.002',
-  priceUsd: '7.32',
-  bpm: '128',
-  key: 'A#',
-  duration: '2:30',
-  fileType: 'WAV',
-  nftId: '1erg4ghh87jggh8m',
-  royalty: '60%',
-  licenses: ['License', 'License', 'License']
-};
-
-const SIMILAR_TRACKS = [
-  {
-    title: 'Sabi Sabi',
-    creator: 'Groove Master',
-    image: 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-    licenseTypes: ['Afrobeats', 'Lease'],
-    price: '0.06 ETH',
-    currency: '$101',
-  },
-  {
-    title: 'Lagos at 2AM',
-    creator: 'DJ Spectra',
-    image: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-    licenseTypes: ['Beat', 'Stems'],
-    price: '0.09 ETH',
-    currency: '$151',
-  },
-  {
-    title: 'Burnt Orange Ep. 5',
-    creator: 'The Podcast Lab',
-    image: 'https://images.unsplash.com/photo-1478737270197-497851a1f29d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-    licenseTypes: ['Podcast', 'License'],
-    price: '0.03 ETH',
-    currency: '$50',
-  },
-  {
-    title: 'No Wahala, Just Vibes',
-    creator: 'Static Echo',
-    image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
-    licenseTypes: ['Skit', 'Non-Excl.'],
-    price: '0.02 ETH',
-    currency: '$33',
-  },
-];
-
-export default function ProductDetailPage() {
+export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const { id } = use(params);
+  const { playTrack, currentTrack, isPlaying } = useMusicPlayer();
+  
+  const [trackData, setTrackData] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = React.useState('');
+
+  React.useEffect(() => {
+    async function fetchTrack() {
+      try {
+        const res = await apiFetch(`/api/market/tracks/${id}`);
+        if (res && res.ok) {
+          const json = await res.json();
+          if (json.success) {
+            setTrackData(json.data);
+          } else {
+            setError(json.message || 'Track not found');
+          }
+        } else {
+          setError('Failed to fetch track details');
+        }
+      } catch (err) {
+        console.error('Fetch track error:', err);
+        setError('Something went wrong');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchTrack();
+  }, [id]);
+
+  const handleSearch = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      router.push(`/marketplace?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#050510] flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-accent-purple border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error || !trackData) {
+    return (
+      <div className="min-h-screen bg-[#050510] flex flex-col items-center justify-center p-6 text-center">
+        <h1 className="text-2xl font-black mb-4">Oops! {error || 'Track not found'}</h1>
+        <Button onClick={() => router.push('/marketplace')}>Back to Marketplace</Button>
+      </div>
+    );
+  }
+
+  const { track, creator, more_from_creator } = trackData;
+
+  // Map backend fields to the UI needs
+  const displayTrack = {
+    ...track,
+    creator: creator.name || 'Unknown',
+    handle: creator.username ? `@${creator.username}` : '@unknown',
+    image: track.cover_url || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+    description: track.description || 'No description provided.',
+    price: track.price || '0.00',
+    priceUsd: (parseFloat(track.price || '0') * 2400).toFixed(2), // Mock conversion
+    bpm: track.bpm || 'N/A',
+    key: track.key || 'N/A',
+    duration: track.duration || 'N/A',
+    fileType: track.file_type || 'WAV',
+    nftId: track.nft_id || 'Not Minted',
+    royalty: track.royalty_percentage ? `${track.royalty_percentage}%` : '0%',
+    licenses: track.license_types || ['Standard License']
+  };
 
   return (
     <CartProvider>
@@ -84,7 +109,6 @@ export default function ProductDetailPage() {
         <Sidebar activePage="market" />
 
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Customized Top Bar for Detail Page */}
           <header className="flex items-center justify-between px-10 py-5 bg-[#050510]/50 backdrop-blur-md border-b border-white/5 sticky top-0 z-40">
             <div className="flex items-center gap-6 flex-1">
               <button
@@ -101,9 +125,12 @@ export default function ProductDetailPage() {
                 <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-600 group-focus-within:text-accent-purple transition-colors">
                   <Search size={16} />
                 </div>
-                <input
+                 <input
                   type="text"
                   placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearch}
                   className="w-full bg-[#0F0F1A] border border-white/5 rounded-xl py-2.5 pl-11 pr-4 text-xs font-medium focus:outline-none focus:border-accent-purple/50 transition-all placeholder-zinc-600"
                 />
               </div>
@@ -113,33 +140,38 @@ export default function ProductDetailPage() {
           </header>
 
           <main className="flex-1 overflow-y-auto pb-32">
-            {/* Hero Section */}
             <div className="relative h-[450px] w-full overflow-hidden">
               <img 
                 src={displayTrack.image} 
                 alt={displayTrack.title} 
                 className="w-full h-full object-cover"
               />
-              {/* Gradient Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-[#050510] via-[#050510]/40 to-transparent" />
-              
-              {/* Play Button Over Hero */}
               <div className="absolute bottom-10 right-10">
-                <button className="w-20 h-20 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(157,0,255,0.6)] hover:scale-105 transition-all">
-                  <Play size={32} fill="white" className="ml-2" />
+                <button 
+                  onClick={() => playTrack({
+                    id: displayTrack.id,
+                    title: displayTrack.title,
+                    artist: displayTrack.creator,
+                    image: displayTrack.image,
+                    audioUrl: displayTrack.audio_url
+                  })}
+                  className="w-20 h-20 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(157,0,255,0.6)] hover:scale-105 transition-all"
+                >
+                  {currentTrack?.id === displayTrack.id && isPlaying ? (
+                    <Pause size={32} fill="white" />
+                  ) : (
+                    <Play size={32} fill="white" className="ml-2" />
+                  )}
                 </button>
               </div>
-
-              {/* Title */}
               <div className="absolute bottom-10 left-10">
                 <h1 className="text-6xl font-black tracking-tighter text-white mb-2">{displayTrack.title}</h1>
               </div>
             </div>
 
             <div className="px-10 py-10 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10">
-              {/* Left Content */}
               <div className="space-y-12">
-                {/* Description */}
                 <section>
                   <h3 className="text-lg font-black uppercase tracking-widest text-zinc-500 mb-6">Description</h3>
                   <p className="text-zinc-400 leading-relaxed max-w-3xl">
@@ -147,15 +179,14 @@ export default function ProductDetailPage() {
                   </p>
                 </section>
 
-                {/* Technical Data */}
                 <section>
                   <h3 className="text-lg font-black uppercase tracking-widest text-zinc-500 mb-6">Technical Data</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
-                      { label: 'BPM', value: displayTrack.bpm, isTag: true },
-                      { label: 'Key', value: displayTrack.key, isTag: true },
-                      { label: 'Duration', value: displayTrack.duration, isTag: true },
-                      { label: 'File Type', value: displayTrack.fileType, isTag: true },
+                      { label: 'BPM', value: displayTrack.bpm },
+                      { label: 'Key', value: displayTrack.key },
+                      { label: 'Duration', value: displayTrack.duration },
+                      { label: 'File Type', value: displayTrack.fileType },
                     ].map((item, i) => (
                       <div key={i} className="flex items-center gap-3">
                         <span className="text-[11px] font-bold text-zinc-600 uppercase tracking-wider whitespace-nowrap">{item.label}:</span>
@@ -165,16 +196,8 @@ export default function ProductDetailPage() {
                       </div>
                     ))}
                   </div>
-                  
-                  <div className="mt-8 flex items-center gap-4">
-                     <span className="text-[11px] font-bold text-zinc-600 uppercase tracking-wider">NFT ID:</span>
-                     <div className="bg-[#0F0F1A] border border-white/5 rounded-lg px-6 py-2.5 text-xs font-black text-white/70 font-mono">
-                       {displayTrack.nftId}
-                     </div>
-                  </div>
                 </section>
 
-                {/* Creator Info */}
                 <section className="bg-[#0F0F1A]/50 border border-white/5 rounded-3xl p-8 max-w-2xl">
                   <h3 className="text-lg font-black uppercase tracking-widest text-zinc-500 mb-8">Creator Info</h3>
                   <div className="flex items-center gap-6">
@@ -186,24 +209,30 @@ export default function ProductDetailPage() {
                     <div>
                       <h4 className="text-2xl font-black text-white mb-1">{displayTrack.creator}</h4>
                       <p className="text-zinc-500 font-bold mb-4">{displayTrack.handle}</p>
-                      <Button variant="secondary" className="px-5 py-2 text-xs rounded-xl">
-                        View Profile
-                      </Button>
+                      <Link href={`/creator/${creator.username}`}>
+                        <Button variant="secondary" className="px-5 py-2 text-xs rounded-xl">
+                          View Profile
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 </section>
 
-                {/* More From This Creator */}
                 <section>
-                  <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-lg font-black uppercase tracking-widest text-zinc-500">More from this Creator</h3>
-                  </div>
+                  <h3 className="text-lg font-black uppercase tracking-widest text-zinc-500 mb-8">More from this Creator</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-5">
                     {more_from_creator && more_from_creator.length > 0 ? (
                       more_from_creator.map((t: any, i: number) => (
                         <TrackCard 
                           key={t.id || i}
-                          {...t}
+                          id={t.id}
+                          title={t.title}
+                          creator={displayTrack.creator}
+                          image={t.cover_url || displayTrack.image}
+                          audioUrl={t.audio_url}
+                          licenseTypes={t.license_types || ['License']}
+                          price={t.price || '0.00'}
+                          currency={t.currency || '$0'}
                         />
                       ))
                     ) : (
@@ -213,13 +242,11 @@ export default function ProductDetailPage() {
                 </section>
               </div>
 
-              {/* Right Sidebar */}
               <aside className="space-y-6">
                 <PurchaseSidebar track={displayTrack} />
               </aside>
             </div>
 
-            {/* Bottom Footer Details */}
             <footer className="px-10 py-10 border-t border-white/5 opacity-40 hover:opacity-100 transition-opacity flex justify-between items-center text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
               <div className="flex gap-8">
                 <a href="#" className="hover:text-white transition-colors">About Groovely</a>
@@ -316,7 +343,7 @@ const PurchaseSidebar = ({ track }: { track: any }) => {
             <span className="bg-[#0F0F1A] px-4 -mt-px">Licenses</span>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            {track.licenses.map((lic: string, i: number) => (
+            {(track.licenses || []).map((lic: string, i: number) => (
               <div key={i} className="bg-[#050510] border border-white/5 rounded-xl py-3 px-4 text-center text-xs font-bold text-zinc-400 hover:text-white transition-colors cursor-pointer">
                 {lic}
               </div>

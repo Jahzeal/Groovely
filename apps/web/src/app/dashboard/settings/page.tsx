@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -24,12 +24,15 @@ export default function SettingsPage() {
   const [twitter, setTwitter] = useState('');
   const [instagram, setInstagram] = useState('');
   const [soundcloud, setSoundcloud] = useState('');
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // UI state
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [saving, setSaving] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const abbrevWallet = walletAddress ? `${walletAddress.slice(0, 10)}...${walletAddress.slice(-8)}` : '—';
@@ -55,6 +58,7 @@ export default function SettingsPage() {
         setTwitter(p.twitter ?? '');
         setInstagram(p.instagram ?? '');
         setSoundcloud(p.soundcloud ?? '');
+        if (p.avatar_url) setAvatarPreview(p.avatar_url);
       } catch (err: any) {
         setFetchError(err.message || 'Could not load profile');
       } finally {
@@ -80,6 +84,23 @@ export default function SettingsPage() {
     setCreatorTypes((prev) => [...prev, trimmed]);
     setCustomTypeInput('');
     setShowCustomInput(false);
+  };
+
+  const handleFileClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      // In a real scenario, you'd upload this to the server here or in handleSave
+      toast.success('Photo selected!');
+    }
   };
 
   const handleSave = async () => {
@@ -116,6 +137,12 @@ export default function SettingsPage() {
     }
   };
 
+  const handleGlobalSearch = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      router.push(`/marketplace?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
   const handleDisconnect = () => {
     localStorage.removeItem('groovely_token');
     localStorage.removeItem('groovely_user_id');
@@ -135,7 +162,14 @@ export default function SettingsPage() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">
               <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            <input type="text" placeholder="Search" className="w-full bg-[#0F0F1A] border border-white/5 rounded-xl py-3 px-12 text-sm focus:outline-none focus:border-accent-purple/30 transition-all text-white placeholder-zinc-600" />
+            <input 
+              type="text" 
+              placeholder="Search" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleGlobalSearch}
+              className="w-full bg-[#0F0F1A] border border-white/5 rounded-xl py-3 px-12 text-sm focus:outline-none focus:border-accent-purple/30 transition-all text-white placeholder-zinc-600" 
+            />
           </div>
           <div className="ml-auto flex items-center gap-3">
             <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="Wallet" className="w-6 h-6 object-contain" />
@@ -170,12 +204,22 @@ export default function SettingsPage() {
                 ) : (
                   <div className="flex flex-col gap-6">
                     <div className="flex items-center gap-6">
-                      <img
-                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${username || 'creator'}`}
-                        alt="Avatar"
-                        className="w-20 h-20 rounded-full border-2 border-[#151525] shadow-lg object-cover"
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        accept="image/*"
+                        className="hidden"
                       />
-                      <button className="bg-white/5 hover:bg-white/10 text-white text-xs font-bold py-3 px-6 rounded-xl border border-white/5 transition-all">
+                      <img
+                        src={avatarPreview || `https://api.dicebear.com/7.x/avataaars/svg?seed=${username || 'creator'}`}
+                        alt="Avatar"
+                        className="w-20 h-20 rounded-full border-2 border-[#151525] shadow-lg object-cover bg-[#0F0F1A]"
+                      />
+                      <button 
+                        onClick={handleFileClick}
+                        className="bg-white/5 hover:bg-white/10 text-white text-xs font-bold py-3 px-6 rounded-xl border border-white/5 transition-all"
+                      >
                         Change Photo
                       </button>
                     </div>

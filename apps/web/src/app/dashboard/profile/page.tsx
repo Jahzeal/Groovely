@@ -23,13 +23,15 @@ interface CreatorProfile {
   username: string;
   bio: string | null;
   avatar_url: string | null;
-  creator_types: string[];
+  creator_type: string[];
   twitter: string | null;
   instagram: string | null;
   soundcloud: string | null;
-  followers_count?: number;
-  plays_count?: number;
-  monthly_listeners?: number;
+  stats?: {
+    all_time_plays: number;
+    followers: number;
+    monthly_listeners: number;
+  };
 }
 
 export default function ProfilePage() {
@@ -127,9 +129,9 @@ export default function ProfilePage() {
                         </h1>
                         <span className="text-zinc-500 font-bold text-sm">@{profile.username}</span>
                       </div>
-                      {profile.creator_types?.length > 0 && (
+                      {profile.creator_type && profile.creator_type.length > 0 && (
                         <div className="flex flex-wrap gap-2">
-                          {profile.creator_types.map((type) => (
+                          {profile.creator_type.map((type) => (
                             <span
                               key={type}
                               className="inline-block bg-accent-purple/10 border border-accent-purple/20 px-4 py-1.5 rounded-full text-xs font-bold text-accent-purple capitalize"
@@ -211,9 +213,9 @@ export default function ProfilePage() {
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
                   {[
-                    { icon: Radio, label: 'All-Time Plays', value: profile.plays_count?.toLocaleString() ?? '—' },
-                    { icon: Users, label: 'Followers', value: profile.followers_count?.toLocaleString() ?? '—' },
-                    { icon: Headphones, label: 'Monthly Listeners', value: profile.monthly_listeners?.toLocaleString() ?? '—' },
+                    { icon: Radio, label: 'All-Time Plays', value: profile.stats?.all_time_plays?.toLocaleString() ?? '0' },
+                    { icon: Users, label: 'Followers', value: profile.stats?.followers?.toLocaleString() ?? '0' },
+                    { icon: Headphones, label: 'Monthly Listeners', value: profile.stats?.monthly_listeners?.toLocaleString() ?? '0' },
                   ].map((stat, i) => (
                     <div key={i} className="glass-card p-8 flex flex-col gap-6 relative overflow-hidden group hover:border-accent-purple/30 transition-all duration-500">
                       <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">

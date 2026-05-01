@@ -134,7 +134,7 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
             <NavItem icon={Store}          label="Groovely Market"   href="/marketplace"            active={isMarket} />
             <NavItem icon={BarChart3}      label="Analytics"         href="/dashboard/analytics"    active={pathname === '/dashboard/analytics'} />
             <NavItem icon={Sparkles}       label="AI Tools"          comingSoon />
-            <NavItem icon={Headphones}     label="Listening Rooms"   href="/dashboard/rooms" />
+            <NavItem icon={Headphones}     label="Listening Rooms"   comingSoon />
 
             <div className="h-px bg-white/5 my-6 mx-6" />
 
