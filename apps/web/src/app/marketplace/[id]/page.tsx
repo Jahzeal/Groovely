@@ -115,14 +115,14 @@ export default function ProductDetailPage() {
           <main className="flex-1 overflow-y-auto pb-32">
             {/* Hero Section */}
             <div className="relative h-[450px] w-full overflow-hidden">
-              <img
-                src={MOCK_TRACK.image}
-                alt={MOCK_TRACK.title}
+              <img 
+                src={displayTrack.image} 
+                alt={displayTrack.title} 
                 className="w-full h-full object-cover"
               />
               {/* Gradient Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-[#050510] via-[#050510]/40 to-transparent" />
-
+              
               {/* Play Button Over Hero */}
               <div className="absolute bottom-10 right-10">
                 <button className="w-20 h-20 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(157,0,255,0.6)] hover:scale-105 transition-all">
@@ -132,7 +132,7 @@ export default function ProductDetailPage() {
 
               {/* Title */}
               <div className="absolute bottom-10 left-10">
-                <h1 className="text-6xl font-black tracking-tighter text-white mb-2">{MOCK_TRACK.title}</h1>
+                <h1 className="text-6xl font-black tracking-tighter text-white mb-2">{displayTrack.title}</h1>
               </div>
             </div>
 
@@ -143,7 +143,7 @@ export default function ProductDetailPage() {
                 <section>
                   <h3 className="text-lg font-black uppercase tracking-widest text-zinc-500 mb-6">Description</h3>
                   <p className="text-zinc-400 leading-relaxed max-w-3xl">
-                    {MOCK_TRACK.description}
+                    {displayTrack.description}
                   </p>
                 </section>
 
@@ -152,10 +152,10 @@ export default function ProductDetailPage() {
                   <h3 className="text-lg font-black uppercase tracking-widest text-zinc-500 mb-6">Technical Data</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
-                      { label: 'BPM', value: MOCK_TRACK.bpm, isTag: true },
-                      { label: 'Key', value: MOCK_TRACK.key, isTag: true },
-                      { label: 'Duration', value: MOCK_TRACK.duration, isTag: true },
-                      { label: 'File Type', value: MOCK_TRACK.fileType, isTag: true },
+                      { label: 'BPM', value: displayTrack.bpm, isTag: true },
+                      { label: 'Key', value: displayTrack.key, isTag: true },
+                      { label: 'Duration', value: displayTrack.duration, isTag: true },
+                      { label: 'File Type', value: displayTrack.fileType, isTag: true },
                     ].map((item, i) => (
                       <div key={i} className="flex items-center gap-3">
                         <span className="text-[11px] font-bold text-zinc-600 uppercase tracking-wider whitespace-nowrap">{item.label}:</span>
@@ -165,12 +165,12 @@ export default function ProductDetailPage() {
                       </div>
                     ))}
                   </div>
-
+                  
                   <div className="mt-8 flex items-center gap-4">
-                    <span className="text-[11px] font-bold text-zinc-600 uppercase tracking-wider">NFT ID:</span>
-                    <div className="bg-[#0F0F1A] border border-white/5 rounded-lg px-6 py-2.5 text-xs font-black text-white/70 font-mono">
-                      {MOCK_TRACK.nftId}
-                    </div>
+                     <span className="text-[11px] font-bold text-zinc-600 uppercase tracking-wider">NFT ID:</span>
+                     <div className="bg-[#0F0F1A] border border-white/5 rounded-lg px-6 py-2.5 text-xs font-black text-white/70 font-mono">
+                       {displayTrack.nftId}
+                     </div>
                   </div>
                 </section>
 
@@ -180,12 +180,12 @@ export default function ProductDetailPage() {
                   <div className="flex items-center gap-6">
                     <div className="w-24 h-24 rounded-full bg-zinc-800 overflow-hidden border-2 border-white/5">
                       <div className="w-full h-full bg-gradient-to-br from-zinc-700 to-zinc-900 flex items-center justify-center text-4xl font-black text-white/20">
-                        {MOCK_TRACK.creator[0]}
+                        {displayTrack.creator[0]}
                       </div>
                     </div>
                     <div>
-                      <h4 className="text-2xl font-black text-white mb-1">{MOCK_TRACK.creator}</h4>
-                      <p className="text-zinc-500 font-bold mb-4">{MOCK_TRACK.handle}</p>
+                      <h4 className="text-2xl font-black text-white mb-1">{displayTrack.creator}</h4>
+                      <p className="text-zinc-500 font-bold mb-4">{displayTrack.handle}</p>
                       <Button variant="secondary" className="px-5 py-2 text-xs rounded-xl">
                         View Profile
                       </Button>
@@ -199,16 +199,23 @@ export default function ProductDetailPage() {
                     <h3 className="text-lg font-black uppercase tracking-widest text-zinc-500">More from this Creator</h3>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-5">
-                    {SIMILAR_TRACKS.map((track, i) => (
-                      <TrackCard key={i} {...track} />
-                    ))}
+                    {more_from_creator && more_from_creator.length > 0 ? (
+                      more_from_creator.map((t: any, i: number) => (
+                        <TrackCard 
+                          key={t.id || i}
+                          {...t}
+                        />
+                      ))
+                    ) : (
+                      <p className="text-zinc-500 italic">No other tracks found from this creator.</p>
+                    )}
                   </div>
                 </section>
               </div>
 
               {/* Right Sidebar */}
               <aside className="space-y-6">
-                <PurchaseSidebar />
+                <PurchaseSidebar track={displayTrack} />
               </aside>
             </div>
 
@@ -278,7 +285,7 @@ const HeaderActions = () => {
   );
 };
 
-const PurchaseSidebar = () => {
+const PurchaseSidebar = ({ track }: { track: any }) => {
   const { openCart } = useCart();
   return (
     <div className="bg-[#0F0F1A] border border-white/5 rounded-3xl p-8 sticky top-32">
@@ -288,14 +295,14 @@ const PurchaseSidebar = () => {
         </div>
         <span className="text-sm font-bold text-zinc-400">ETH</span>
       </div>
-
+      
       <div className="text-center mb-8">
-        <div className="text-4xl font-black tracking-tight text-white mb-1">{MOCK_TRACK.price}</div>
-        <div className="text-zinc-500 font-bold text-sm">(${MOCK_TRACK.priceUsd})</div>
+        <div className="text-4xl font-black tracking-tight text-white mb-1">{track.price}</div>
+        <div className="text-zinc-500 font-bold text-sm">(${track.priceUsd})</div>
       </div>
 
-      <Button
-        fullWidth
+      <Button 
+        fullWidth 
         onClick={openCart}
         className="mb-8 flex items-center justify-center gap-2"
       >
@@ -309,7 +316,7 @@ const PurchaseSidebar = () => {
             <span className="bg-[#0F0F1A] px-4 -mt-px">Licenses</span>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            {MOCK_TRACK.licenses.map((lic, i) => (
+            {track.licenses.map((lic: string, i: number) => (
               <div key={i} className="bg-[#050510] border border-white/5 rounded-xl py-3 px-4 text-center text-xs font-bold text-zinc-400 hover:text-white transition-colors cursor-pointer">
                 {lic}
               </div>
@@ -322,7 +329,7 @@ const PurchaseSidebar = () => {
             <span className="bg-[#0F0F1A] px-4 -mt-px">Royalty (%)</span>
           </div>
           <div className="bg-[#050510] border border-white/5 rounded-xl py-4 px-6 text-2xl font-black text-accent-purple text-center">
-            {MOCK_TRACK.royalty}
+            {track.royalty}
           </div>
         </div>
       </div>
