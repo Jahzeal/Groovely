@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const BACKEND_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'https://groovely-f7i7.onrender.com';
+  process.env.NEXT_PUBLIC_API_URL || 'https://groovely-github-repo.onrender.com';
 
 async function handler(
   request: NextRequest,
@@ -12,6 +12,8 @@ async function handler(
 
   const { search } = new URL(request.url);
   const destination = `${targetUrl}${search}`;
+
+  console.log(`[API Proxy] ${request.method} -> ${destination}`);
 
   const forwardHeaders = new Headers(request.headers);
   forwardHeaders.delete('host');

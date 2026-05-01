@@ -8,12 +8,12 @@ import { MarketTopBar } from '@/components/marketplace/MarketTopBar';
 import { TrackCard } from '@/components/marketplace/TrackCard';
 import { MusicPlayer } from '@/components/marketplace/MusicPlayer';
 import { Button } from '@/components/ui/Button';
-import { 
-  ChevronLeft, 
-  ShoppingCart, 
-  Search, 
-  Bell, 
-  ChevronDown, 
+import {
+  ChevronLeft,
+  ShoppingCart,
+  Search,
+  Bell,
+  ChevronDown,
   Play,
   Share2,
   ExternalLink,
@@ -87,7 +87,7 @@ export default function ProductDetailPage() {
           {/* Customized Top Bar for Detail Page */}
           <header className="flex items-center justify-between px-10 py-5 bg-[#050510]/50 backdrop-blur-md border-b border-white/5 sticky top-0 z-40">
             <div className="flex items-center gap-6 flex-1">
-              <button 
+              <button
                 onClick={() => router.back()}
                 className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors group"
               >
@@ -115,14 +115,14 @@ export default function ProductDetailPage() {
           <main className="flex-1 overflow-y-auto pb-32">
             {/* Hero Section */}
             <div className="relative h-[450px] w-full overflow-hidden">
-              <img 
-                src={MOCK_TRACK.image} 
-                alt={MOCK_TRACK.title} 
+              <img
+                src={MOCK_TRACK.image}
+                alt={MOCK_TRACK.title}
                 className="w-full h-full object-cover"
               />
               {/* Gradient Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-[#050510] via-[#050510]/40 to-transparent" />
-              
+
               {/* Play Button Over Hero */}
               <div className="absolute bottom-10 right-10">
                 <button className="w-20 h-20 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(157,0,255,0.6)] hover:scale-105 transition-all">
@@ -165,12 +165,12 @@ export default function ProductDetailPage() {
                       </div>
                     ))}
                   </div>
-                  
+
                   <div className="mt-8 flex items-center gap-4">
-                     <span className="text-[11px] font-bold text-zinc-600 uppercase tracking-wider">NFT ID:</span>
-                     <div className="bg-[#0F0F1A] border border-white/5 rounded-lg px-6 py-2.5 text-xs font-black text-white/70 font-mono">
-                       {MOCK_TRACK.nftId}
-                     </div>
+                    <span className="text-[11px] font-bold text-zinc-600 uppercase tracking-wider">NFT ID:</span>
+                    <div className="bg-[#0F0F1A] border border-white/5 rounded-lg px-6 py-2.5 text-xs font-black text-white/70 font-mono">
+                      {MOCK_TRACK.nftId}
+                    </div>
                   </div>
                 </section>
 
@@ -261,7 +261,7 @@ const HeaderActions = () => {
       <button className="text-zinc-500 hover:text-white transition-colors">
         <Bell size={20} />
       </button>
-      <button 
+      <button
         onClick={openCart}
         className="text-zinc-500 hover:text-white transition-colors"
       >
@@ -288,14 +288,14 @@ const PurchaseSidebar = () => {
         </div>
         <span className="text-sm font-bold text-zinc-400">ETH</span>
       </div>
-      
+
       <div className="text-center mb-8">
         <div className="text-4xl font-black tracking-tight text-white mb-1">{MOCK_TRACK.price}</div>
         <div className="text-zinc-500 font-bold text-sm">(${MOCK_TRACK.priceUsd})</div>
       </div>
 
-      <Button 
-        fullWidth 
+      <Button
+        fullWidth
         onClick={openCart}
         className="mb-8 flex items-center justify-center gap-2"
       >

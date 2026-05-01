@@ -219,7 +219,10 @@ export const OnboardingFlow = () => {
         <Logo />
         <div className="flex items-center gap-6">
           <span className="text-zinc-400 text-sm font-medium hidden sm:inline">Already have an account?</span>
-          <button className="bg-accent-purple text-white px-7 py-2.5 rounded-xl font-bold text-sm hover:bg-opacity-90 transition-all">
+          <button 
+            onClick={() => router.push('/login')}
+            className="bg-accent-purple text-white px-7 py-2.5 rounded-xl font-bold text-sm hover:bg-opacity-90 transition-all"
+          >
             Log In
           </button>
         </div>

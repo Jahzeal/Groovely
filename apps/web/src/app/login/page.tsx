@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAccount, useConnect, useDisconnect, useSignMessage } from 'wagmi';
+import { useAccount, useConnect, useDisconnect, useConfig } from 'wagmi';
+import { signMessage } from '@wagmi/core';
 import { Logo } from '@/components/ui/Logo';
 import { Button } from '@/components/ui/Button';
 import { WalletCard } from '@/components/onboarding/WalletCard';
@@ -16,16 +17,19 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, status } = useAccount();
   const { connectAsync, connectors } = useConnect();
   const { disconnect } = useDisconnect();
-  const { signMessageAsync } = useSignMessage();
+  const config = useConfig();
 
   const handleConnectWallet = async () => {
     if (!wallet) return;
     setLoading(true);
     setError(null);
     try {
+      console.log('Starting connection for wallet:', wallet);
+      console.log('Available connectors:', connectors.map(c => ({ id: c.id, name: c.name })));
+
       // 1. Discovery
       const target = wallet?.toLowerCase() || '';
       let connector = connectors.find((c: any) => {
@@ -38,17 +42,28 @@ export default function LoginPage() {
         connector = connectors.find((c: any) => c.id === 'injected');
       }
 
+      if (connectors.length === 0) {
+        throw new Error('No web3 wallets detected. Please install MetaMask or another compatible wallet.');
+      }
+
       if (!connector) connector = connectors[0];
+      
+      console.log('Selected connector:', connector?.id, connector?.name);
 
       // 2. Connect
       let walletAddr = address;
-      if (!isConnected) {
+      
+      // If already connected to a different connector, or not connected at all
+      if (!isConnected || (connector && connector.id !== 'injected' && isConnected)) {
         try {
+          console.log('Attempting to connect via connectAsync...');
           const connectResult = await connectAsync({ connector });
+          console.log('Connect result:', connectResult);
           // @ts-ignore
           walletAddr = connectResult.accounts[0];
         } catch (error: any) {
           if (error.name === 'ConnectorAlreadyConnectedError') {
+            console.log('Connector already connected, fetching accounts...');
             const accounts = await connector.getAccounts();
             // @ts-ignore
             walletAddr = accounts[0];
@@ -58,28 +73,23 @@ export default function LoginPage() {
         }
       }
 
+      console.log('Wallet address determined:', walletAddr);
       if (!walletAddr) throw new Error('Could not determine wallet address');
 
-      // 3. Fetch Nonce
-      const nonceRes = await fetch(`/api/auth/nonce/${walletAddr}`);
-      if (!nonceRes.ok) throw new Error('Failed to fetch nonce');
-      const { message } = await nonceRes.json();
-
-      // 4. Sign
-      const signature = await signMessageAsync({ message });
-
-      // 5. Connect Backend
-      const connectRes = await fetch(`https://groovely-github-repo.onrender.com/api/auth/login/wallet`, {
+      // 3. Authenticate with backend
+      console.log('Authenticating with backend...');
+      const connectRes = await fetch(`/api/auth/login/wallet`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ walletAddress: walletAddr, signature }),
+        body: JSON.stringify({ walletAddress: walletAddr }),
       });
 
       const authData = await connectRes.json();
       if (!connectRes.ok) throw new Error(authData.error || authData.message || 'Authentication failed');
 
-      // 6. Store JWT — response shape: { success, data: { token, user: { id, wallet, role } } }
+      // 4. Store JWT
       const { token, user } = authData.data;
+      console.log('Login successful, storing credentials');
       localStorage.setItem('groovely_token', token);
       localStorage.setItem('groovely_user_id', String(user.id));
       localStorage.setItem('groovely_wallet', user.wallet ?? walletAddr);
@@ -155,6 +165,7 @@ export default function LoginPage() {
                 <div className={`${wallet === 'metamask' ? 'scale-110' : ''} transition-transform`}>
                   <MetaMaskIcon />
                 </div>
+                <span className={`mt-3 text-[10px] font-bold uppercase tracking-wider transition-colors ${wallet === 'metamask' ? 'text-white' : 'text-zinc-500'}`}>MetaMask</span>
               </div>
               <div
                 onClick={() => setWallet('walletconnect')}
@@ -163,6 +174,7 @@ export default function LoginPage() {
                 <div className={`${wallet === 'walletconnect' ? 'scale-110' : ''} transition-transform`}>
                   <WalletConnectIcon />
                 </div>
+                <span className={`mt-3 text-[10px] font-bold uppercase tracking-wider transition-colors ${wallet === 'walletconnect' ? 'text-white' : 'text-zinc-500'}`}>WalletConnect</span>
               </div>
               <div
                 onClick={() => setWallet('phantom')}
@@ -171,6 +183,7 @@ export default function LoginPage() {
                 <div className={`${wallet === 'phantom' ? 'scale-110' : ''} transition-transform`}>
                   <PhantomIcon />
                 </div>
+                <span className={`mt-3 text-[10px] font-bold uppercase tracking-wider transition-colors ${wallet === 'phantom' ? 'text-white' : 'text-zinc-500'}`}>Phantom</span>
               </div>
             </div>
 
