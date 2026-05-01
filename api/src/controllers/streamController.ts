@@ -1,7 +1,8 @@
 import { Response } from 'express';
 import { AuthRequest } from '../types/request';
-import { recordStream, getTrackById } from '../models/trackModel';
+import { recordStream } from '../models/trackModel';
 import { sendSuccess, sendBadRequest, sendNotFound, sendInternalError } from '../helpers/response';
+import { query } from '../config/database';
 
 const getTrackId = (req: AuthRequest): number | null => {
   const id = req.params.id;
@@ -22,9 +23,9 @@ export const recordStreamController = async (req: AuthRequest, res: Response): P
       return;
     }
 
-    const track = await getTrackById(trackId, userId);
+    const trackResult = await query('SELECT id FROM tracks WHERE id = $1', [trackId]);
     
-    if (!track) {
+    if (trackResult.rows.length === 0) {
       sendNotFound(res, 'Track not found');
       return;
     }
