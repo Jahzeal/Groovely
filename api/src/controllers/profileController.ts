@@ -1,55 +1,76 @@
 import { Response } from 'express';
 import { AuthRequest } from '../types/request';
+import { query } from '../config/database';
 import {
-  validateUsername,
-  validateDisplayName,
-  validateBio,
-  validateCreatorTypes,
-  createCreatorProfile,
-  updateCreatorProfile,
+  createCreatorProfile as createCreatorProfileService,
+  updateCreatorProfile as updateCreatorProfileService,
   getCreatorProfileById,
-  createFanProfile,
-  updateFanProfile,
+  createFanProfile as createFanProfileService,
+  updateFanProfile as updateFanProfileService,
   getFanProfileById,
-  getPublicProfile
+  getPublicProfile as getPublicProfileService
 } from '../services/profileService';
-import { sendSuccess, sendBadRequest, sendNotFound, sendInternalError } from '../helpers/response';
+import {
+  sendSuccess,
+  sendBadRequest,
+  sendNotFound,
+  sendInternalError
+} from '../helpers/response';
+import { ErrorMessages, SuccessMessages } from '../constants';
 
+// Helper to get stats for a creator
+const getCreatorStats = async (creatorId: number) => {
+  // All time plays (total streams across all tracks)
+  const allTimeResult = await query(
+    `SELECT COUNT(ts.id) as total
+     FROM track_streams ts
+     JOIN tracks t ON ts.track_id = t.id
+     WHERE t.user_id = $1`,
+    [creatorId]
+  );
+  const allTimePlays = parseInt(allTimeResult.rows[0]?.total || 0);
+
+  // Followers count
+  const followersResult = await query(
+    'SELECT COUNT(id) as total FROM follows WHERE following_id = $1',
+    [creatorId]
+  );
+  const followers = parseInt(followersResult.rows[0]?.total || 0);
+
+  // Monthly listeners (unique users who streamed in last 30 days)
+  const monthlyResult = await query(
+    `SELECT COUNT(DISTINCT ts.user_id) as total
+     FROM track_streams ts
+     JOIN tracks t ON ts.track_id = t.id
+     WHERE t.user_id = $1 AND ts.played_at >= NOW() - INTERVAL '30 days'`,
+    [creatorId]
+  );
+  const monthlyListeners = parseInt(monthlyResult.rows[0]?.total || 0);
+
+  return {
+    all_time_plays: allTimePlays,
+    followers: followers,
+    monthly_listeners: monthlyListeners
+  };
+};
+
+// Creator: Create profile
 export const createCreatorProfileController = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
     const { displayName, username, bio, creatorTypes, twitter, instagram, soundcloud } = req.body;
 
-    const displayNameValidation = validateDisplayName(displayName);
-    if (!displayNameValidation.valid) {
-      sendBadRequest(res, displayNameValidation.error!);
+    if (!displayName || !username) {
+      sendBadRequest(res, 'Display name and username are required');
       return;
     }
 
-    const usernameValidation = validateUsername(username);
-    if (!usernameValidation.valid) {
-      sendBadRequest(res, usernameValidation.error!);
-      return;
-    }
-
-    const bioValidation = validateBio(bio || '');
-    if (!bioValidation.valid) {
-      sendBadRequest(res, bioValidation.error!);
-      return;
-    }
-
-    const creatorTypesValidation = validateCreatorTypes(creatorTypes || []);
-    if (!creatorTypesValidation.valid) {
-      sendBadRequest(res, creatorTypesValidation.error!);
-      return;
-    }
-
-    const profile = await createCreatorProfile(
+    const profile = await createCreatorProfileService(
       userId,
       displayName,
       username,
       bio || '',
-      creatorTypes,
+      creatorTypes || [],
       twitter || null,
       instagram || null,
       soundcloud || null
@@ -66,59 +87,46 @@ export const createCreatorProfileController = async (req: AuthRequest, res: Resp
   }
 };
 
+// Creator: Get own profile (with stats)
 export const getCreatorProfileController = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
     const profile = await getCreatorProfileById(userId);
-    sendSuccess(res, profile, 'Creator profile retrieved successfully');
-  } catch (error) {
-    if (error instanceof Error && error.message === 'Profile not found') {
-      sendNotFound(res, error.message);
+
+    if (!profile) {
+      sendNotFound(res, 'Profile not found');
       return;
     }
+
+    const stats = await getCreatorStats(userId);
+
+    const response = {
+      ...profile,
+      stats
+    };
+
+    sendSuccess(res, response, 'Creator profile retrieved successfully');
+  } catch (error) {
     console.error('Get creator profile error:', error);
     sendInternalError(res);
   }
 };
 
+// Creator: Update profile
 export const updateCreatorProfileController = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
     const { displayName, username, bio, creatorTypes, twitter, instagram, soundcloud } = req.body;
 
-    const displayNameValidation = validateDisplayName(displayName);
-    if (!displayNameValidation.valid) {
-      sendBadRequest(res, displayNameValidation.error!);
-      return;
-    }
-
-    const usernameValidation = validateUsername(username);
-    if (!usernameValidation.valid) {
-      sendBadRequest(res, usernameValidation.error!);
-      return;
-    }
-
-    const bioValidation = validateBio(bio || '');
-    if (!bioValidation.valid) {
-      sendBadRequest(res, bioValidation.error!);
-      return;
-    }
-
-    const creatorTypesValidation = validateCreatorTypes(creatorTypes || []);
-    if (!creatorTypesValidation.valid) {
-      sendBadRequest(res, creatorTypesValidation.error!);
-      return;
-    }
-
-    const profile = await updateCreatorProfile(
+    const profile = await updateCreatorProfileService(
       userId,
       displayName,
       username,
-      bio || '',
+      bio,
       creatorTypes,
-      twitter || null,
-      instagram || null,
-      soundcloud || null
+      twitter,
+      instagram,
+      soundcloud
     );
 
     sendSuccess(res, profile, 'Creator profile updated successfully');
@@ -132,25 +140,19 @@ export const updateCreatorProfileController = async (req: AuthRequest, res: Resp
   }
 };
 
-
+// Fan: Create profile
 export const createFanProfileController = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
     const { displayName, username } = req.body;
 
-    const displayNameValidation = validateDisplayName(displayName);
-    if (!displayNameValidation.valid) {
-      sendBadRequest(res, displayNameValidation.error!);
+    if (!displayName || !username) {
+      sendBadRequest(res, 'Display name and username are required');
       return;
     }
 
-    const usernameValidation = validateUsername(username);
-    if (!usernameValidation.valid) {
-      sendBadRequest(res, usernameValidation.error!);
-      return;
-    }
+    const profile = await createFanProfileService(userId, displayName, username);
 
-    const profile = await createFanProfile(userId, displayName, username);
     sendSuccess(res, profile, 'Fan profile created successfully');
   } catch (error) {
     if (error instanceof Error && error.message === 'Username already taken') {
@@ -162,40 +164,32 @@ export const createFanProfileController = async (req: AuthRequest, res: Response
   }
 };
 
-
+// Fan: Get profile
 export const getFanProfileController = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
     const profile = await getFanProfileById(userId);
-    sendSuccess(res, profile, 'Fan profile retrieved successfully');
-  } catch (error) {
-    if (error instanceof Error && error.message === 'Profile not found') {
-      sendNotFound(res, error.message);
+
+    if (!profile) {
+      sendNotFound(res, 'Profile not found');
       return;
     }
+
+    sendSuccess(res, profile, 'Fan profile retrieved successfully');
+  } catch (error) {
     console.error('Get fan profile error:', error);
     sendInternalError(res);
   }
 };
 
+// Fan: Update profile
 export const updateFanProfileController = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
     const { displayName, username } = req.body;
 
-    const displayNameValidation = validateDisplayName(displayName);
-    if (!displayNameValidation.valid) {
-      sendBadRequest(res, displayNameValidation.error!);
-      return;
-    }
+    const profile = await updateFanProfileService(userId, displayName, username);
 
-    const usernameValidation = validateUsername(username);
-    if (!usernameValidation.valid) {
-      sendBadRequest(res, usernameValidation.error!);
-      return;
-    }
-
-    const profile = await updateFanProfile(userId, displayName, username);
     sendSuccess(res, profile, 'Fan profile updated successfully');
   } catch (error) {
     if (error instanceof Error && error.message === 'Username already taken') {
@@ -207,22 +201,32 @@ export const updateFanProfileController = async (req: AuthRequest, res: Response
   }
 };
 
+// Public profile by username (no auth, anyone can view)
 export const getPublicProfileController = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const username = req.params.username as string;
-    
+
     if (!username) {
       sendBadRequest(res, 'Username is required');
       return;
     }
-    
-    const profile = await getPublicProfile(username);
-    sendSuccess(res, profile, 'Profile retrieved successfully');
-  } catch (error) {
-    if (error instanceof Error && error.message === 'Profile not found') {
-      sendNotFound(res, error.message);
+
+    const profile = await getPublicProfileService(username);
+
+    if (!profile) {
+      sendNotFound(res, 'Profile not found');
       return;
     }
+
+    // If profile is a creator, add stats
+    let response = { ...profile };
+    if (profile.role === 'creator') {
+      const stats = await getCreatorStats(profile.id);
+      response = { ...profile, stats };
+    }
+
+    sendSuccess(res, response, 'Profile retrieved successfully');
+  } catch (error) {
     console.error('Get public profile error:', error);
     sendInternalError(res);
   }
