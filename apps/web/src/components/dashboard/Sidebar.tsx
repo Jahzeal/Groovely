@@ -68,7 +68,7 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
   React.useEffect(() => {
     setMounted(true);
     setToken(localStorage.getItem('groovely_token'));
-    
+
     if (initialRole) {
       setRole(initialRole);
     } else {
@@ -125,35 +125,35 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
       <nav className="flex-1 space-y-1 overflow-y-auto custom-scrollbar">
         {role === 'creator' ? (
           <>
-            <NavItem icon={LayoutDashboard} label="Dashboard"        href="/dashboard"              active={isDashboard} />
-            <NavItem icon={Library}        label="My Library"        href="/library"                active={pathname === '/library'} />
-            <NavItem icon={Wallet}         label="Earnings"          href="/dashboard/earnings"     active={pathname === '/dashboard/earnings'} />
+            <NavItem icon={LayoutDashboard} label="Dashboard" href="/dashboard" active={isDashboard} />
+            <NavItem icon={Library} label="My Library" href="/library" active={pathname === '/library'} />
+            <NavItem icon={Wallet} label="Earnings" href="/dashboard/earnings" active={pathname === '/dashboard/earnings'} />
 
             <div className="h-px bg-white/5 my-6 mx-6" />
 
-            <NavItem icon={Store}          label="Groovely Market"   href="/marketplace"            active={isMarket} />
-            <NavItem icon={BarChart3}      label="Analytics"         href="/dashboard/analytics"    active={pathname === '/dashboard/analytics'} />
-            <NavItem icon={Sparkles}       label="AI Tools"          comingSoon />
-            <NavItem icon={Headphones}     label="Listening Rooms"   comingSoon />
+            <NavItem icon={Store} label="Groovely Market" href="/marketplace" active={isMarket} />
+            <NavItem icon={BarChart3} label="Analytics" href="/dashboard/analytics" active={pathname === '/dashboard/analytics'} />
+            <NavItem icon={Sparkles} label="AI Tools" comingSoon />
+            <NavItem icon={Headphones} label="Listening Rooms" comingSoon />
 
             <div className="h-px bg-white/5 my-6 mx-6" />
 
-            <NavItem icon={User}           label="Profile"           href="/dashboard/profile"      active={pathname === '/dashboard/profile'} />
-            <NavItem icon={FileText}       label="Licenses"          href="/dashboard/licenses" />
-            <NavItem icon={MessageSquare}  label="Community &amp; Support" href="/dashboard/community" />
-            <NavItem icon={Settings}       label="Settings"          href="/dashboard/settings"     active={pathname === '/dashboard/settings'} />
+            <NavItem icon={User} label="Profile" href="/dashboard/profile" active={pathname === '/dashboard/profile'} />
+            <NavItem icon={FileText} label="Licenses" href="/dashboard/licenses" active={pathname === '/dashboard/licenses'} />
+            <NavItem icon={MessageSquare} label="Community & Support" href="/dashboard/community" active={pathname === '/dashboard/community'} />
+            <NavItem icon={Settings} label="Settings" href="/dashboard/settings" active={pathname === '/dashboard/settings'} />
           </>
         ) : (
           <>
-            <NavItem icon={LayoutDashboard} label="Discover"         href="/explore"                active={activePage === 'explore' || pathname === '/explore'} />
-            <NavItem icon={Library}         label="My Library"       href="/library"                active={pathname === '/library'} />
-            <NavItem icon={Store}           label="Groovely Market"  href="/marketplace"            active={isMarket} />
+            <NavItem icon={LayoutDashboard} label="Discover" href="/explore" active={activePage === 'explore' || pathname === '/explore'} />
+            <NavItem icon={Library} label="My Library" href="/library" active={pathname === '/library'} />
+            <NavItem icon={Store} label="Groovely Market" href="/marketplace" active={isMarket} />
           </>
         )}
       </nav>
 
       <div className="mt-auto px-4 pb-4">
-        <button 
+        <button
           onClick={handleSignOut}
           className="w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white font-bold py-4 rounded-xl border border-white/5 transition-all"
         >

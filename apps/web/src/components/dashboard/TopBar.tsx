@@ -28,7 +28,7 @@ export const TopBar = () => {
           const payload = JSON.parse(atob(token.split('.')[1]));
           setRole(payload.role ?? null);
         }
-      } catch {}
+      } catch { }
     }
   }, []);
 
@@ -69,15 +69,15 @@ export const TopBar = () => {
     <header className="flex items-center justify-between px-10 py-6 bg-[#050510] border-b border-white/5">
       <div className="flex items-center gap-8 flex-1">
         <button className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest">
-           <ChevronLeft size={18} strokeWidth={3} />
-           <span>Back</span>
+          <ChevronLeft size={18} strokeWidth={3} />
+          <span>Back</span>
         </button>
 
         <div className="relative w-full max-w-md group">
           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-600 group-focus-within:text-white transition-colors">
             <Search size={18} />
           </div>
-           <input
+          <input
             type="text"
             placeholder="Search"
             value={searchQuery}
@@ -96,8 +96,8 @@ export const TopBar = () => {
 
       <div className="flex items-center gap-6">
         <button className="text-zinc-500 hover:text-white transition-colors relative">
-           <ShoppingCart size={22} strokeWidth={2.5} />
-           <div className="absolute -top-1 -right-1 w-2 h-2 bg-accent-purple rounded-full shadow-[0_0_8px_rgba(157,0,255,0.6)]" />
+          <ShoppingCart size={22} strokeWidth={2.5} />
+          <div className="absolute -top-1 -right-1 w-2 h-2 bg-accent-purple rounded-full shadow-[0_0_8px_rgba(157,0,255,0.6)]" />
         </button>
 
         {/* Wallet Dropdown */}

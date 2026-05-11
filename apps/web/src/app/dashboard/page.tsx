@@ -7,10 +7,10 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { TracksTable } from '@/components/dashboard/TracksTable';
 import { ActiveRoomCard } from '@/components/dashboard/ActiveRoomCard';
 import { PromoCards } from '@/components/dashboard/PromoCards';
-import { 
-  Radio, 
-  Wallet, 
-  UploadCloud, 
+import {
+  Radio,
+  Wallet,
+  UploadCloud,
   Headphones,
   Send,
   Disc,
@@ -102,43 +102,43 @@ export default function DashboardPage() {
               </div>
             ) : (
               <>
-                 <StatCard 
-                   icon={Radio} 
-                   label="Streams" 
-                   value={stats?.streams?.total || "0"} 
-                   change={stats?.streams?.change ? parseFloat(stats.streams.change) : null} 
-                   changeType={stats?.streams?.changeType}
-                 />
-                 <StatCard 
-                   icon={Wallet} 
-                   label="Earnings" 
-                   value={stats?.earnings?.total ? `$${parseFloat(stats.earnings.total).toFixed(4)}` : "$0.00"} 
-                   change={stats?.earnings?.change ? parseFloat(stats.earnings.change) : null} 
-                   changeType={stats?.earnings?.changeType}
-                 />
-                 <StatCard 
-                   icon={UploadCloud} 
-                   label="Uploads" 
-                   value={stats?.uploads?.total || "0"} 
-                   change={stats?.uploads?.change ? parseFloat(stats.uploads.change) : null} 
-                   changeType={stats?.uploads?.changeType}
-                 />
-                 <StatCard 
-                   icon={Headphones} 
-                   label="Listening Rooms" 
-                   value="0" 
-                   comingSoon
-                 />
+                <StatCard
+                  icon={Radio}
+                  label="Streams"
+                  value={stats?.streams?.total || "0"}
+                  change={stats?.streams?.change ? parseFloat(stats.streams.change) : null}
+                  changeType={stats?.streams?.changeType}
+                />
+                <StatCard
+                  icon={Wallet}
+                  label="Earnings"
+                  value={stats?.earnings?.total ? `$${parseFloat(stats.earnings.total).toFixed(4)}` : "$0.00"}
+                  change={stats?.earnings?.change ? parseFloat(stats.earnings.change) : null}
+                  changeType={stats?.earnings?.changeType}
+                />
+                <StatCard
+                  icon={UploadCloud}
+                  label="Uploads"
+                  value={stats?.uploads?.total || "0"}
+                  change={stats?.uploads?.change ? parseFloat(stats.uploads.change) : null}
+                  changeType={stats?.uploads?.changeType}
+                />
+                <StatCard
+                  icon={Headphones}
+                  label="Listening Rooms"
+                  value="0"
+                  comingSoon
+                />
               </>
             )}
           </div>
 
           {/* Tracks and Active Room Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
-             <TracksTable />
-             <div className="lg:col-span-1 border-white/5">
-                <ActiveRoomCard />
-             </div>
+            <TracksTable />
+            <div className="lg:col-span-1 border-white/5">
+              <ActiveRoomCard />
+            </div>
           </div>
 
           {/* Promo Section */}
@@ -146,24 +146,24 @@ export default function DashboardPage() {
 
           {/* Footer */}
           <footer className="mt-20 py-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-10 opacity-70 hover:opacity-100 transition-opacity">
-             <div className="flex flex-wrap items-center gap-x-8 gap-y-4 text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                <a href="#" className="hover:text-accent-purple transition-colors">About Groovely</a>
-                <span className="w-1 h-1 bg-zinc-800 rounded-full" />
-                <a href="#" className="hover:text-accent-purple transition-colors">Privacy Policy</a>
-                <span className="w-1 h-1 bg-zinc-800 rounded-full" />
-                <a href="#" className="hover:text-accent-purple transition-colors">Terms of Use</a>
-                <span className="w-1 h-1 bg-zinc-800 rounded-full" />
-                <a href="#" className="hover:text-accent-purple transition-colors">Docs/Developer API</a>
-                <span className="w-1 h-1 bg-zinc-800 rounded-full" />
-                <a href="#" className="hover:text-accent-purple transition-colors text-accent-cyan">Feedback</a>
-             </div>
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-4 text-[10px] font-black uppercase tracking-widest text-zinc-500">
+              <a href="#" className="hover:text-accent-purple transition-colors">About Groovely</a>
+              <span className="w-1 h-1 bg-zinc-800 rounded-full" />
+              <a href="#" className="hover:text-accent-purple transition-colors">Privacy Policy</a>
+              <span className="w-1 h-1 bg-zinc-800 rounded-full" />
+              <a href="#" className="hover:text-accent-purple transition-colors">Terms of Use</a>
+              <span className="w-1 h-1 bg-zinc-800 rounded-full" />
+              <a href="#" className="hover:text-accent-purple transition-colors">Docs/Developer API</a>
+              <span className="w-1 h-1 bg-zinc-800 rounded-full" />
+              <a href="#" className="hover:text-accent-purple transition-colors text-accent-cyan">Feedback</a>
+            </div>
 
-             <div className="flex items-center gap-8 text-zinc-500">
-                <a href="#" className="hover:text-white transition-all transform hover:scale-110 active:scale-90"><Twitter size={18} /></a>
-                <a href="#" className="hover:text-white transition-all transform hover:scale-110 active:scale-90"><Disc size={18} /></a>
-                <a href="#" className="hover:text-white transition-all transform hover:scale-110 active:scale-90"><Send size={18} /></a>
-                <a href="#" className="hover:text-white transition-all transform hover:scale-110 active:scale-90"><Instagram size={18} /></a>
-             </div>
+            <div className="flex items-center gap-8 text-zinc-500">
+              <a href="#" className="hover:text-white transition-all transform hover:scale-110 active:scale-90"><Twitter size={18} /></a>
+              <a href="#" className="hover:text-white transition-all transform hover:scale-110 active:scale-90"><Disc size={18} /></a>
+              <a href="#" className="hover:text-white transition-all transform hover:scale-110 active:scale-90"><Send size={18} /></a>
+              <a href="#" className="hover:text-white transition-all transform hover:scale-110 active:scale-90"><Instagram size={18} /></a>
+            </div>
           </footer>
         </main>
       </div>
