@@ -13,6 +13,7 @@ import streamRoutes from './routes/streamRoutes';
 import fanDashboardRoutes from './routes/fanDashboardRoutes';
 import marketplaceRoutes from './routes/marketplaceRoutes';
 import libraryRoutes from './routes/libraryRoutes';
+import analyticsRoutes from './routes/analyticsRoutes';
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.use('/api/market', marketplaceRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/creator', creatorRoutes);
 app.use('/api/creator', trackRoutes);
+app.use('/api/creator/analytics', analyticsRoutes);
 app.use('/api/fan', fanRoutes);
 app.use('/api/fan', fanDashboardRoutes);
 app.use('/api/library', libraryRoutes);

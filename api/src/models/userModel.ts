@@ -39,27 +39,36 @@ export const createOrUpdateCreatorProfile = async (
   creatorType: string[],
   twitter: string | null,
   instagram: string | null,
-  soundcloud: string | null
+  soundcloud: string | null,
+  avatarUrl: string | null | undefined
 ) => {
-  const result = await query(
-    `UPDATE users 
-     SET display_name = $1, 
-         username = $2, 
-         bio = $3, 
-         creator_type = $4, 
-         twitter = $5, 
-         instagram = $6, 
-         soundcloud = $7 
-     WHERE id = $8 
-     RETURNING id, display_name, username, bio, creator_type, twitter, instagram, soundcloud`,
-    [displayName, username, bio, creatorType, twitter, instagram, soundcloud, userId]
-  );
+  let queryText = `UPDATE users SET 
+    display_name = $1, 
+    username = $2, 
+    bio = $3, 
+    creator_type = $4, 
+    twitter = $5, 
+    instagram = $6, 
+    soundcloud = $7`;
+  
+  const params: any[] = [displayName, username, bio, creatorType, twitter, instagram, soundcloud];
+  let paramIndex = 8;
+
+  if (avatarUrl !== undefined) {
+    queryText += `, avatar_url = $${paramIndex++}`;
+    params.push(avatarUrl);
+  }
+
+  queryText += ` WHERE id = $${paramIndex++} RETURNING id, display_name, username, bio, creator_type, twitter, instagram, soundcloud, avatar_url`;
+  params.push(userId);
+
+  const result = await query(queryText, params);
   return result.rows[0];
 };
 
 export const getCreatorProfile = async (userId: number) => {
   const result = await query(
-    `SELECT id, display_name, username, bio, creator_type, twitter, instagram, soundcloud 
+    `SELECT id, display_name, username, bio, creator_type, twitter, instagram, soundcloud, avatar_url 
      FROM users 
      WHERE id = $1`,
     [userId]
@@ -70,21 +79,28 @@ export const getCreatorProfile = async (userId: number) => {
 export const createOrUpdateFanProfile = async (
   userId: number,
   displayName: string,
-  username: string
+  username: string,
+  avatarUrl: string | null | undefined
 ) => {
-  const result = await query(
-    `UPDATE users 
-     SET display_name = $1, username = $2 
-     WHERE id = $3 
-     RETURNING id, display_name, username`,
-    [displayName, username, userId]
-  );
+  let queryText = `UPDATE users SET display_name = $1, username = $2`;
+  const params: any[] = [displayName, username];
+  let paramIndex = 3;
+
+  if (avatarUrl !== undefined) {
+    queryText += `, avatar_url = $${paramIndex++}`;
+    params.push(avatarUrl);
+  }
+
+  queryText += ` WHERE id = $${paramIndex++} RETURNING id, display_name, username, avatar_url`;
+  params.push(userId);
+
+  const result = await query(queryText, params);
   return result.rows[0];
 };
 
 export const getFanProfile = async (userId: number) => {
   const result = await query(
-    `SELECT id, display_name, username FROM users WHERE id = $1`,
+    `SELECT id, display_name, username, avatar_url FROM users WHERE id = $1`,
     [userId]
   );
   return result.rows[0];
@@ -92,7 +108,7 @@ export const getFanProfile = async (userId: number) => {
 
 export const getPublicProfileByUsername = async (username: string) => {
   const result = await query(
-    `SELECT id, display_name, username, bio, creator_type, twitter, instagram, soundcloud 
+    `SELECT id, display_name, username, bio, creator_type, twitter, instagram, soundcloud, avatar_url 
      FROM users 
      WHERE username = $1`,
     [username]

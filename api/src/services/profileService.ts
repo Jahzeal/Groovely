@@ -70,7 +70,8 @@ export const createCreatorProfile = async (
   creatorTypes: string[],
   twitter: string | null,
   instagram: string | null,
-  soundcloud: string | null
+  soundcloud: string | null,
+  avatarUrl: string | null
 ) => {
   const usernameTaken = await isUsernameTaken(username);
   if (usernameTaken) {
@@ -78,7 +79,7 @@ export const createCreatorProfile = async (
   }
 
   const profile = await createOrUpdateCreatorProfile(
-    userId, displayName, username, bio, creatorTypes, twitter, instagram, soundcloud
+    userId, displayName, username, bio, creatorTypes, twitter, instagram, soundcloud, avatarUrl
   );
 
   return profile;
@@ -92,7 +93,8 @@ export const updateCreatorProfile = async (
   creatorTypes: string[],
   twitter: string | null,
   instagram: string | null,
-  soundcloud: string | null
+  soundcloud: string | null,
+  avatarUrl: string | undefined
 ) => {
   const usernameTaken = await isUsernameTaken(username, userId);
   if (usernameTaken) {
@@ -100,7 +102,7 @@ export const updateCreatorProfile = async (
   }
 
   const profile = await createOrUpdateCreatorProfile(
-    userId, displayName, username, bio, creatorTypes, twitter, instagram, soundcloud
+    userId, displayName, username, bio, creatorTypes, twitter, instagram, soundcloud, avatarUrl
   );
 
   return profile;
@@ -119,14 +121,15 @@ export const getCreatorProfileById = async (userId: number) => {
 export const createFanProfile = async (
   userId: number,
   displayName: string,
-  username: string
+  username: string,
+  avatarUrl: string | null
 ) => {
   const usernameTaken = await isUsernameTaken(username);
   if (usernameTaken) {
     throw new Error('Username already taken');
   }
 
-  const profile = await createOrUpdateFanProfile(userId, displayName, username);
+  const profile = await createOrUpdateFanProfile(userId, displayName, username, avatarUrl);
 
   return profile;
 };
@@ -134,14 +137,15 @@ export const createFanProfile = async (
 export const updateFanProfile = async (
   userId: number,
   displayName: string,
-  username: string
+  username: string,
+  avatarUrl: string | undefined
 ) => {
   const usernameTaken = await isUsernameTaken(username, userId);
   if (usernameTaken) {
     throw new Error('Username already taken');
   }
 
-  const profile = await createOrUpdateFanProfile(userId, displayName, username);
+  const profile = await createOrUpdateFanProfile(userId, displayName, username, avatarUrl);
 
   return profile;
 };

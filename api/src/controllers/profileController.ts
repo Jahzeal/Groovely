@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../types/request';
 import { query } from '../config/database';
+import cloudinary from '../config/cloudinary';
 import {
   createCreatorProfile as createCreatorProfileService,
   updateCreatorProfile as updateCreatorProfileService,
@@ -20,7 +21,6 @@ import { ErrorMessages, SuccessMessages } from '../constants';
 
 // Helper to get stats for a creator
 const getCreatorStats = async (creatorId: number) => {
-  // All time plays (total streams across all tracks)
   const allTimeResult = await query(
     `SELECT COUNT(ts.id) as total
      FROM track_streams ts
@@ -30,14 +30,12 @@ const getCreatorStats = async (creatorId: number) => {
   );
   const allTimePlays = parseInt(allTimeResult.rows[0]?.total || 0);
 
-  // Followers count
   const followersResult = await query(
     'SELECT COUNT(id) as total FROM follows WHERE following_id = $1',
     [creatorId]
   );
   const followers = parseInt(followersResult.rows[0]?.total || 0);
 
-  // Monthly listeners (unique users who streamed in last 30 days)
   const monthlyResult = await query(
     `SELECT COUNT(DISTINCT ts.user_id) as total
      FROM track_streams ts
@@ -54,15 +52,48 @@ const getCreatorStats = async (creatorId: number) => {
   };
 };
 
+// Helper to upload avatar to Cloudinary
+const uploadAvatar = async (file: any): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'groovely/avatars',
+        transformation: [{ width: 500, height: 500, crop: 'fill' }]
+      },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result!.secure_url);
+      }
+    );
+    uploadStream.end(file.data);
+  });
+};
+
 // Creator: Create profile
 export const createCreatorProfileController = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
     const { displayName, username, bio, creatorTypes, twitter, instagram, soundcloud } = req.body;
+    const files = req.files as any;
+    const avatarFile = files?.avatar;
 
     if (!displayName || !username) {
       sendBadRequest(res, 'Display name and username are required');
       return;
+    }
+
+    let avatarUrl = null;
+    if (avatarFile) {
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(avatarFile.mimetype)) {
+        sendBadRequest(res, 'Invalid image format. Allowed: JPG, JPEG, PNG, WEBP');
+        return;
+      }
+      if (avatarFile.size > 2 * 1024 * 1024) {
+        sendBadRequest(res, 'Image size must be less than 2MB');
+        return;
+      }
+      avatarUrl = await uploadAvatar(avatarFile);
     }
 
     const profile = await createCreatorProfileService(
@@ -73,7 +104,8 @@ export const createCreatorProfileController = async (req: AuthRequest, res: Resp
       creatorTypes || [],
       twitter || null,
       instagram || null,
-      soundcloud || null
+      soundcloud || null,
+      avatarUrl
     );
 
     sendSuccess(res, profile, 'Creator profile created successfully');
@@ -112,11 +144,27 @@ export const getCreatorProfileController = async (req: AuthRequest, res: Respons
   }
 };
 
-// Creator: Update profile
+// Creator: Update profile (includes avatar)
 export const updateCreatorProfileController = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
     const { displayName, username, bio, creatorTypes, twitter, instagram, soundcloud } = req.body;
+    const files = req.files as any;
+    const avatarFile = files?.avatar;
+
+    let avatarUrl = undefined;
+    if (avatarFile) {
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(avatarFile.mimetype)) {
+        sendBadRequest(res, 'Invalid image format. Allowed: JPG, JPEG, PNG, WEBP');
+        return;
+      }
+      if (avatarFile.size > 2 * 1024 * 1024) {
+        sendBadRequest(res, 'Image size must be less than 2MB');
+        return;
+      }
+      avatarUrl = await uploadAvatar(avatarFile);
+    }
 
     const profile = await updateCreatorProfileService(
       userId,
@@ -126,7 +174,8 @@ export const updateCreatorProfileController = async (req: AuthRequest, res: Resp
       creatorTypes,
       twitter,
       instagram,
-      soundcloud
+      soundcloud,
+      avatarUrl
     );
 
     sendSuccess(res, profile, 'Creator profile updated successfully');
@@ -145,13 +194,29 @@ export const createFanProfileController = async (req: AuthRequest, res: Response
   try {
     const userId = req.userId;
     const { displayName, username } = req.body;
+    const files = req.files as any;
+    const avatarFile = files?.avatar;
 
     if (!displayName || !username) {
       sendBadRequest(res, 'Display name and username are required');
       return;
     }
 
-    const profile = await createFanProfileService(userId, displayName, username);
+    let avatarUrl = null;
+    if (avatarFile) {
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(avatarFile.mimetype)) {
+        sendBadRequest(res, 'Invalid image format. Allowed: JPG, JPEG, PNG, WEBP');
+        return;
+      }
+      if (avatarFile.size > 2 * 1024 * 1024) {
+        sendBadRequest(res, 'Image size must be less than 2MB');
+        return;
+      }
+      avatarUrl = await uploadAvatar(avatarFile);
+    }
+
+    const profile = await createFanProfileService(userId, displayName, username, avatarUrl);
 
     sendSuccess(res, profile, 'Fan profile created successfully');
   } catch (error) {
@@ -182,13 +247,29 @@ export const getFanProfileController = async (req: AuthRequest, res: Response): 
   }
 };
 
-// Fan: Update profile
+// Fan: Update profile (includes avatar)
 export const updateFanProfileController = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId;
     const { displayName, username } = req.body;
+    const files = req.files as any;
+    const avatarFile = files?.avatar;
 
-    const profile = await updateFanProfileService(userId, displayName, username);
+    let avatarUrl = undefined;
+    if (avatarFile) {
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(avatarFile.mimetype)) {
+        sendBadRequest(res, 'Invalid image format. Allowed: JPG, JPEG, PNG, WEBP');
+        return;
+      }
+      if (avatarFile.size > 2 * 1024 * 1024) {
+        sendBadRequest(res, 'Image size must be less than 2MB');
+        return;
+      }
+      avatarUrl = await uploadAvatar(avatarFile);
+    }
+
+    const profile = await updateFanProfileService(userId, displayName, username, avatarUrl);
 
     sendSuccess(res, profile, 'Fan profile updated successfully');
   } catch (error) {
@@ -218,7 +299,6 @@ export const getPublicProfileController = async (req: AuthRequest, res: Response
       return;
     }
 
-    // If profile is a creator, add stats
     let response = { ...profile };
     if (profile.role === 'creator') {
       const stats = await getCreatorStats(profile.id);
