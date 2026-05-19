@@ -1,0 +1,16 @@
+# Netlify Configuration for Pnpm Monorepos
+
+[build]
+  # Builds only the Next.js front-end app in the workspace
+  command = "pnpm --filter web build"
+  # The output directory of the built Next.js app
+  publish = "apps/web/.next"
+
+[build.environment]
+  # Force Netlify to use pnpm instead of npm/yarn
+  NETLIFY_USE_PNPM = "true"
+  # Use Node 20 or matching version for Next.js 16
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
