@@ -19,7 +19,6 @@ const connectors = [
 const config = createConfig({
   chains: [polygonAmoy, mainnet],
   connectors,
-  reconnectOnMount: false,
   transports: {
     [polygonAmoy.id]: http(),
     [mainnet.id]: http(),

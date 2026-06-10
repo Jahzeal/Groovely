@@ -10,6 +10,12 @@ dist/
 # Env
 .env
 .env.local
+.env.*.local
+contracts/.env
+contracts/artifacts/
+contracts/cache/
+contracts/typechain-types/
+contracts/deployments/
 
 # OS
 .DS_Store

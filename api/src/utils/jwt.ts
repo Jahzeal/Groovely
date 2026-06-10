@@ -1,12 +1,13 @@
-import jwt, { JwtPayload as JwtPayloadType } from 'jsonwebtoken';
-import { jwtConfig } from '../config/env';
+import * as jwt from 'jsonwebtoken';
 
-export interface CustomJwtPayload extends JwtPayloadType {
+export interface CustomJwtPayload extends jwt.JwtPayload {
   id: number;
   wallet: string | null;
   email: string | null;
   role: string;
 }
+
+const getJwtSecret = () => process.env.JWT_SECRET || 'session_secret';
 
 export const generateToken = (
   userId: number,
@@ -21,15 +22,15 @@ export const generateToken = (
     role,
   };
 
-  const token = jwt.sign(payload, jwtConfig.secret, {
-    expiresIn: jwtConfig.expiresIn as jwt.SignOptions['expiresIn'],
+  const token = jwt.sign(payload, getJwtSecret(), {
+    expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'],
   });
 
   return token;
 };
 
 export const verifyToken = (token: string): CustomJwtPayload => {
-  const decoded = jwt.verify(token, jwtConfig.secret) as CustomJwtPayload;
+  const decoded = jwt.verify(token, getJwtSecret()) as CustomJwtPayload;
   return decoded;
 };
 

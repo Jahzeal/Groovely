@@ -8,6 +8,7 @@ import { MarketTopBar } from '@/components/marketplace/MarketTopBar';
 import { TrackCard } from '@/components/marketplace/TrackCard';
 import { MusicPlayer } from '@/components/marketplace/MusicPlayer';
 import { useMusicPlayer } from '@/components/marketplace/MusicPlayerContext';
+import { MintModal, EditionInfo } from '@/components/marketplace/MintModal';
 import { Button } from '@/components/ui/Button';
 import {
   ChevronLeft,
@@ -20,7 +21,8 @@ import {
   Share2,
   ExternalLink,
   Copy,
-  Info
+  Info,
+  Check
 } from 'lucide-react';
 import { CartProvider, useCart } from '@/components/marketplace/CartContext';
 import { use } from 'react';
@@ -29,12 +31,29 @@ import { apiFetch } from '@/lib/api';
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { id } = use(params);
-  const { playTrack, currentTrack, isPlaying } = useMusicPlayer();
+  const { playTrack, currentTrack, isPlaying, addPurchasedTrack } = useMusicPlayer();
   
   const [trackData, setTrackData] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [isPurchased, setIsPurchased] = React.useState(false);
+  const [mintModalOpen, setMintModalOpen] = React.useState(false);
+
+  // Fetch purchase status to lift 40s limit if already owned
+  React.useEffect(() => {
+    apiFetch(`/api/tracks/${id}/purchased`, { skipAuthRedirect: true })
+      .then(async (res) => {
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data?.data?.purchased) {
+            setIsPurchased(true);
+            addPurchasedTrack(id);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [id]); // eslint-disable-line
 
   React.useEffect(() => {
     async function fetchTrack() {
@@ -243,7 +262,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </div>
 
               <aside className="space-y-6">
-                <PurchaseSidebar track={displayTrack} />
+                <PurchaseSidebar
+                  track={displayTrack}
+                  isPurchased={isPurchased}
+                  onBuy={() => setMintModalOpen(true)}
+                />
               </aside>
             </div>
 
@@ -264,6 +287,37 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
         <MusicPlayer />
       </div>
+
+      {/* Mint Modal */}
+      <MintModal
+        isOpen={mintModalOpen}
+        onClose={() => setMintModalOpen(false)}
+        trackId={Number(id)}
+        trackTitle={displayTrack.title}
+        trackImage={displayTrack.image}
+        creatorName={displayTrack.creator}
+        editions={[
+          // Build editions from track data; fall back to sensible defaults
+          {
+            id: displayTrack.id,
+            contractEditionId: 0, // 0 until contract is deployed
+            editionType: 'fan',
+            mintPriceUsdc: parseFloat(displayTrack.price) || 5,
+            maxSupply: 1000,
+            mintedSupply: 0,
+            active: true,
+          },
+          {
+            id: displayTrack.id * 10 + 1,
+            contractEditionId: 0,
+            editionType: 'collector',
+            mintPriceUsdc: (parseFloat(displayTrack.price) || 5) * 5,
+            maxSupply: 100,
+            mintedSupply: 0,
+            active: true,
+          },
+        ] as EditionInfo[]}
+      />
 
       <style jsx>{`
         .divider-text {
@@ -312,40 +366,71 @@ const HeaderActions = () => {
   );
 };
 
-const PurchaseSidebar = ({ track }: { track: any }) => {
-  const { openCart } = useCart();
+const PurchaseSidebar = ({
+  track,
+  isPurchased,
+  onBuy,
+}: {
+  track: any;
+  isPurchased?: boolean;
+  onBuy?: () => void;
+}) => {
   return (
     <div className="bg-[#0F0F1A] border border-white/5 rounded-3xl p-8 sticky top-32">
+      {/* Price display */}
       <div className="flex items-center justify-center gap-2 mb-2">
         <div className="w-5 h-5 rounded-full bg-accent-purple/30 border border-accent-purple/50 flex items-center justify-center">
-          <span className="text-[10px] text-accent-purple font-black">Ξ</span>
+          <span className="text-[10px] text-accent-purple font-black">$</span>
         </div>
-        <span className="text-sm font-bold text-zinc-400">ETH</span>
-      </div>
-      
-      <div className="text-center mb-8">
-        <div className="text-4xl font-black tracking-tight text-white mb-1">{track.price}</div>
-        <div className="text-zinc-500 font-bold text-sm">(${track.priceUsd})</div>
+        <span className="text-sm font-bold text-zinc-400">USDC</span>
       </div>
 
-      <Button 
-        fullWidth 
-        onClick={openCart}
-        className="mb-8 flex items-center justify-center gap-2"
-      >
-        <ShoppingCart size={18} />
-        Add to Cart
-      </Button>
+      <div className="text-center mb-8">
+        <div className="text-4xl font-black tracking-tight text-white mb-1">
+          {track.price || '5.00'}
+        </div>
+        <div className="text-zinc-500 font-bold text-sm">Starting price per edition</div>
+      </div>
+
+      {isPurchased ? (
+        /* ── Owned state ── */
+        <div className="mb-8">
+          <div className="flex items-center justify-center gap-2 py-4 bg-accent-purple/10 border border-accent-purple/20 rounded-2xl mb-3">
+            <Check size={18} className="text-accent-purple" strokeWidth={2.5} />
+            <span className="text-sm font-black text-accent-purple">You Own This Track</span>
+          </div>
+          <p className="text-center text-[11px] text-zinc-600 font-bold uppercase tracking-wider">
+            Unlimited listening · Full license active
+          </p>
+        </div>
+      ) : (
+        /* ── Buy CTA ── */
+        <Button
+          fullWidth
+          onClick={onBuy}
+          className="mb-8 flex items-center justify-center gap-2 shadow-[0_8px_30px_rgba(139,92,246,0.4)]"
+        >
+          <ShoppingCart size={18} />
+          Mint / Purchase
+        </Button>
+      )}
 
       <div className="space-y-6">
         <div>
           <div className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600 mb-4 divider-text">
-            <span className="bg-[#0F0F1A] px-4 -mt-px">Licenses</span>
+            <span className="bg-[#0F0F1A] px-4 -mt-px">Editions Available</span>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            {(track.licenses || []).map((lic: string, i: number) => (
-              <div key={i} className="bg-[#050510] border border-white/5 rounded-xl py-3 px-4 text-center text-xs font-bold text-zinc-400 hover:text-white transition-colors cursor-pointer">
-                {lic}
+          <div className="space-y-2">
+            {[
+              { label: 'Fan Edition', supply: '1,000', price: track.price || '5.00' },
+              { label: 'Collector Edition', supply: '100', price: ((parseFloat(track.price) || 5) * 5).toFixed(2) },
+            ].map((ed) => (
+              <div key={ed.label} className="flex items-center justify-between bg-[#050510] border border-white/5 rounded-xl py-2.5 px-4 text-xs">
+                <span className="font-bold text-zinc-400">{ed.label}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-zinc-600">{ed.supply} left</span>
+                  <span className="font-black text-white">${ed.price}</span>
+                </div>
               </div>
             ))}
           </div>
@@ -356,10 +441,29 @@ const PurchaseSidebar = ({ track }: { track: any }) => {
             <span className="bg-[#0F0F1A] px-4 -mt-px">Royalty (%)</span>
           </div>
           <div className="bg-[#050510] border border-white/5 rounded-xl py-4 px-6 text-2xl font-black text-accent-purple text-center">
-            {track.royalty}
+            {track.royalty || '10%'}
+          </div>
+        </div>
+
+        <div>
+          <div className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600 mb-4 divider-text">
+            <span className="bg-[#0F0F1A] px-4 -mt-px">Licenses</span>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {(track.licenses || ['Standard License']).map((lic: string, i: number) => (
+              <div key={i} className="bg-[#050510] border border-white/5 rounded-xl py-3 px-4 text-center text-xs font-bold text-zinc-400 hover:text-white transition-colors cursor-pointer">
+                {lic}
+              </div>
+            ))}
           </div>
         </div>
       </div>
+
+      {!isPurchased && (
+        <p className="mt-6 text-[10px] text-zinc-700 text-center leading-relaxed">
+          Free 40-second preview · Purchase to unlock full track
+        </p>
+      )}
     </div>
   );
 };

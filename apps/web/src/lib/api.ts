@@ -1,6 +1,6 @@
 import toast from 'react-hot-toast';
 
-export const API_BASE = 'https://groovely-github-repo.onrender.com';
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
 export async function apiFetch(endpoint: string, options: RequestInit & { skipAuthRedirect?: boolean } = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('groovely_token') : null;
@@ -45,4 +45,12 @@ export function handleLogout() {
 
     window.location.href = '/login';
   }
+}
+
+export function resolveIpfsUrl(url: string | undefined): string {
+  if (!url) return '';
+  if (url.startsWith('ipfs://')) {
+    return `https://ipfs.io/ipfs/${url.replace('ipfs://', '')}`;
+  }
+  return url;
 }

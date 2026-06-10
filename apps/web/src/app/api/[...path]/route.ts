@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const BACKEND_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'https://groovely-github-repo.onrender.com';
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 async function handler(
   request: NextRequest,
@@ -27,66 +27,51 @@ async function handler(
     bodyBuffer = await request.arrayBuffer();
   }
 
-  // Retry up to 4 times (total ~40-50s) to survive Render's cold start / Node 10s ConnectTimeout
-  const maxRetries = 4;
-  let lastError: any;
+  try {
+    const backendResponse = await fetch(destination, {
+      method,
+      headers: forwardHeaders,
+      body: bodyBuffer,
+      signal: AbortSignal.timeout(120_000), // Wait up to 120s for large track uploads
+    });
 
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const backendResponse = await fetch(destination, {
-        method,
-        headers: forwardHeaders,
-        body: bodyBuffer,
-        signal: AbortSignal.timeout(20_000), // Wait up to 20s per attempt
-      });
-
-      const contentType = backendResponse.headers.get('content-type') || '';
-      const isText = contentType.includes('application/json') || contentType.includes('text/');
-      
-      let responseBody: any = backendResponse.body;
-      if (isText && responseBody) {
-         responseBody = await backendResponse.text();
-      }
-
-      const responseHeaders = new Headers(backendResponse.headers);
-      responseHeaders.delete('transfer-encoding');
-      responseHeaders.delete('connection');
-      if (isText) {
-         responseHeaders.delete('content-encoding');
-         responseHeaders.delete('content-length');
-      }
-
-      return new NextResponse(responseBody, {
-        status: backendResponse.status,
-        statusText: backendResponse.statusText,
-        headers: responseHeaders,
-      });
-    } catch (error: any) {
-      lastError = error;
-      const isTimeout =
-        error?.name === 'TimeoutError' ||
-        error?.message?.includes('Connect Timeout Error');
-
-      if (!isTimeout || attempt === maxRetries) {
-        break; // Break and send the error response if it's not a timeout, or we ran out of attempts
-      }
-      
-      console.log(`[API Proxy] Render backend still waking up (Attempt ${attempt}/${maxRetries}). Retrying...`);
-      // Wait 2 seconds before retrying
-      await new Promise((resume) => setTimeout(resume, 2000));
+    const contentType = backendResponse.headers.get('content-type') || '';
+    const isText = contentType.includes('application/json') || contentType.includes('text/');
+    
+    let responseBody: any = backendResponse.body;
+    if (isText && responseBody) {
+       responseBody = await backendResponse.text();
     }
+
+    const responseHeaders = new Headers(backendResponse.headers);
+    responseHeaders.delete('transfer-encoding');
+    responseHeaders.delete('connection');
+    if (isText) {
+       responseHeaders.delete('content-encoding');
+       responseHeaders.delete('content-length');
+    }
+
+    return new NextResponse(responseBody, {
+      status: backendResponse.status,
+      statusText: backendResponse.statusText,
+      headers: responseHeaders,
+    });
+  } catch (error: any) {
+    console.error(`[API Proxy] Failed to reach backend at ${destination}:`, error);
+
+    const isTimeout = error?.name === 'TimeoutError' || error?.message?.includes('timeout');
+
+    return NextResponse.json(
+      {
+        error: isTimeout 
+          ? 'Upload is taking too long. Please try again with a smaller file or faster connection.' 
+          : 'Failed to communicate with backend server.',
+        destination,
+        detail: error?.message || error?.toString(),
+      },
+      { status: 503 }
+    );
   }
-
-  console.error(`[API Proxy] Failed to reach backend at ${destination} after ${maxRetries} attempts:`, lastError);
-
-  return NextResponse.json(
-    {
-      error: 'Backend is waking up (Render cold start) and taking longer than expected. Please try ignoring and clicking connect again.',
-      destination,
-      detail: lastError?.message || lastError?.toString(),
-    },
-    { status: 503 }
-  );
 }
 
 export const GET     = handler;

@@ -48,6 +48,11 @@ export default function UploadPage() {
   const [isrc, setIsrc] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
+  // Payment Model state
+  const [paymentModel, setPaymentModel] = useState<'fixed' | 'royalty' | 'none'>('fixed');
+  const [licensePrice, setLicensePrice] = useState('0.00');
+  const [royaltyPercentage, setRoyaltyPercentage] = useState(10);
+
   const [isDraggingAudio, setIsDraggingAudio] = useState(false);
   const [isDraggingCover, setIsDraggingCover] = useState(false);
 
@@ -153,6 +158,9 @@ export default function UploadPage() {
     if (key) formData.append('key', key);
     if (isrc) formData.append('isrc', isrc);
     formData.append('usage_rights', JSON.stringify(usageRights));
+    formData.append('payment_model', paymentModel);
+    formData.append('license_price', licensePrice);
+    formData.append('royalty_percentage', String(royaltyPercentage));
 
     try {
       const res = await apiFetch('/api/creator/tracks', {
@@ -470,47 +478,98 @@ export default function UploadPage() {
                   {/* Payment Model */}
                   <div className="pt-8 border-t border-white/5">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-6 ml-1">Payment Model</p>
-                    <div className="space-y-6">
-                      <div className="flex items-center justify-between gap-4">
+                    <div className="space-y-6 font-sans">
+                      {/* Fixed License Price */}
+                      <div 
+                        className="flex items-center justify-between gap-4 cursor-pointer"
+                        onClick={() => setPaymentModel('fixed')}
+                      >
                         <div className="flex items-center gap-3">
-                          <div className="w-5 h-5 rounded-full border-2 border-accent-purple bg-accent-purple/20 flex items-center justify-center">
-                            <div className="w-2 h-2 bg-accent-purple rounded-full" />
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${paymentModel === 'fixed' ? 'border-accent-purple bg-accent-purple/20' : 'border-zinc-700 bg-transparent'}`}>
+                            {paymentModel === 'fixed' && <div className="w-2 h-2 bg-accent-purple rounded-full" />}
                           </div>
-                          <span className="text-sm font-bold">Fixed License Price</span>
+                          <span className={`text-sm font-bold transition-colors ${paymentModel === 'fixed' ? 'text-white' : 'text-zinc-500'}`}>Fixed License Price</span>
                         </div>
-                        <div className="w-24 relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 text-sm">$</span>
-                          <input type="text" value="0.00" readOnly className="w-full bg-transparent border border-white/10 rounded-lg pl-6 pr-3 py-2 text-sm text-zinc-500 font-bold text-right" />
+                        <div className="w-24 relative" onClick={(e) => e.stopPropagation()}>
+                          <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-sm transition-colors ${paymentModel === 'fixed' ? 'text-zinc-400' : 'text-zinc-600'}`}>$</span>
+                          <input 
+                            type="text" 
+                            value={licensePrice}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/[^0-9.]/g, '');
+                              setLicensePrice(val);
+                            }}
+                            disabled={paymentModel !== 'fixed'}
+                            className={`w-full bg-transparent border border-white/10 rounded-lg pl-6 pr-3 py-2 text-sm font-bold text-right outline-none focus:border-accent-purple/50 transition-colors ${paymentModel === 'fixed' ? 'text-white' : 'text-zinc-500'}`} 
+                          />
                         </div>
                       </div>
 
+                      {/* Royalty */}
                       <div className="space-y-4">
-                        <div className="flex items-center justify-between gap-4">
+                        <div 
+                          className="flex items-center justify-between gap-4 cursor-pointer"
+                          onClick={() => setPaymentModel('royalty')}
+                        >
                           <div className="flex items-center gap-3">
-                            <div className="w-5 h-5 rounded-full border-2 border-zinc-700 bg-transparent flex items-center justify-center"></div>
-                            <span className="text-sm font-bold text-zinc-600">Royalty</span>
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${paymentModel === 'royalty' ? 'border-accent-purple bg-accent-purple/20' : 'border-zinc-700 bg-transparent'}`}>
+                              {paymentModel === 'royalty' && <div className="w-2 h-2 bg-accent-purple rounded-full" />}
+                            </div>
+                            <span className={`text-sm font-bold transition-colors ${paymentModel === 'royalty' ? 'text-white' : 'text-zinc-500'}`}>Royalty</span>
                           </div>
-                          <div className="w-24 relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 text-sm">%</span>
-                            <input type="text" value="0.00" readOnly className="w-full bg-transparent border border-white/10 rounded-lg pl-6 pr-3 py-2 text-sm text-zinc-500 font-bold text-right" />
+                          <div className="w-24 relative" onClick={(e) => e.stopPropagation()}>
+                            <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-sm transition-colors ${paymentModel === 'royalty' ? 'text-zinc-400' : 'text-zinc-600'}`}>%</span>
+                            <input 
+                              type="text" 
+                              value={royaltyPercentage}
+                              onChange={(e) => {
+                                let val = parseInt(e.target.value.replace(/[^0-9]/g, ''));
+                                if (isNaN(val)) val = 0;
+                                if (val > 100) val = 100;
+                                setRoyaltyPercentage(val);
+                              }}
+                              disabled={paymentModel !== 'royalty'}
+                              className={`w-full bg-transparent border border-white/10 rounded-lg pl-6 pr-3 py-2 text-sm font-bold text-right outline-none focus:border-accent-purple/50 transition-colors ${paymentModel === 'royalty' ? 'text-white' : 'text-zinc-500'}`} 
+                            />
                           </div>
                         </div>
                         <div className="px-2 relative pt-2">
-                          <div className="h-2 bg-zinc-800 rounded-full w-full">
-                            <div className="h-full bg-accent-purple w-[10%] rounded-full relative">
-                              <div className="absolute -right-3 -top-8 bg-zinc-800 border border-white/10 px-1.5 py-1 rounded-md text-[10px] font-black text-white shadow-xl">
-                                10%
-                                <div className="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-zinc-800 border-r border-b border-white/10 rotate-45" />
-                              </div>
-                              <div className="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)] cursor-pointer" />
+                          <div className={`h-2 rounded-full w-full relative ${paymentModel === 'royalty' ? 'bg-zinc-800' : 'bg-zinc-900 opacity-50'}`}>
+                            <div 
+                              className="h-full bg-accent-purple rounded-full relative transition-all duration-75"
+                              style={{ width: `${royaltyPercentage}%` }}
+                            >
+                              {paymentModel === 'royalty' && (
+                                <div className="absolute -right-3 -top-8 bg-zinc-800 border border-white/10 px-1.5 py-1 rounded-md text-[10px] font-black text-white shadow-xl pointer-events-none">
+                                  {royaltyPercentage}%
+                                  <div className="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-zinc-800 border-r border-b border-white/10 rotate-45" />
+                                </div>
+                              )}
+                              <div className={`absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)] pointer-events-none ${paymentModel === 'royalty' ? 'bg-white' : 'bg-zinc-600'}`} />
                             </div>
                           </div>
+                          {paymentModel === 'royalty' && (
+                            <input 
+                              type="range" 
+                              min="0" 
+                              max="100" 
+                              value={royaltyPercentage}
+                              onChange={(e) => setRoyaltyPercentage(Number(e.target.value))}
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            />
+                          )}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3">
-                        <div className="w-5 h-5 rounded-full border-2 border-zinc-700 bg-transparent flex items-center justify-center"></div>
-                        <span className="text-sm font-bold text-zinc-600">No License Fee</span>
+                      {/* No License Fee */}
+                      <div 
+                        className="flex items-center gap-3 cursor-pointer"
+                        onClick={() => setPaymentModel('none')}
+                      >
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${paymentModel === 'none' ? 'border-accent-purple bg-accent-purple/20' : 'border-zinc-700 bg-transparent'}`}>
+                          {paymentModel === 'none' && <div className="w-2 h-2 bg-accent-purple rounded-full" />}
+                        </div>
+                        <span className={`text-sm font-bold transition-colors ${paymentModel === 'none' ? 'text-white' : 'text-zinc-500'}`}>No License Fee</span>
                       </div>
                     </div>
                   </div>

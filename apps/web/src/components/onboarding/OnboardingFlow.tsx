@@ -137,7 +137,7 @@ export const OnboardingFlow = () => {
       let connectRes;
 
       const payloadRole = role === 'creator' ? 'creator' : 'fan';
-      connectRes = await fetch('https://groovely-github-repo.onrender.com/api/auth/signup/wallet', {
+      connectRes = await fetch('/api/auth/signup/wallet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ walletAddress: walletAddr, role: payloadRole, signature }),
@@ -173,9 +173,9 @@ export const OnboardingFlow = () => {
   };
 
   const handleGoogleLogin = () => {
-    // Redirect browser to backend Google Auth endpoint
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://groovely-f7i7.onrender.com';
-    window.location.href = `${backendUrl}/oauth2/authorization/google`;
+    // Redirect browser to NestJS Google Auth endpoint
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    window.location.href = `${backendUrl}/api/auth/google?role=${role === 'creator' ? 'creator' : 'fan'}`;
   };
 
   const handleSaveProfile = async () => {
@@ -193,14 +193,45 @@ export const OnboardingFlow = () => {
           displayName,
           username,
           bio,
-          creatorType: role === 'creator' ? creatorType : 'FAN'
+          creatorType: role === 'creator' ? creatorType : 'FAN',
+          role: role === 'creator' ? 'creator' : 'fan'
         }),
       });
 
-      if (!res.ok) throw new Error('Failed to update profile');
+      if (!res.ok) {
+        let errorMsg = 'Failed to update profile';
+        try {
+          const data = await res.json();
+          errorMsg = data.error || data.message || errorMsg;
+        } catch (e) {}
+        throw new Error(errorMsg);
+      }
+
+      try {
+        const json = await res.json();
+        const data = json.data ?? json;
+        if (data.token) {
+          localStorage.setItem('groovely_token', data.token);
+        }
+        if (data.role) {
+          localStorage.setItem('groovely_role', data.role);
+        } else {
+          localStorage.setItem('groovely_role', role === 'creator' ? 'creator' : 'fan');
+        }
+      } catch (e) {
+        console.error('Error saving updated token:', e);
+      }
+
       setStep(4);
     } catch (err: any) {
       setError(err.message || 'Failed to save profile');
+      toast.error(err.message || 'Failed to save profile', {
+        style: {
+          background: '#333',
+          color: '#fff',
+          borderRadius: '10px',
+        },
+      });
     } finally {
       setLoading(false);
     }

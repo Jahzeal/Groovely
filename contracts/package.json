@@ -1,0 +1,25 @@
+{
+  "name": "grooveli-contracts",
+  "version": "1.0.0",
+  "description": "Groovely decentralised music rights smart contracts — ERC-1155 + royalties + revenue splitting",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:amoy": "hardhat run scripts/deploy.ts --network amoy",
+    "deploy:polygon": "hardhat run scripts/deploy.ts --network polygon",
+    "verify:amoy": "hardhat run scripts/verify.ts --network amoy",
+    "clean": "hardhat clean"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.0",
+    "@types/node": "^22.0.0",
+    "dotenv": "^16.4.5",
+    "hardhat": "^2.22.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.0"
+  }
+}

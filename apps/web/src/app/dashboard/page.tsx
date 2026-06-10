@@ -17,6 +17,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { Twitter, Instagram } from '@/components/ui/SocialIcons';
+import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 
 interface DashboardStats {
@@ -38,11 +39,31 @@ interface DashboardStats {
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [displayName, setDisplayName] = useState<string>('Creator');
 
   useEffect(() => {
+    // Check role and redirect fans
+    let role = localStorage.getItem('groovely_role');
+    if (!role) {
+      const token = localStorage.getItem('groovely_token');
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const userRole = payload.role ?? '';
+          localStorage.setItem('groovely_role', userRole);
+          role = userRole;
+        } catch {}
+      }
+    }
+    
+    if (role === 'fan') {
+      router.push('/explore');
+      return;
+    }
+
     async function fetchStats() {
       try {
         const res = await apiFetch('/api/creator/dashboard/stats');

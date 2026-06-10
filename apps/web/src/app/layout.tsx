@@ -19,6 +19,7 @@ export const metadata: Metadata = {
 
 import { Web3Provider } from "@/components/providers/web3-provider";
 import { MusicPlayerProvider } from "@/components/marketplace/MusicPlayerContext";
+import { PreviewLimitModal } from "@/components/marketplace/PreviewLimitModal";
 import { Toaster } from 'react-hot-toast';
 
 export default function RootLayout({
@@ -36,6 +37,7 @@ export default function RootLayout({
         <Web3Provider>
           <MusicPlayerProvider>
             {children}
+            <PreviewLimitModal />
           </MusicPlayerProvider>
           <Toaster
             position="top-center"

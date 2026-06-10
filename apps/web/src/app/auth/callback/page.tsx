@@ -18,11 +18,25 @@ function CallbackHandler() {
       localStorage.setItem('groovely_token', token);
       if (userId) localStorage.setItem('groovely_user_id', userId);
       
+      // Decode and store role from token
+      let role = '';
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        role = payload.role ?? '';
+        localStorage.setItem('groovely_role', role);
+      } catch (e) {
+        console.error(e);
+      }
+      
       // 2. Redirect based on new user status
       if (isNewUser) {
         router.push('/onboarding');
       } else {
-        router.push('/dashboard');
+        if (role === 'fan') {
+          router.push('/explore');
+        } else {
+          router.push('/dashboard');
+        }
       }
     } else if (status === 'WALLET_REQUIRED') {
       // This is for future use if we want to prompt for wallet linking

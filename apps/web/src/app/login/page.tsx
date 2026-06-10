@@ -112,8 +112,8 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://groovely-f7i7.onrender.com';
-    window.location.href = `${backendUrl}/oauth2/authorization/google`;
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    window.location.href = `${backendUrl}/api/auth/google`;
   };
 
   return (

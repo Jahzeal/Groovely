@@ -1,7 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
-import { apiFetch } from '@/lib/api';
+import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
+import { apiFetch, resolveIpfsUrl } from '@/lib/api';
 
 interface Track {
   id: string | number;
@@ -25,7 +25,14 @@ interface MusicPlayerContextType {
   setVolume: (volume: number) => void;
   playNext: () => void;
   playPrevious: () => void;
+  // 40-second preview enforcement
+  previewLimitReached: boolean;
+  dismissPreviewLimit: () => void;
+  purchasedTrackIds: Set<string | number>;
+  addPurchasedTrack: (id: string | number) => void;
 }
+
+const PREVIEW_LIMIT_SECONDS = 40;
 
 const MusicPlayerContext = createContext<MusicPlayerContextType | undefined>(undefined);
 
@@ -37,26 +44,53 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(0.7);
-  
+  const [previewLimitReached, setPreviewLimitReached] = useState(false);
+  const [purchasedTrackIds, setPurchasedTrackIds] = useState<Set<string | number>>(new Set());
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const streamRecordedRef = useRef<string | number | null>(null);
   const currentTrackRef = useRef<Track | null>(null);
+  const purchasedRef = useRef<Set<string | number>>(new Set());
 
-  // Keep the ref in sync with state
+  // Keep refs in sync with state
   useEffect(() => {
     currentTrackRef.current = currentTrack;
   }, [currentTrack]);
 
+  useEffect(() => {
+    purchasedRef.current = purchasedTrackIds;
+  }, [purchasedTrackIds]);
+
+  const addPurchasedTrack = useCallback((id: string | number) => {
+    setPurchasedTrackIds(prev => new Set([...prev, id]));
+    // If the preview limit was reached for this track, dismiss it and resume
+    if (currentTrackRef.current?.id === id) {
+      setPreviewLimitReached(false);
+      if (audioRef.current) {
+        audioRef.current.play().catch(() => {});
+        setIsPlaying(true);
+      }
+    }
+  }, []);
+
+  const dismissPreviewLimit = useCallback(() => {
+    setPreviewLimitReached(false);
+    // Pause the audio so user has to actively restart after dismissing
+    if (audioRef.current) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    }
+  }, []);
+
   const recordStream = async (trackId: string | number) => {
     if (streamRecordedRef.current === trackId) return;
     streamRecordedRef.current = trackId;
-    
+
     try {
-      apiFetch(`/api/tracks/${trackId}/stream`, { 
+      apiFetch(`/api/tracks/${trackId}/stream`, {
         method: 'POST',
-        skipAuthRedirect: true 
-      })
-        .catch(err => console.error('Failed to record stream:', err));
+        skipAuthRedirect: true,
+      }).catch(err => console.error('Failed to record stream:', err));
     } catch (e) {
       console.error('Stream recording error:', e);
     }
@@ -66,9 +100,9 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (typeof window !== 'undefined') {
       audioRef.current = new Audio();
       audioRef.current.volume = volume;
-      
+
       const audio = audioRef.current;
-      
+
       const updateProgress = () => {
         if (audio.duration) {
           const pct = (audio.currentTime / audio.duration) * 100;
@@ -77,10 +111,23 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
           setDuration(audio.duration);
 
           const activeTrack = currentTrackRef.current;
+
+          // Stream recording
           if (activeTrack && streamRecordedRef.current !== activeTrack.id) {
             if (audio.currentTime > 15 || pct > 30) {
               recordStream(activeTrack.id);
             }
+          }
+
+          // 40-second preview enforcement
+          if (
+            activeTrack &&
+            audio.currentTime >= PREVIEW_LIMIT_SECONDS &&
+            !purchasedRef.current.has(activeTrack.id)
+          ) {
+            audio.pause();
+            setIsPlaying(false);
+            setPreviewLimitReached(true);
           }
         }
       };
@@ -90,15 +137,16 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         const activeTrack = currentTrackRef.current;
         if (activeTrack) recordStream(activeTrack.id);
         setIsPlaying(false);
+        setPreviewLimitReached(false);
         playNext();
       });
-      
+
       return () => {
         audio.removeEventListener('timeupdate', updateProgress);
         audio.pause();
       };
     }
-  }, []); // Initialize once
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (audioRef.current) {
@@ -113,14 +161,17 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setQueue(newQueue);
     }
 
+    // Reset preview limit when switching tracks
+    setPreviewLimitReached(false);
+
     if (currentTrack?.id === track.id) {
       togglePlay();
       return;
     }
 
     setCurrentTrack(track);
-    const url = track.audioUrl || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
-    
+    const url = resolveIpfsUrl(track.audioUrl) || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+
     try {
       audioRef.current.src = url;
       setIsPlaying(true);
@@ -139,7 +190,6 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (queue.length === 0 || !currentTrack) return;
     const currentIndex = queue.findIndex(t => t.id === currentTrack.id);
     if (currentIndex === -1 || currentIndex === queue.length - 1) {
-      // Loop back or stop
       if (queue.length > 0) {
         playTrack(queue[0]);
       }
@@ -152,7 +202,6 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (queue.length === 0 || !currentTrack) return;
     const currentIndex = queue.findIndex(t => t.id === currentTrack.id);
     if (currentIndex === -1 || currentIndex === 0) {
-      // Loop back or stop
       if (queue.length > 0) {
         playTrack(queue[queue.length - 1]);
       }
@@ -163,6 +212,9 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const togglePlay = async () => {
     if (!audioRef.current || !currentTrack) return;
+
+    // Don't allow resuming if preview limit is reached and track not purchased
+    if (previewLimitReached && !purchasedRef.current.has(currentTrack.id)) return;
 
     try {
       if (isPlaying) {
@@ -184,26 +236,36 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const seek = (time: number) => {
     if (!audioRef.current) return;
+    // Prevent seeking past preview limit if not purchased
+    if (currentTrack && !purchasedRef.current.has(currentTrack.id)) {
+      time = Math.min(time, PREVIEW_LIMIT_SECONDS);
+    }
     audioRef.current.currentTime = time;
     setCurrentTime(time);
   };
 
   return (
-    <MusicPlayerContext.Provider value={{ 
-      currentTrack, 
-      isPlaying, 
-      playTrack, 
-      togglePlay, 
-      progress, 
-      setProgress,
-      duration,
-      currentTime,
-      seek,
-      volume,
-      setVolume,
-      playNext,
-      playPrevious
-    }}>
+    <MusicPlayerContext.Provider
+      value={{
+        currentTrack,
+        isPlaying,
+        playTrack,
+        togglePlay,
+        progress,
+        setProgress,
+        duration,
+        currentTime,
+        seek,
+        volume,
+        setVolume,
+        playNext,
+        playPrevious,
+        previewLimitReached,
+        dismissPreviewLimit,
+        purchasedTrackIds,
+        addPurchasedTrack,
+      }}
+    >
       {children}
     </MusicPlayerContext.Provider>
   );
