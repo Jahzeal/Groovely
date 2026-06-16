@@ -20,7 +20,7 @@ export class IpfsService {
 
     try {
       const formData = new FormData();
-      const blob = new Blob([fileBuffer], { type: mimeType });
+      const blob = new Blob([fileBuffer as any], { type: mimeType });
       formData.append('file', blob, fileName);
 
       // Pinata options

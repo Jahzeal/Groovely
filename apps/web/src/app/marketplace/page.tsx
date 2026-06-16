@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { MarketTopBar } from '@/components/marketplace/MarketTopBar';
 import { GenreBar } from '@/components/marketplace/GenreBar';
@@ -14,7 +14,7 @@ import { apiFetch } from '@/lib/api';
 import { CartProvider } from '@/components/marketplace/CartContext';
 import { useSearchParams } from 'next/navigation';
 
-export default function MarketplacePage() {
+function MarketplaceContent() {
   const [forYou, setForYou] = useState<any[]>([]);
   const [isLoadingForYou, setIsLoadingForYou] = useState(true);
   const [allTracks, setAllTracks] = useState<any[]>([]);
@@ -423,5 +423,17 @@ export default function MarketplacePage() {
         <MusicPlayer />
       </div>
     </CartProvider>
+  );
+}
+
+export default function MarketplacePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#050510] flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-accent-purple border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <MarketplaceContent />
+    </Suspense>
   );
 }

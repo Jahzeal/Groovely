@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { ChevronDown, ChevronUp, ExternalLink, Check } from 'lucide-react';
+import { POLYGONSCAN_BASE } from '@/lib/contracts';
 
 interface MintSuccessModalProps {
   isOpen: boolean;
@@ -120,6 +121,11 @@ export function MintSuccessModal({
             <Button 
               variant="secondary" 
               fullWidth 
+              onClick={() => {
+                if (trackData.txHash) {
+                  window.open(`${POLYGONSCAN_BASE}${trackData.txHash}`, '_blank', 'noopener,noreferrer');
+                }
+              }}
               className="py-4 bg-white/5 hover:bg-white/10 border-none rounded-2xl text-[10px] uppercase tracking-[0.2em] font-black leading-none"
             >
               View on Blockchain

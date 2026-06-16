@@ -47,6 +47,7 @@ export default function UploadPage() {
   const [key, setKey] = useState('');
   const [isrc, setIsrc] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   // Payment Model state
   const [paymentModel, setPaymentModel] = useState<'fixed' | 'royalty' | 'none'>('fixed');
@@ -142,6 +143,10 @@ export default function UploadPage() {
       toast.error('Please enter a track title');
       return;
     }
+    if (!agreedToTerms) {
+      toast.error('You must confirm ownership and agree to the Terms & Conditions');
+      return;
+    }
 
     setIsUploading(true);
     const formData = new FormData();
@@ -179,9 +184,15 @@ export default function UploadPage() {
       localStorage.setItem('pending_track_id', json.data.id);
       localStorage.setItem('pending_track_title', json.data.title);
       localStorage.setItem('pending_track_cover', json.data.cover_url);
+      localStorage.setItem('pending_track_genre', genre);
+      localStorage.setItem('pending_track_tags', JSON.stringify(tags));
+      localStorage.setItem('pending_track_rights', JSON.stringify(usageRights));
+      localStorage.setItem('pending_track_payment', paymentModel);
+      localStorage.setItem('pending_track_price', licensePrice);
+      localStorage.setItem('pending_track_royalty', String(royaltyPercentage));
 
       toast.success('Track uploaded successfully!');
-      router.push('/dashboard/upload/metadata');
+      router.push('/dashboard/upload/mint');
     } catch (error: any) {
       toast.error(error.message || 'Upload failed');
     } finally {
@@ -575,8 +586,12 @@ export default function UploadPage() {
                   </div>
 
                   <div className="pt-8 border-t border-white/5">
-                    <div className="flex items-start gap-4 cursor-pointer group">
-                      <div className="w-5 h-5 rounded border-2 border-zinc-700 bg-[#0F0F1A] flex items-center justify-center transition-all group-hover:border-zinc-500 mt-0.5">
+                    <div 
+                      onClick={() => setAgreedToTerms(!agreedToTerms)}
+                      className="flex items-start gap-4 cursor-pointer group"
+                    >
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${agreedToTerms ? 'bg-accent-purple border-accent-purple' : 'border-zinc-700 bg-[#0F0F1A] group-hover:border-zinc-500'} mt-0.5`}>
+                        {agreedToTerms && <CheckCircle2 size={12} className="text-white" />}
                       </div>
                       <p className="text-[10px] font-bold text-zinc-500 leading-normal">
                         I confirm I own the rights to this audio and agree to Groovely's <span className="text-accent-purple">Terms & Conditions</span>
