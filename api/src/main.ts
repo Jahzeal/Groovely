@@ -10,20 +10,27 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Enable CORS
+  const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+  const allowedOrigins = clientUrl.split(',').map(item => item.trim());
+  console.log('[CORS] Allowed origins:', allowedOrigins);
+
   app.enableCors({
     origin: (origin, callback) => {
-      // Allow any localhost origin in development, or fall back to CLIENT_URL
-      if (!origin || origin.startsWith('http://localhost:') || origin === 'http://localhost') {
-        callback(null, true);
-      } else {
-        const allowed = process.env.CLIENT_URL || 'http://localhost:3000';
-        const allowedOrigins = allowed.split(',').map(item => item.trim());
-        if (allowedOrigins.includes(origin)) {
-          callback(null, true);
-        } else {
-          callback(new Error(`Not allowed by CORS`));
-        }
+      // Allow requests with no origin (e.g. mobile apps, curl)
+      if (!origin) {
+        return callback(null, true);
       }
+      // Always allow localhost origins in any environment
+      if (origin.startsWith('http://localhost:') || origin === 'http://localhost') {
+        return callback(null, true);
+      }
+      // Check against allowed origins list
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      // Reject and log the blocked origin for easy debugging
+      console.error(`[CORS] Blocked origin: "${origin}" | Allowed: ${JSON.stringify(allowedOrigins)}`);
+      return callback(new Error(`Not allowed by CORS`));
     },
     credentials: true,
   });
