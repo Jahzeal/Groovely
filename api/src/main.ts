@@ -17,10 +17,11 @@ async function bootstrap() {
         callback(null, true);
       } else {
         const allowed = process.env.CLIENT_URL || 'http://localhost:3000';
-        if (origin === allowed) {
+        const allowedOrigins = allowed.split(',').map(item => item.trim());
+        if (allowedOrigins.includes(origin)) {
           callback(null, true);
         } else {
-          callback(new Error('Not allowed by CORS'));
+          callback(new Error(`Not allowed by CORS`));
         }
       }
     },
@@ -59,8 +60,8 @@ async function bootstrap() {
 
   const port = process.env.PORT || 5000;
   await app.listen(port);
-  console.log(`Groovely NestJS Server running on http://localhost:${port}`);
+  console.log(`Groovely NestJS Server running, listening on port ${port}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`API available at http://localhost:${port}/api`);
+  console.log(`API available locally at http://localhost:${port}/api`);
 }
 bootstrap();
