@@ -4,6 +4,15 @@ import React, { useState, useEffect } from 'react';
 import { Upload, Eye, MoreVertical, Edit2, RefreshCw, Loader2 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 
+/** Convert ipfs:// URLs to a public HTTP gateway URL so browsers can load them */
+const ipfsToHttp = (url?: string): string => {
+  if (!url) return '';
+  if (url.startsWith('ipfs://')) {
+    return `https://gateway.pinata.cloud/ipfs/${url.slice(7)}`;
+  }
+  return url;
+};
+
 interface TrackRow {
   image?: string;
   cover_url?: string;
@@ -113,7 +122,7 @@ export const TracksTable = () => {
                 <tr key={i} className="group hover:bg-white/[0.02] transition-colors">
                   <td className="py-5">
                     <div className="flex items-center gap-4">
-                      <img src={track.image || track.cover_url || track.coverImage || "https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=100&q=80"} alt={track.name || track.title || "Track"} className="w-10 h-10 rounded-lg object-cover" />
+                      <img src={ipfsToHttp(track.image || track.cover_url || track.coverImage) || "https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=100&q=80"} alt={track.name || track.title || "Track"} className="w-10 h-10 rounded-lg object-cover" />
                       <div className="flex flex-col">
                          <span className="text-sm font-bold text-white group-hover:text-accent-purple transition-colors">{track.name || track.title || "Untitled Track"}</span>
                          <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider mt-1">

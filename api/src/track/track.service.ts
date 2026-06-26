@@ -61,9 +61,10 @@ export class TrackService {
     this.validateAudioFile(audioFile);
     this.validateImageFile(coverFile);
 
-    // Upload to Pinata IPFS instead of Cloudinary
+    // Audio → IPFS (decentralized, permanent storage)
     const audioUrl = await this.ipfs.uploadFile(audioFile.buffer, audioFile.originalname, audioFile.mimetype);
-    const coverUrl = await this.ipfs.uploadFile(coverFile.buffer, coverFile.originalname, coverFile.mimetype);
+    // Cover art → Cloudinary (fast CDN delivery for display in the dashboard)
+    const coverUrl = await this.cloudinary.uploadFile(coverFile.buffer, 'covers', 'image');
 
     const result = await this.db.query(
       `INSERT INTO tracks (

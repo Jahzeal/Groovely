@@ -182,10 +182,10 @@ contract GrooveliMusic1155 is ERC1155, ERC1155Supply, ERC2981, Ownable, Reentran
         });
 
         // Set per-token URI — fall back to song metadata if none provided
-        string memory uri = bytes(metadataURI).length > 0
-            ? metadataURI
-            : songs[songId].metadataURI;
-        _tokenURIs[editionId] = uri;
+        string memory _metaArg   = string(metadataURI);
+        string memory _songMeta  = songs[songId].metadataURI;
+        string memory _resolvedUri = bytes(_metaArg).length > 0 ? _metaArg : _songMeta;
+        _tokenURIs[editionId] = _resolvedUri;
 
         // Set ERC-2981 royalty: 10% back to the platform revenue splitter
         _setTokenRoyalty(editionId, platformWallet, 1000);
