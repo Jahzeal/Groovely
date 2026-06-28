@@ -1,0 +1,3 @@
+[build]
+  command = "pnpm --filter web build"
+  publish = "apps/web/.next"
