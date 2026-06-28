@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
+import { IpfsService } from '../ipfs/ipfs.service';
 
 export interface ContributorDto {
   wallet_address: string;
@@ -33,18 +34,57 @@ export interface ConfirmMintDto {
 
 @Injectable()
 export class MintingService {
-  constructor(private db: DatabaseService) {}
+  constructor(
+    private db: DatabaseService,
+    private ipfs: IpfsService,
+  ) {}
 
   // ─────────────────────────────────────────────────────────────────────────
   // Songs
   // ─────────────────────────────────────────────────────────────────────────
 
   async createSong(userId: number, dto: CreateSongDto) {
+    let metadataUri = dto.metadata_uri || null;
+
+    if (dto.track_id) {
+      // Fetch track details to generate metadata JSON
+      const trackResult = await this.db.query(
+        `SELECT * FROM tracks WHERE id = $1 AND user_id = $2`,
+        [dto.track_id, userId],
+      );
+      const track = trackResult.rows[0];
+
+      if (track) {
+        // Construct standard NFT metadata
+        const metadata = {
+          name: track.title || dto.title,
+          description: track.description || '',
+          image: track.cover_url || '',
+          animation_url: track.audio_url || '',
+          attributes: [
+            { trait_type: 'Category', value: track.category || 'music' },
+            { trait_type: 'Explicit', value: track.explicit ? 'Yes' : 'No' },
+            ...(track.bpm ? [{ trait_type: 'BPM', value: track.bpm }] : []),
+            ...(track.key ? [{ trait_type: 'Key', value: track.key }] : []),
+            ...(track.isrc ? [{ trait_type: 'ISRC', value: track.isrc }] : []),
+          ],
+        };
+
+        try {
+          // Upload metadata JSON to IPFS
+          metadataUri = await this.ipfs.uploadJson(metadata, `${track.title || dto.title} Metadata`);
+        } catch (err) {
+          console.error('Failed to upload song metadata to IPFS:', err);
+          // Fallback to manual / placeholder if IPFS upload fails
+        }
+      }
+    }
+
     const result = await this.db.query(
       `INSERT INTO songs (user_id, track_id, title, metadata_uri, status)
        VALUES ($1, $2, $3, $4, 'draft')
        RETURNING *`,
-      [userId, dto.track_id || null, dto.title, dto.metadata_uri || null],
+      [userId, dto.track_id || null, dto.title, metadataUri],
     );
     return result.rows[0];
   }

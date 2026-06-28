@@ -17,15 +17,27 @@ import { useRouter } from 'next/navigation';
 import { Polygon } from '@/components/ui/SocialIcons';
 import { MintConfirmationModal } from '@/components/dashboard/MintConfirmationModal';
 import { MintSuccessModal } from '@/components/dashboard/MintSuccessModal';
+import { useConfig, useAccount } from 'wagmi';
+import { 
+  createSongOnChain, 
+  setContributorsOnChain, 
+  createEditionOnChain, 
+  waitForTx 
+} from '@/lib/contracts';
+import { apiFetch } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 export default function MintPage() {
   const router = useRouter();
+  const config = useConfig();
+  const { address } = useAccount();
   const [storage, setStorage] = useState('IPFS');
   const [addCollaborator, setAddCollaborator] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mintStatus, setMintStatus] = useState<'idle' | 'confirming' | 'minting' | 'success'>('idle');
 
   // Load from localStorage
+  const [trackId, setTrackId] = useState<number | null>(null);
   const [trackTitle, setTrackTitle] = useState('Title');
   const [trackCover, setTrackCover] = useState('');
   const [trackGenre, setTrackGenre] = useState('');
@@ -34,8 +46,11 @@ export default function MintPage() {
   const [paymentModel, setPaymentModel] = useState('fixed');
   const [licensePrice, setLicensePrice] = useState('0.00');
   const [royaltyPercentage, setRoyaltyPercentage] = useState('10');
+  const [txHash, setTxHash] = useState('');
+  const [tokenId, setTokenId] = useState('');
 
   React.useEffect(() => {
+    const id = localStorage.getItem('pending_track_id');
     const title = localStorage.getItem('pending_track_title');
     const cover = localStorage.getItem('pending_track_cover');
     const genre = localStorage.getItem('pending_track_genre');
@@ -45,6 +60,7 @@ export default function MintPage() {
     const price = localStorage.getItem('pending_track_price');
     const royalty = localStorage.getItem('pending_track_royalty');
 
+    if (id) setTrackId(Number(id));
     if (title) setTrackTitle(title);
     if (cover) setTrackCover(cover);
     if (genre) setTrackGenre(genre);
@@ -64,13 +80,171 @@ export default function MintPage() {
     setMintStatus('confirming');
   };
 
-  const handleMintConfirmed = () => {
+  const handleMintConfirmed = async () => {
+    if (!address) {
+      toast.error('Please connect your wallet first.');
+      setIsModalOpen(false);
+      setMintStatus('idle');
+      return;
+    }
+    if (!trackId) {
+      toast.error('No pending track found. Please upload again.');
+      setIsModalOpen(false);
+      setMintStatus('idle');
+      return;
+    }
+
     setMintStatus('minting');
-    
-    // Simulate minting process
-    setTimeout(() => {
+
+    try {
+      // 1. Create Song in database
+      const songRes = await apiFetch('/api/songs', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: trackTitle,
+          track_id: trackId,
+        }),
+      });
+
+      if (!songRes || !songRes.ok) {
+        throw new Error('Failed to create song in database');
+      }
+      const songJson = await songRes.json();
+      const songDb = songJson.data || songJson.song || songJson;
+      const songDbId = songDb.id;
+      const songMetadataUri = songDb.metadata_uri || `ipfs://QmSongMetadataPlaceholder`;
+
+      // 2. Set Contributors in database
+      const contributorsRes = await apiFetch(`/api/songs/${songDbId}/contributors`, {
+        method: 'POST',
+        body: JSON.stringify({
+          contributors: [
+            {
+              wallet_address: address,
+              basis_points: 10000,
+              role: 'artist',
+              display_name: 'Creator',
+            },
+          ],
+        }),
+      });
+      if (!contributorsRes || !contributorsRes.ok) {
+        throw new Error('Failed to set contributors in database');
+      }
+
+      // 3. Create Edition in database
+      const editionRes = await apiFetch(`/api/songs/${songDbId}/editions`, {
+        method: 'POST',
+        body: JSON.stringify({
+          edition_type: 'open',
+          max_supply: 0,
+          mint_price_usdc: Number(licensePrice) || 0,
+        }),
+      });
+      if (!editionRes || !editionRes.ok) {
+        throw new Error('Failed to create edition in database');
+      }
+      const editionJson = await editionRes.json();
+      const editionDb = editionJson.data || editionJson.edition || editionJson;
+      const editionDbId = editionDb.id;
+
+      // 4. Create Song on-chain
+      const songTx = await createSongOnChain(
+        config,
+        trackTitle,
+        songMetadataUri,
+        address
+      );
+      const songReceipt = await waitForTx(config, songTx);
+
+      // Parse songId from receipt logs using event selector
+      let onChainSongId = 1;
+      try {
+        const songLog = songReceipt.logs.find(
+          (log) => log.topics[0] === '0x2cf607229937514d342113433bf500c4287cba30f599f96dbdb595701e6bf8d8'
+        );
+        if (songLog && songLog.topics[1]) {
+          onChainSongId = parseInt(songLog.topics[1], 16);
+        }
+      } catch (err) {
+        console.error('Error parsing song ID log:', err);
+      }
+
+      // 5. Update Song Contract ID on backend
+      const updateSongRes = await apiFetch(`/api/songs/${songDbId}/contract-id`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          contract_song_id: onChainSongId,
+        }),
+      });
+      if (!updateSongRes || !updateSongRes.ok) {
+        throw new Error('Failed to sync song contract ID with backend');
+      }
+
+      // 6. Set Contributors on-chain
+      const contributorsTx = await setContributorsOnChain(config, onChainSongId, [
+        { wallet: address, basisPoints: BigInt(10000) },
+      ]);
+      await waitForTx(config, contributorsTx);
+
+      // 7. Create Edition on-chain
+      const editionTx = await createEditionOnChain(
+        config,
+        onChainSongId,
+        'open',
+        0,
+        Number(licensePrice) || 0
+      );
+      const editionReceipt = await waitForTx(config, editionTx);
+
+      // Parse editionId from receipt logs using event selector
+      let onChainEditionId = 1;
+      try {
+        const editionLog = editionReceipt.logs.find(
+          (log) => log.topics[0] === '0xdea513584a6187bd083673763b9a1321f417e674a36df7c0e66c4e99368d6d50'
+        );
+        if (editionLog && editionLog.topics[1]) {
+          onChainEditionId = parseInt(editionLog.topics[1], 16);
+        }
+      } catch (err) {
+        console.error('Error parsing edition ID log:', err);
+      }
+
+      // 8. Update Edition Contract ID on backend
+      const updateEditionRes = await apiFetch(`/api/editions/${editionDbId}/contract-id`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          contract_edition_id: onChainEditionId,
+          tx_hash: editionTx,
+        }),
+      });
+      if (!updateEditionRes || !updateEditionRes.ok) {
+        throw new Error('Failed to sync edition contract ID with backend');
+      }
+
+      // 9. Clear localStorage pending data
+      localStorage.removeItem('pending_track_id');
+      localStorage.removeItem('pending_track_title');
+      localStorage.removeItem('pending_track_cover');
+      localStorage.removeItem('pending_track_genre');
+      localStorage.removeItem('pending_track_tags');
+      localStorage.removeItem('pending_track_rights');
+      localStorage.removeItem('pending_track_payment');
+      localStorage.removeItem('pending_track_price');
+      localStorage.removeItem('pending_track_royalty');
+
+      setTxHash(editionTx);
+      setTokenId(`#${onChainEditionId}`);
       setMintStatus('success');
-    }, 2000);
+      toast.success('Track minted successfully!');
+
+    } catch (err: any) {
+      console.error('Minting error:', err);
+      const msg = err?.shortMessage || err?.message || 'Minting failed. Please try again.';
+      toast.error(msg);
+      setMintStatus('idle');
+      setIsModalOpen(false);
+    }
   };
 
   const handleCloseModal = () => {
@@ -348,8 +522,8 @@ export default function MintPage() {
           }}
           trackData={{
             title: trackTitle,
-            txHash: '0x8a72e8bc5d29a54460f780dba8ba36b7454f7aacaa2d0f62e841e94eb019cf92b',
-            tokenId: '#4829'
+            txHash: txHash || '0x8a72e8bc5d29a54460f780dba8ba36b7454f7aacaa2d0f62e841e94eb019cf92b',
+            tokenId: tokenId || '#4829'
           }}
         />
 

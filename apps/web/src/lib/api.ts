@@ -50,7 +50,11 @@ export function handleLogout() {
 export function resolveIpfsUrl(url: string | undefined): string {
   if (!url) return '';
   if (url.startsWith('ipfs://')) {
-    return `https://ipfs.io/ipfs/${url.replace('ipfs://', '')}`;
+    const cid = url.replace('ipfs://', '');
+    // Filter out mock/invalid CIDs (real CID v0 is 46 chars, CID v1 is 59 chars)
+    if (cid.length < 40) return '';
+    return `https://gateway.pinata.cloud/ipfs/${cid}`;
   }
   return url;
 }
+

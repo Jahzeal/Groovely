@@ -3,6 +3,8 @@ node_modules/
 .pnpm-store/
 .next/
 dist/
+.turbo/
+
 
 # Logs
 *.log

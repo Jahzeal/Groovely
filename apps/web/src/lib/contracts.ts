@@ -64,6 +64,50 @@ export const GROOVELI_ABI = [
     inputs: [{ name: 'editionId', type: 'uint256' }],
     outputs: [{ name: '', type: 'uint256' }],
   },
+  // createSong(string title, string metadataURI, address creator)
+  {
+    name: 'createSong',
+    type: 'function' as const,
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'title', type: 'string' },
+      { name: 'metadataURI', type: 'string' },
+      { name: 'creator', type: 'address' },
+    ],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+  // setContributors(uint256 songId, tuple[] contributors)
+  {
+    name: 'setContributors',
+    type: 'function' as const,
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'songId', type: 'uint256' },
+      {
+        name: '_contributors',
+        type: 'tuple[]',
+        components: [
+          { name: 'wallet', type: 'address' },
+          { name: 'basisPoints', type: 'uint96' },
+        ],
+      },
+    ],
+    outputs: [],
+  },
+  // createEdition(uint256 songId, string editionType, uint256 maxSupply, uint256 mintPrice, string metadataURI)
+  {
+    name: 'createEdition',
+    type: 'function' as const,
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'songId', type: 'uint256' },
+      { name: 'editionType', type: 'string' },
+      { name: 'maxSupply', type: 'uint256' },
+      { name: 'mintPrice', type: 'uint256' },
+      { name: 'metadataURI', type: 'string' },
+    ],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
 ] as const;
 
 export const ERC20_ABI = [
@@ -158,6 +202,52 @@ export async function mintEdition(
     abi: GROOVELI_ABI,
     functionName: 'mint',
     args: [BigInt(editionId), BigInt(amount)],
+  });
+}
+
+/** Create a song on-chain. Returns tx hash. */
+export async function createSongOnChain(
+  config: Config,
+  title: string,
+  metadataUri: string,
+  creatorAddress: `0x${string}`,
+): Promise<`0x${string}`> {
+  return writeContract(config, {
+    address: CONTRACT_ADDRESS,
+    abi: GROOVELI_ABI,
+    functionName: 'createSong',
+    args: [title, metadataUri, creatorAddress],
+  });
+}
+
+/** Set contributors on-chain. Returns tx hash. */
+export async function setContributorsOnChain(
+  config: Config,
+  songId: number,
+  contributors: { wallet: `0x${string}`; basisPoints: bigint }[],
+): Promise<`0x${string}`> {
+  return writeContract(config, {
+    address: CONTRACT_ADDRESS,
+    abi: GROOVELI_ABI,
+    functionName: 'setContributors',
+    args: [BigInt(songId), contributors],
+  });
+}
+
+/** Create an edition on-chain. Returns tx hash. */
+export async function createEditionOnChain(
+  config: Config,
+  songId: number,
+  editionType: string,
+  maxSupply: number,
+  mintPriceUsdc: number,
+  metadataUri = '',
+): Promise<`0x${string}`> {
+  return writeContract(config, {
+    address: CONTRACT_ADDRESS,
+    abi: GROOVELI_ABI,
+    functionName: 'createEdition',
+    args: [BigInt(songId), editionType, BigInt(maxSupply), parseUSDC(mintPriceUsdc), metadataUri],
   });
 }
 

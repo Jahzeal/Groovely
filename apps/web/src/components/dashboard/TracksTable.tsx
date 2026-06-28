@@ -8,7 +8,9 @@ import { apiFetch } from '@/lib/api';
 const ipfsToHttp = (url?: string): string => {
   if (!url) return '';
   if (url.startsWith('ipfs://')) {
-    return `https://gateway.pinata.cloud/ipfs/${url.slice(7)}`;
+    const cid = url.slice(7);
+    if (cid.length < 40) return '';
+    return `https://gateway.pinata.cloud/ipfs/${cid}`;
   }
   return url;
 };

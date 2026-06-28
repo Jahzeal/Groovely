@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Body,
   Param,
   UseGuards,
@@ -102,6 +103,38 @@ export class MintingController {
     // Inject authenticated user ID
     body.buyer_user_id = req.userId;
     return this.mintingService.confirmMint(body);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Sync smart contract IDs
+  // ─────────────────────────────────────────────────────────────────────────
+
+  @Patch('songs/:id/contract-id')
+  @ResponseMessage('Song contract ID updated successfully')
+  async updateSongContractId(
+    @Param('id') id: string,
+    @Body('contract_song_id') contractSongId: number,
+  ) {
+    const songId = parseInt(id);
+    if (isNaN(songId)) throw new BadRequestException('Invalid song ID');
+    if (contractSongId === undefined) throw new BadRequestException('contract_song_id is required');
+    await this.mintingService.updateSongContractId(songId, contractSongId);
+    return { success: true };
+  }
+
+  @Patch('editions/:id/contract-id')
+  @ResponseMessage('Edition contract ID updated successfully')
+  async updateEditionContractId(
+    @Param('id') id: string,
+    @Body('contract_edition_id') contractEditionId: number,
+    @Body('tx_hash') txHash: string,
+  ) {
+    const editionId = parseInt(id);
+    if (isNaN(editionId)) throw new BadRequestException('Invalid edition ID');
+    if (contractEditionId === undefined) throw new BadRequestException('contract_edition_id is required');
+    if (!txHash) throw new BadRequestException('tx_hash is required');
+    await this.mintingService.updateEditionContractId(editionId, contractEditionId, txHash);
+    return { success: true };
   }
 
   // ─────────────────────────────────────────────────────────────────────────

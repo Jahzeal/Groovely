@@ -11,35 +11,25 @@ import {
   ShoppingBag,
   MoreVertical,
   Send,
-  Music
+  Music,
+  Pause,
+  Loader2
 } from 'lucide-react';
 import { Twitter, Instagram } from '@/components/ui/SocialIcons';
+import { apiFetch } from '@/lib/api';
+import { useMusicPlayer } from '@/components/marketplace/MusicPlayerContext';
+import toast from 'react-hot-toast';
 
-// --- Mock Data ---
-
-const libraryTracks = [
-  { id: 1, title: "Phoenix Feather Waltz", artist: "NightWhisper", status: "Purchased", image: "https://images.unsplash.com/photo-1514525253361-bee8d48800d5?w=300&h=300&fit=crop" },
-  { id: 2, title: "Eternity's Echoes", artist: "SilentShadow", status: "Played", image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop" },
-  { id: 3, title: "Resonance of the Lost Li...", artist: "Vanilla", status: "Saved", image: "https://images.unsplash.com/photo-1493225255756-d9584f8606e9?w=300&h=300&fit=crop" },
-  { id: 4, title: "The Vanishing Point", artist: "SolarChill", status: "Saved", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&h=300&fit=crop" },
-  { id: 5, title: "Paper Cranes in the Wind", artist: "Nebula", status: "Purchased", image: "https://images.unsplash.com/photo-1526218626217-dc65a29bb444?w=300&h=300&fit=crop" },
-  { id: 6, title: "Dreams of the Melting Sun", artist: "Infinity", status: "Played", image: "https://images.unsplash.com/photo-1459749411177-042180ce673c?w=300&h=300&fit=crop" },
-  { id: 7, title: "Echoes from the Halcy...", artist: "Vertigo", status: "Saved", image: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=300&h=300&fit=crop" },
-  { id: 8, title: "An Intricate Dance of Cr...", artist: "SteelRhythm", status: "Played", image: "https://images.unsplash.com/photo-1483412033650-1015ddeb81d1?w=300&h=300&fit=crop" },
-  { id: 9, title: "Portrait of a Sleeping Gal...", artist: "LunaSky", status: "Saved", image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=300&h=300&fit=crop" },
-  { id: 10, title: "The Haunted Sonata", artist: "NovaZephyr", status: "Saved", image: "https://images.unsplash.com/photo-1420161907993-961fbcf21204?w=300&h=300&fit=crop" },
-  { id: 11, title: "Lullabies from the Anci...", artist: "Serene", status: "Played", image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&h=300&fit=crop" },
-  { id: 12, title: "Fossilized Emotions", artist: "Enchanted", status: "Purchased", image: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&h=300&fit=crop" },
-  { id: 13, title: "Eons", artist: "NeoPixel", status: "Purchased", image: "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=300&h=300&fit=crop" },
-  { id: 14, title: "Ghostly Ballet at Dawn", artist: "CyberWitch", status: "Saved", image: "https://images.unsplash.com/photo-1514525253361-bee8d48800d5?w=300&h=300&fit=crop" },
-  { id: 15, title: "Jade Starlight Serenade", artist: "EmberFire", status: "Played", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&h=300&fit=crop" },
-  { id: 16, title: "Rustic Symphony in the...", artist: "AquaDawn", status: "Played", image: "https://images.unsplash.com/photo-1459749411177-042180ce673c?w=300&h=300&fit=crop" },
-  { id: 17, title: "Bittersweet Tango with...", artist: "Electric", status: "Saved", image: "https://images.unsplash.com/photo-1526218626217-dc65a29bb444?w=300&h=300&fit=crop" },
-  { id: 18, title: "Zephyr's Twilight Sere...", artist: "DawnChase", status: "Purchased", image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop" },
-  { id: 19, title: "The Aurora's Secret So...", artist: "ChocoHaze", status: "Saved", image: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=300&h=300&fit=crop" },
-  { id: 20, title: "Journey through the Ep...", artist: "Echo", status: "Purchased", image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=300&h=300&fit=crop" },
-  { id: 21, title: "Twilight Cathedral", artist: "Vapor", status: "Saved", image: "https://images.unsplash.com/photo-1483412033650-1015ddeb81d1?w=300&h=300&fit=crop" },
-];
+interface Track {
+  id: number;
+  title: string;
+  artist_name?: string;
+  artist_username?: string;
+  cover_url?: string;
+  audio_url?: string;
+  status?: string;
+  category?: string;
+}
 
 const FilterTab = ({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) => (
   <button 
@@ -55,46 +45,144 @@ const FilterTab = ({ label, active, onClick }: { label: string; active: boolean;
   </button>
 );
 
-const TrackCard = ({ track }: { track: typeof libraryTracks[0] }) => (
-  <div className="bg-[#0F0F1A]/40 border border-white/5 rounded-2xl p-4 flex items-center gap-4 group hover:bg-[#0F0F1A]/60 transition-all duration-300 hover:border-white/10">
-    <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0">
-      <img src={track.image} alt={track.title} className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-500" />
-      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-        <Play size={20} fill="white" className="text-white ml-1" />
+const TrackCard = ({ track, onSave }: { track: Track; onSave: (id: number, isSaved: boolean) => Promise<boolean> }) => {
+  const { playTrack, currentTrack, isPlaying } = useMusicPlayer();
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(true);
+
+  const isThisTrackPlaying = currentTrack?.id === track.id && isPlaying;
+
+  const handleSave = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setIsSaving(true);
+    try {
+      const success = await onSave(track.id, isSaved);
+      if (success) setIsSaved(!isSaved);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-[#0F0F1A]/40 border border-white/5 rounded-2xl p-4 flex items-center gap-4 group hover:bg-[#0F0F1A]/60 transition-all duration-300 hover:border-white/10">
+      <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0">
+        <img 
+          src={track.cover_url || "https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=300&q=80"} 
+          alt={track.title} 
+          className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-500" 
+        />
+        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={() => playTrack({
+              id: track.id,
+              title: track.title,
+              artist: track.artist_name || track.artist_username || 'Unknown Artist',
+              image: track.cover_url || '',
+              audioUrl: track.audio_url
+            })}
+            className="w-8 h-8 bg-accent-purple rounded-full flex items-center justify-center text-white"
+          >
+            {isThisTrackPlaying ? (
+              <Pause size={14} fill="white" />
+            ) : (
+              <Play size={14} fill="white" className="ml-0.5" />
+            )}
+          </button>
+        </div>
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="text-sm font-black text-white truncate group-hover:text-accent-purple transition-colors">{track.title}</h3>
+        <div className="flex items-center gap-2 mt-1">
+          <p className="text-xs font-bold text-zinc-500 truncate">{track.artist_name || (track.artist_username ? `@${track.artist_username}` : 'Unknown Artist')}</p>
+          <span className="bg-white/5 border border-white/5 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md text-zinc-400">
+            {track.category || 'Music'}
+          </span>
+        </div>
+      </div>
+      <div className="flex items-center gap-1">
+        <button 
+          onClick={handleSave}
+          disabled={isSaving || !isSaved}
+          className={`transition-colors p-1.5 rounded-lg hover:bg-white/5 disabled:opacity-50 ${isSaved ? 'text-red-400' : 'text-zinc-600'}`}
+        >
+          {isSaving ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <Heart size={14} fill={isSaved ? 'currentColor' : 'none'} />
+          )}
+        </button>
+        <button className="text-zinc-600 hover:text-white transition-colors p-1">
+          <MoreVertical size={16} />
+        </button>
       </div>
     </div>
-    <div className="flex-1 min-w-0">
-      <h3 className="text-sm font-black text-white truncate group-hover:text-accent-purple transition-colors">{track.title}</h3>
-      <div className="flex items-center gap-2 mt-1">
-        <p className="text-xs font-bold text-zinc-500 truncate">{track.artist}</p>
-        <span className="bg-white/5 border border-white/5 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md text-zinc-400">
-          {track.status}
-        </span>
-      </div>
-    </div>
-    <button className="text-zinc-600 hover:text-white transition-colors p-1">
-      <MoreVertical size={16} />
-    </button>
-  </div>
-);
+  );
+};
 
 export default function LibraryPage() {
   const [activeTab, setActiveTab] = useState('All');
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [tracks, setTracks] = useState<Track[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setWalletAddress(localStorage.getItem('groovely_wallet'));
   }, []);
 
+  const fetchLibrary = async (filter: string) => {
+    setLoading(true);
+    try {
+      const apiFilter = filter.toLowerCase();
+      const res = await apiFetch(`/api/library?filter=${apiFilter}&limit=50`);
+      if (res && res.ok) {
+        const json = await res.json();
+        const tracksData = json.data?.tracks || (Array.isArray(json.data) ? json.data : json.tracks || json);
+        setTracks(Array.isArray(tracksData) ? tracksData : []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch library', error);
+      toast.error('Failed to load tracks');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLibrary(activeTab);
+  }, [activeTab]);
+
+  const handleSaveTrack = async (trackId: number, isCurrentlySaved: boolean): Promise<boolean> => {
+    try {
+      const method = isCurrentlySaved ? 'DELETE' : 'POST';
+      const res = await apiFetch(`/api/library/save/${trackId}`, {
+        method
+      });
+      if (res && res.ok) {
+        toast.success(isCurrentlySaved ? 'Removed from library' : 'Saved to library');
+        fetchLibrary(activeTab);
+        return true;
+      } else {
+        const errorData = await res?.json();
+        throw new Error(errorData?.error || 'Action failed');
+      }
+    } catch (error: any) {
+      console.error('Library action error:', error);
+      toast.error(error.message || 'Action failed');
+      return false;
+    }
+  };
+
   const abbrevWallet = walletAddress 
     ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-3)}` 
     : '0xc...y69';
 
-  const filteredTracks = libraryTracks.filter(t => 
+  const filteredTracks = tracks.filter(t => 
     t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.artist.toLowerCase().includes(searchQuery.toLowerCase())
-  ).filter(t => activeTab === 'All' || t.status === activeTab);
+    (t.artist_name || t.artist_username || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
@@ -153,17 +241,24 @@ export default function LibraryPage() {
           </div>
 
            {/* Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {filteredTracks.length > 0 ? (
-              filteredTracks.map((track) => (
-                <TrackCard key={track.id} track={track} />
-              ))
-            ) : (
-              <div className="col-span-full py-20 text-center bg-white/5 rounded-3xl border border-white/5 border-dashed">
-                <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">No matching tracks found</p>
-              </div>
-            )}
-          </div>
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4 w-full">
+              <Loader2 className="w-8 h-8 text-accent-purple animate-spin" />
+              <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px]">Loading library...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              {filteredTracks.length > 0 ? (
+                filteredTracks.map((track) => (
+                  <TrackCard key={track.id} track={track} onSave={handleSaveTrack} />
+                ))
+              ) : (
+                <div className="col-span-full py-20 text-center bg-white/5 rounded-3xl border border-white/5 border-dashed">
+                  <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">No matching tracks found</p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Footer */}
           <footer className="mt-24 pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-10 opacity-70">
