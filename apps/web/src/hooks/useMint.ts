@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useConfig, useAccount } from 'wagmi';
+import { useConfig, useAccount, useSwitchChain } from 'wagmi';
+import { polygonAmoy } from 'wagmi/chains';
 import {
   approveUSDC,
   mintEdition,
@@ -43,7 +44,8 @@ export function useMint({
   onSuccess,
 }: UseMintOptions) {
   const config = useConfig();
-  const { address } = useAccount();
+  const { address, chain } = useAccount();
+  const { switchChainAsync } = useSwitchChain();
 
   const [step, setStep] = useState<MintStep>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -71,6 +73,19 @@ export function useMint({
 
     setStep('checking');
     setErrorMessage(null);
+
+    // Enforce correct network (Polygon Amoy Testnet, chain ID 80002)
+    const targetChainId = polygonAmoy.id;
+    if (chain?.id !== targetChainId) {
+      try {
+        await switchChainAsync({ chainId: targetChainId });
+      } catch (err: any) {
+        console.error('Failed to switch chain:', err);
+        setErrorMessage('Please switch your wallet network to Polygon Amoy Testnet.');
+        setStep('error');
+        return;
+      }
+    }
 
     try {
       const priceRaw = parseUSDC(mintPriceUsdc);
