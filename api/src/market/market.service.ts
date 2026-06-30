@@ -22,6 +22,7 @@ export class MarketService {
        FROM tracks t
        JOIN users u ON t.user_id = u.id
        WHERE t.visibility = 'public'
+         AND EXISTS (SELECT 1 FROM songs s WHERE s.track_id = t.id AND s.status = 'published')
        ORDER BY (SELECT COUNT(*) FROM track_streams WHERE track_id = t.id) DESC
        LIMIT $1`,
       [limit]
@@ -46,6 +47,7 @@ export class MarketService {
        FROM tracks t
        JOIN users u ON t.user_id = u.id
        WHERE t.visibility = 'public'
+         AND EXISTS (SELECT 1 FROM songs s WHERE s.track_id = t.id AND s.status = 'published')
        ORDER BY t.created_at DESC
        LIMIT $1`,
       [limit]
@@ -75,10 +77,11 @@ export class MarketService {
        FROM tracks t
        JOIN users u ON t.user_id = u.id
        WHERE t.visibility = 'public'
+         AND EXISTS (SELECT 1 FROM songs s WHERE s.track_id = t.id AND s.status = 'published')
        ${categoryFilter}
        ORDER BY t.created_at DESC
        LIMIT $1
-    `;
+     `;
 
     const params = category !== 'all' ? [limit, category] : [limit];
     const result = await this.db.query(queryText, params);
@@ -105,7 +108,9 @@ export class MarketService {
         u.username as creator_username
        FROM tracks t
        JOIN users u ON t.user_id = u.id
-       WHERE t.id = $1 AND t.visibility = 'public'`,
+       WHERE t.id = $1 
+         AND t.visibility = 'public'
+         AND EXISTS (SELECT 1 FROM songs s WHERE s.track_id = t.id AND s.status = 'published')`,
       [trackId]
     );
 
@@ -123,7 +128,9 @@ export class MarketService {
         t.currency,
         t.usage_rights as license_types
        FROM tracks t
-       WHERE t.user_id = $1 AND t.id != $2 AND t.visibility = 'public'
+       WHERE t.user_id = $1 AND t.id != $2 
+         AND t.visibility = 'public'
+         AND EXISTS (SELECT 1 FROM songs s WHERE s.track_id = t.id AND s.status = 'published')
        ORDER BY t.created_at DESC
        LIMIT 4`,
       [track.creator_id, trackId]
