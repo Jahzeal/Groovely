@@ -10,6 +10,7 @@ import { WalletCard } from '@/components/onboarding/WalletCard';
 import { MetaMaskIcon, WalletConnectIcon, PhantomIcon } from '@/components/onboarding/OnboardingFlow';
 import { Google as GoogleIcon } from '@/components/ui/SocialIcons';
 import toast from 'react-hot-toast';
+import { useLogin } from '@privy-io/react-auth';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,6 +22,52 @@ export default function LoginPage() {
   const { connectAsync, connectors } = useConnect();
   const { disconnect } = useDisconnect();
   const config = useConfig();
+
+  const { login } = useLogin({
+    onComplete: async ({ user }) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const smartWallet = user.linkedAccounts.find(
+          (account) => account.type === 'smart_wallet'
+        );
+        const walletAddr = smartWallet?.address || user.wallet?.address;
+        
+        if (!walletAddr) {
+          throw new Error('Could not retrieve smart wallet address.');
+        }
+
+        // Authenticate with backend
+        const connectRes = await fetch(`/api/auth/login/wallet`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ walletAddress: walletAddr }),
+        });
+
+        const authData = await connectRes.json();
+        if (!connectRes.ok) throw new Error(authData.error || authData.message || 'Authentication failed');
+
+        const { token, user: dbUser } = authData.data;
+        localStorage.setItem('groovely_token', token);
+        localStorage.setItem('groovely_user_id', String(dbUser.id));
+        localStorage.setItem('groovely_wallet', dbUser.wallet ?? walletAddr);
+        localStorage.setItem('groovely_role', dbUser.role ?? '');
+
+        if (dbUser.role === 'fan') {
+          router.push('/explore');
+        } else {
+          router.push('/dashboard');
+        }
+      } catch (err: any) {
+        console.error('Login error:', err);
+        const errorMessage = err.message || 'Something went wrong during login';
+        setError(errorMessage);
+        toast.error(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    }
+  });
 
   const handleConnectWallet = async () => {
     if (!wallet) return;
@@ -112,8 +159,7 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-    window.location.href = `${backendUrl}/api/auth/google`;
+    login({ loginMethods: ['google'] });
   };
 
   return (

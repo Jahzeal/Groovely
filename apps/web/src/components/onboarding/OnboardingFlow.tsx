@@ -55,6 +55,12 @@ export const OnboardingFlow = () => {
 
   useEffect(() => {
     setMounted(true);
+    const savedRole = localStorage.getItem('groovely_role');
+    if (savedRole === 'creator') {
+      setRole('creator');
+    } else if (savedRole === 'fan' || savedRole === 'listener') {
+      setRole('listener');
+    }
   }, []);
 
   // Profile data (Step 3)
@@ -383,13 +389,13 @@ export const OnboardingFlow = () => {
                 </div>
 
                 {/* Google Button or Skip button if already on Google */}
-                {(mounted && localStorage.getItem('groovely_token') && !address) ? (
+                {(mounted && localStorage.getItem('groovely_token')) ? (
                   <Button 
                     fullWidth 
                     variant="secondary"
                     onClick={() => setStep(3)}
                   >
-                    Continue without Wallet
+                    {address ? 'Continue to Profile' : 'Continue without Wallet'}
                   </Button>
                 ) : (
                   <button 
