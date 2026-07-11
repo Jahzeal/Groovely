@@ -8,9 +8,11 @@ import {
   Copy, LogOut, User, Settings, CheckCheck, ExternalLink
 } from 'lucide-react';
 import { handleLogout } from '@/lib/api';
+import { usePrivy } from '@privy-io/react-auth';
 
 export const TopBar = () => {
   const router = useRouter();
+  const { user } = usePrivy();
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -20,7 +22,14 @@ export const TopBar = () => {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setWalletAddress(localStorage.getItem('groovely_wallet'));
+      const storedWallet = localStorage.getItem('groovely_wallet');
+      if (storedWallet) {
+        setWalletAddress(storedWallet);
+      } else if (user?.wallet?.address) {
+        setWalletAddress(user.wallet.address);
+        localStorage.setItem('groovely_wallet', user.wallet.address);
+      }
+
       // Decode role from JWT token
       try {
         const token = localStorage.getItem('groovely_token');
@@ -30,7 +39,7 @@ export const TopBar = () => {
         }
       } catch { }
     }
-  }, []);
+  }, [user]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -43,13 +52,15 @@ export const TopBar = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const abbrev = walletAddress
-    ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+  const activeAddress = user?.wallet?.address || walletAddress;
+
+  const abbrev = activeAddress
+    ? `${activeAddress.slice(0, 6)}...${activeAddress.slice(-4)}`
     : '0x...';
 
   const handleCopy = () => {
-    if (walletAddress) {
-      navigator.clipboard.writeText(walletAddress);
+    if (activeAddress) {
+      navigator.clipboard.writeText(activeAddress);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -145,7 +156,7 @@ export const TopBar = () => {
                 {/* Full address */}
                 <div className="mt-3 bg-black/30 rounded-xl px-3 py-2 flex items-center justify-between gap-2">
                   <p className="text-[10px] text-zinc-500 font-mono truncate flex-1">
-                    {walletAddress ?? 'Not connected'}
+                    {activeAddress ?? 'Not connected'}
                   </p>
                   <button
                     onClick={handleCopy}
@@ -176,7 +187,7 @@ export const TopBar = () => {
                   Settings
                 </Link>
                 <a
-                  href={walletAddress ? `https://polygonscan.com/address/${walletAddress}` : '#'}
+                  href={activeAddress ? `https://polygonscan.com/address/${activeAddress}` : '#'}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => setDropdownOpen(false)}
