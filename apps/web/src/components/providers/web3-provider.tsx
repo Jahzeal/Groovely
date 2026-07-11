@@ -4,7 +4,7 @@ import { createConfig } from '@privy-io/wagmi';
 import { mainnet, polygonAmoy } from 'wagmi/chains';
 import { http } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { PrivyProvider } from '@privy-io/react-auth';
 import { WagmiProvider, useEmbeddedSmartAccountConnector } from '@privy-io/wagmi';
 import { createPublicClient } from 'viem';
@@ -247,11 +247,21 @@ NEXT_PUBLIC_ZERODEV_PROJECT_ID=${isZeroDevValid ? zeroDevProjectId : 'your_actua
 }
 
 export function Web3Provider({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const privyAppId = process.env.NEXT_PUBLIC_PRIVY_APP_ID || '';
   const zeroDevProjectId = process.env.NEXT_PUBLIC_ZERODEV_PROJECT_ID || '';
 
   const isPrivyValid = privyAppId && privyAppId !== 'your_privy_app_id_here' && privyAppId.trim() !== '';
   const isZeroDevValid = zeroDevProjectId && zeroDevProjectId !== 'your_zerodev_project_id_here' && zeroDevProjectId.trim() !== '';
+
+  if (!mounted) {
+    return <div className="min-h-screen bg-[#050510]" />;
+  }
 
   if (!isPrivyValid || !isZeroDevValid) {
     return <EnvSetupGuide privyAppId={privyAppId} zeroDevProjectId={zeroDevProjectId} />;
