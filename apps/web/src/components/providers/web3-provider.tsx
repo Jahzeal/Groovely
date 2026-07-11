@@ -26,7 +26,7 @@ const queryClient = new QueryClient();
 // A wrapper component that hooks up Privy's embedded wallet with ZeroDev's Kernel Smart Account
 function SmartAccountConnectorWrapper({ children }: { children: ReactNode }) {
   useEmbeddedSmartAccountConnector({
-    getSmartAccountFromSigner: async ({ signer }) => {
+    getSmartAccountFromSigner: (async ({ signer }: any) => {
       const publicClient = createPublicClient({
         chain: polygonAmoy,
         transport: http(),
@@ -58,13 +58,13 @@ function SmartAccountConnectorWrapper({ children }: { children: ReactNode }) {
 
       // 3. Create Kernel Account Client
       const projectId = process.env.NEXT_PUBLIC_ZERODEV_PROJECT_ID || '';
-      const kernelClient = createKernelAccountClient({
+      const kernelClient = (createKernelAccountClient as any)({
         account,
         chain: polygonAmoy,
         bundlerTransport: http(`https://rpc.zerodev.app/api/v2/bundler/${projectId}`),
         middleware: {
-          sponsorUserOperation: async ({ userOperation }) => {
-            const zerodevPaymaster = createZeroDevPaymasterClient({
+          sponsorUserOperation: async ({ userOperation }: any) => {
+            const zerodevPaymaster = (createZeroDevPaymasterClient as any)({
               chain: polygonAmoy,
               entryPoint: {
                 address: entryPointAddress,
@@ -73,7 +73,7 @@ function SmartAccountConnectorWrapper({ children }: { children: ReactNode }) {
               transport: http(`https://rpc.zerodev.app/api/v2/paymaster/${projectId}`),
             });
             
-            return zerodevPaymaster.sponsorUserOperation({
+            return (zerodevPaymaster as any).sponsorUserOperation({
               userOperation,
               entryPoint: {
                 address: entryPointAddress,
@@ -86,7 +86,7 @@ function SmartAccountConnectorWrapper({ children }: { children: ReactNode }) {
 
       // 4. Return EIP-1193 provider wrapping the kernel client
       return new KernelEIP1193Provider(kernelClient) as any;
-    },
+    }) as any,
   });
 
   return <>{children}</>;
@@ -266,7 +266,9 @@ export function Web3Provider({ children }: { children: ReactNode }) {
           accentColor: '#8B5CF6', // Accent purple matching Groovely theme
         },
         embeddedWallets: {
-          createOnLogin: 'users-without-wallets',
+          ethereum: {
+            createOnLogin: 'users-without-wallets',
+          },
         },
       }}
     >

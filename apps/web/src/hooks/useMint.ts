@@ -115,7 +115,7 @@ export function useMint({
         const entryPointAddress = '0x0000000071727De22E5E9d8BAf0edAc6f37da032';
 
         const ecdsaValidator = await signerToEcdsaValidator(publicClient, {
-          signer: rawProvider,
+          signer: rawProvider as any,
           entryPoint: {
             address: entryPointAddress,
             version: '0.7',
@@ -136,13 +136,13 @@ export function useMint({
 
         const projectId = process.env.NEXT_PUBLIC_ZERODEV_PROJECT_ID || '';
 
-        const kernelClient = createKernelAccountClient({
+        const kernelClient = (createKernelAccountClient as any)({
           account,
           chain: polygonAmoy,
           bundlerTransport: http(`https://rpc.zerodev.app/api/v2/bundler/${projectId}`),
           middleware: {
-            sponsorUserOperation: async ({ userOperation }) => {
-              const zerodevPaymaster = createZeroDevPaymasterClient({
+            sponsorUserOperation: async ({ userOperation }: any) => {
+              const zerodevPaymaster = (createZeroDevPaymasterClient as any)({
                 chain: polygonAmoy,
                 entryPoint: {
                   address: entryPointAddress,
@@ -151,7 +151,7 @@ export function useMint({
                 transport: http(`https://rpc.zerodev.app/api/v2/paymaster/${projectId}`),
               });
               
-              return zerodevPaymaster.sponsorUserOperation({
+              return (zerodevPaymaster as any).sponsorUserOperation({
                 userOperation,
                 entryPoint: {
                   address: entryPointAddress,
