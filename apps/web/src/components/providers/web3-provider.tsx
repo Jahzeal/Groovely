@@ -85,7 +85,7 @@ function SmartAccountConnectorWrapper({ children }: { children: ReactNode }) {
       });
 
       // 4. Return EIP-1193 provider wrapping the kernel client
-      return new KernelEIP1193Provider(kernelClient);
+      return new KernelEIP1193Provider(kernelClient) as any;
     },
   });
 
