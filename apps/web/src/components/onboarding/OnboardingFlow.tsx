@@ -61,6 +61,11 @@ export const OnboardingFlow = () => {
     } else if (savedRole === 'fan' || savedRole === 'listener') {
       setRole('listener');
     }
+
+    const token = localStorage.getItem('groovely_token');
+    if (token) {
+      setStep(3);
+    }
   }, []);
 
   // Profile data (Step 3)
@@ -273,7 +278,7 @@ export const OnboardingFlow = () => {
 
 
           {/* Back Button */}
-          {step < 4 && (
+          {step < 4 && !(mounted && localStorage.getItem('groovely_token')) && (
             <button
               onClick={handleBack}
               className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors mb-6 text-sm font-bold uppercase tracking-widest"
@@ -388,24 +393,14 @@ export const OnboardingFlow = () => {
                   <div className="flex-grow h-[1px] bg-white/5" />
                 </div>
 
-                {/* Google Button or Skip button if already on Google */}
-                {(mounted && localStorage.getItem('groovely_token')) ? (
-                  <Button 
-                    fullWidth 
-                    variant="secondary"
-                    onClick={() => setStep(3)}
-                  >
-                    {address ? 'Continue to Profile' : 'Continue without Wallet'}
-                  </Button>
-                ) : (
-                  <button 
-                    onClick={handleGoogleLogin}
-                    className="w-full flex items-center justify-center gap-3 bg-white/5 border border-white/10 hover:bg-white/10 transition-all rounded-full py-4 group active:scale-[0.98]"
-                  >
-                    <GoogleIcon size={18} />
-                    <span className="text-white font-bold text-sm tracking-wide">Continue with Google</span>
-                  </button>
-                )}
+                {/* Google Button */}
+                <button 
+                  onClick={handleGoogleLogin}
+                  className="w-full flex items-center justify-center gap-3 bg-white/5 border border-white/10 hover:bg-white/10 transition-all rounded-full py-4 group active:scale-[0.98]"
+                >
+                  <GoogleIcon size={18} />
+                  <span className="text-white font-bold text-sm tracking-wide">Continue with Google</span>
+                </button>
 
                 <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest text-center mt-2">
                   Your privacy matters. We won't post anything.
