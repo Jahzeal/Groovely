@@ -10,6 +10,7 @@ import { SelectionCard } from './SelectionCard';
 import { WalletCard } from './WalletCard';
 import { Twitter as XIcon, Instagram as InstagramIcon, SoundCloud as SoundCloudIcon, Google as GoogleIcon } from '../ui/SocialIcons';
 import toast from 'react-hot-toast';
+import { useLogin } from '@privy-io/react-auth';
 
 export const MetaMaskIcon = () => (
   <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="MetaMask" className="w-16 h-16" />
@@ -52,6 +53,7 @@ export const OnboardingFlow = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -65,6 +67,14 @@ export const OnboardingFlow = () => {
     const token = localStorage.getItem('groovely_token');
     if (token) {
       setStep(3);
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.email) {
+          setUserEmail(payload.email);
+        }
+      } catch (e) {
+        console.error('Error parsing token:', e);
+      }
     }
   }, []);
 
@@ -78,6 +88,77 @@ export const OnboardingFlow = () => {
   const { connectAsync, connectors } = useConnect();
   const { disconnect } = useDisconnect();
   const { signMessageAsync } = useSignMessage();
+
+  const { login } = useLogin({
+    onComplete: async ({ user }) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const smartWallet = user.linkedAccounts.find(
+          (account) => account.type === 'smart_wallet'
+        );
+        const walletAddr = smartWallet?.address || user.wallet?.address;
+        
+        if (!walletAddr) {
+          throw new Error('Could not retrieve smart wallet address.');
+        }
+
+        const payloadRole = role === 'creator' ? 'creator' : 'fan';
+        const signupRes = await fetch('/api/auth/signup/wallet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ walletAddress: walletAddr, role: payloadRole }),
+        });
+
+        let authData = await signupRes.json();
+        
+        if (!signupRes.ok) {
+          // If conflict/error, let's login instead
+          const loginRes = await fetch('/api/auth/login/wallet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ walletAddress: walletAddr }),
+          });
+          const loginData = await loginRes.json();
+          if (!loginRes.ok) {
+            throw new Error(loginData.error || loginData.message || 'Authentication failed');
+          }
+          authData = loginData;
+        }
+
+        // Store JWT
+        const actualToken = authData.token || authData.data?.token;
+        const actualUserId = authData.userId || String(authData.data?.user?.id);
+        const actualWallet = walletAddr || authData.user?.wallet || authData.data?.user?.wallet;
+        const actualRole = payloadRole || authData.user?.role || authData.data?.user?.role;
+
+        localStorage.setItem('groovely_token', actualToken);
+        localStorage.setItem('groovely_user_id', actualUserId);
+        localStorage.setItem('groovely_wallet', actualWallet || '');
+        localStorage.setItem('groovely_role', actualRole);
+
+        // Decode email to state
+        try {
+          const payload = JSON.parse(atob(actualToken.split('.')[1]));
+          if (payload.email) {
+            setUserEmail(payload.email);
+          }
+        } catch (e) {
+          console.error('Error parsing token:', e);
+        }
+
+        // Set Step 3
+        setStep(3);
+      } catch (err: any) {
+        console.error('Google signup/login error:', err);
+        const errorMessage = err.message || 'Google authentication failed';
+        setError(errorMessage);
+        toast.error(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    }
+  });
 
   const handleBack = () => {
     if (step > 1) {
@@ -184,9 +265,7 @@ export const OnboardingFlow = () => {
   };
 
   const handleGoogleLogin = () => {
-    // Redirect browser to NestJS Google Auth endpoint
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-    window.location.href = `${backendUrl}/api/auth/google?role=${role === 'creator' ? 'creator' : 'fan'}`;
+    login({ loginMethods: ['google'] });
   };
 
   const handleSaveProfile = async () => {
@@ -427,7 +506,13 @@ export const OnboardingFlow = () => {
                   You're almost ready to create, stream, and connect. Let's personalize your space
                 </p>
                 <div className="bg-white/5 border border-white/10 px-4 py-1.5 rounded-full text-xs font-semibold text-white">
-                  Wallet Connected: {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Not Connected'}
+                  {address ? (
+                    `Wallet Connected: ${address.slice(0, 6)}...${address.slice(-4)}`
+                  ) : userEmail ? (
+                    `Signed in via Google: ${userEmail}`
+                  ) : (
+                    'Not Connected'
+                  )}
                 </div>
                 {error && (
                   <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm font-medium">
