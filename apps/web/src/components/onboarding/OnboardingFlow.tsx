@@ -10,7 +10,7 @@ import { SelectionCard } from './SelectionCard';
 import { WalletCard } from './WalletCard';
 import { Twitter as XIcon, Instagram as InstagramIcon, SoundCloud as SoundCloudIcon, Google as GoogleIcon } from '../ui/SocialIcons';
 import toast from 'react-hot-toast';
-import { useLogin } from '@privy-io/react-auth';
+import { useLogin, usePrivy } from '@privy-io/react-auth';
 
 export const MetaMaskIcon = () => (
   <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="MetaMask" className="w-16 h-16" />
@@ -89,20 +89,35 @@ export const OnboardingFlow = () => {
   const { disconnect } = useDisconnect();
   const { signMessageAsync } = useSignMessage();
 
+  const { ready, authenticated, user } = usePrivy();
+
   const { login } = useLogin({
-    onComplete: async ({ user }) => {
+    onComplete: () => {
+      console.log('Login complete, waiting for wallet to initialize...');
+    }
+  });
+
+  useEffect(() => {
+    if (!ready || !authenticated || !user) return;
+    
+    // Check if we already have a backend token
+    const token = localStorage.getItem('groovely_token');
+    if (token) return; // Already registered/logged in on backend
+    
+    const smartWallet = user.linkedAccounts.find(
+      (account) => account.type === 'smart_wallet'
+    );
+    const walletAddr = smartWallet?.address || user.wallet?.address;
+    
+    if (!walletAddr) {
+      // Wallet is still being created/loaded by Privy, wait for next change
+      return;
+    }
+    
+    const registerUserOnBackend = async () => {
       setLoading(true);
       setError(null);
       try {
-        const smartWallet = user.linkedAccounts.find(
-          (account) => account.type === 'smart_wallet'
-        );
-        const walletAddr = smartWallet?.address || user.wallet?.address;
-        
-        if (!walletAddr) {
-          throw new Error('Could not retrieve smart wallet address.');
-        }
-
         const payloadRole = role === 'creator' ? 'creator' : 'fan';
         const signupRes = await fetch('/api/auth/signup/wallet', {
           method: 'POST',
@@ -149,16 +164,18 @@ export const OnboardingFlow = () => {
 
         // Set Step 3
         setStep(3);
+        toast.success('Successfully connected!');
       } catch (err: any) {
-        console.error('Google signup/login error:', err);
-        const errorMessage = err.message || 'Google authentication failed';
-        setError(errorMessage);
-        toast.error(errorMessage);
+        console.error('Google backend link error:', err);
+        setError(err.message || 'Backend registration failed');
+        toast.error(err.message || 'Backend registration failed');
       } finally {
         setLoading(false);
       }
-    }
-  });
+    };
+    
+    registerUserOnBackend();
+  }, [ready, authenticated, user, role]);
 
   const handleBack = () => {
     if (step > 1) {
@@ -357,7 +374,7 @@ export const OnboardingFlow = () => {
 
 
           {/* Back Button */}
-          {step < 4 && !(mounted && localStorage.getItem('groovely_token')) && (
+          {step < 4 && (
             <button
               onClick={handleBack}
               className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors mb-6 text-sm font-bold uppercase tracking-widest"
@@ -472,14 +489,24 @@ export const OnboardingFlow = () => {
                   <div className="flex-grow h-[1px] bg-white/5" />
                 </div>
 
-                {/* Google Button */}
-                <button 
-                  onClick={handleGoogleLogin}
-                  className="w-full flex items-center justify-center gap-3 bg-white/5 border border-white/10 hover:bg-white/10 transition-all rounded-full py-4 group active:scale-[0.98]"
-                >
-                  <GoogleIcon size={18} />
-                  <span className="text-white font-bold text-sm tracking-wide">Continue with Google</span>
-                </button>
+                {/* Google Button or Skip button if already on Google */}
+                {(mounted && localStorage.getItem('groovely_token')) ? (
+                  <Button 
+                    fullWidth 
+                    variant="secondary"
+                    onClick={() => setStep(3)}
+                  >
+                    {address ? 'Continue to Profile' : 'Continue without Wallet'}
+                  </Button>
+                ) : (
+                  <button 
+                    onClick={handleGoogleLogin}
+                    className="w-full flex items-center justify-center gap-3 bg-white/5 border border-white/10 hover:bg-white/10 transition-all rounded-full py-4 group active:scale-[0.98]"
+                  >
+                    <GoogleIcon size={18} />
+                    <span className="text-white font-bold text-sm tracking-wide">Continue with Google</span>
+                  </button>
+                )}
 
                 <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest text-center mt-2">
                   Your privacy matters. We won't post anything.
