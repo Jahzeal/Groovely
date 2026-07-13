@@ -10,7 +10,7 @@ import { SelectionCard } from './SelectionCard';
 import { WalletCard } from './WalletCard';
 import { Twitter as XIcon, Instagram as InstagramIcon, SoundCloud as SoundCloudIcon, Google as GoogleIcon } from '../ui/SocialIcons';
 import toast from 'react-hot-toast';
-import { useLogin, usePrivy } from '@privy-io/react-auth';
+import { useLogin, usePrivy, useLogout } from '@privy-io/react-auth';
 
 export const MetaMaskIcon = () => (
   <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="MetaMask" className="w-16 h-16" />
@@ -54,6 +54,7 @@ export const OnboardingFlow = () => {
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [walletTimedOut, setWalletTimedOut] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -96,6 +97,15 @@ export const OnboardingFlow = () => {
       console.log('Login complete, waiting for wallet to initialize...');
     }
   });
+
+  const { logout } = useLogout();
+
+  // If user is authenticated but wallet hasn't appeared within 12s, surface the timeout UI
+  useEffect(() => {
+    if (!authenticated || user?.wallet?.address) return;
+    const timer = setTimeout(() => setWalletTimedOut(true), 12000);
+    return () => clearTimeout(timer);
+  }, [authenticated, user?.wallet?.address]);
 
   useEffect(() => {
     if (!ready || !authenticated || !user) return;
@@ -508,14 +518,26 @@ export const OnboardingFlow = () => {
                     {address ? 'Continue to Profile' : 'Continue without Wallet'}
                   </Button>
                 ) : authenticated ? (
-                  // Already logged in with Privy but wallet still generating
-                  <button 
-                    disabled
-                    className="w-full flex items-center justify-center gap-3 bg-white/5 border border-white/10 rounded-full py-4 opacity-60 cursor-not-allowed"
-                  >
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span className="text-white font-bold text-sm tracking-wide">Setting up your wallet...</span>
-                  </button>
+                  // Already logged in with Privy — wallet generating or timed out
+                  walletTimedOut ? (
+                    <div className="w-full flex flex-col items-center gap-3">
+                      <p className="text-red-400 text-xs text-center">Wallet setup timed out. Please try again.</p>
+                      <button
+                        onClick={async () => { setWalletTimedOut(false); await logout(); }}
+                        className="w-full flex items-center justify-center gap-3 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 transition-all rounded-full py-4"
+                      >
+                        <span className="text-red-400 font-bold text-sm tracking-wide">Retry — Sign in with Google</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      disabled
+                      className="w-full flex items-center justify-center gap-3 bg-white/5 border border-white/10 rounded-full py-4 opacity-60 cursor-not-allowed"
+                    >
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span className="text-white font-bold text-sm tracking-wide">Setting up your wallet...</span>
+                    </button>
+                  )
                 ) : (
                   <button 
                     onClick={handleGoogleLogin}
