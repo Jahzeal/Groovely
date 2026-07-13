@@ -10,6 +10,19 @@ const nextConfig: NextConfig = {
     };
     return config;
   },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value: "script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval' https://auth.privy.io; frame-src 'self' https://auth.privy.io;",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
