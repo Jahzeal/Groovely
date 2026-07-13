@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAccount, useConnect, useDisconnect, useConfig } from 'wagmi';
 import { signMessage } from '@wagmi/core';
@@ -10,7 +10,7 @@ import { WalletCard } from '@/components/onboarding/WalletCard';
 import { MetaMaskIcon, WalletConnectIcon, PhantomIcon } from '@/components/onboarding/OnboardingFlow';
 import { Google as GoogleIcon } from '@/components/ui/SocialIcons';
 import toast from 'react-hot-toast';
-import { useLogin } from '@privy-io/react-auth';
+import { useLogin, usePrivy } from '@privy-io/react-auth';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,21 +23,47 @@ export default function LoginPage() {
   const { disconnect } = useDisconnect();
   const config = useConfig();
 
+  const { ready, authenticated, user } = usePrivy();
+
   const { login } = useLogin({
-    onComplete: async ({ user }) => {
+    onComplete: () => {
+      console.log('Login complete, waiting for auto-login handler...');
+    }
+  });
+
+  useEffect(() => {
+    // If the user already has a token in localStorage, redirect immediately
+    const token = localStorage.getItem('groovely_token');
+    const role = localStorage.getItem('groovely_role');
+    if (token) {
+      if (role === 'fan') {
+        router.push('/explore');
+      } else {
+        router.push('/dashboard');
+      }
+      return;
+    }
+
+    if (!ready || !authenticated || !user) return;
+
+    // Check if wallet exists
+    const smartWallet = user.linkedAccounts.find(
+      (account) => account.type === 'smart_wallet'
+    );
+    const walletAddr = smartWallet?.address || user.wallet?.address;
+
+    if (!walletAddr) {
+      // Privy is logged in, but no wallet exists (corrupted state).
+      // Automatically redirect to onboarding to resolve this and provision a wallet.
+      console.log('No wallet found for logged-in user, redirecting to onboarding...');
+      router.push('/onboarding');
+      return;
+    }
+
+    const autoLoginBackend = async () => {
       setLoading(true);
       setError(null);
       try {
-        const smartWallet = user.linkedAccounts.find(
-          (account) => account.type === 'smart_wallet'
-        );
-        const walletAddr = smartWallet?.address || user.wallet?.address;
-        
-        if (!walletAddr) {
-          throw new Error('Could not retrieve smart wallet address.');
-        }
-
-        // Authenticate with backend
         const connectRes = await fetch(`/api/auth/login/wallet`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -45,10 +71,17 @@ export default function LoginPage() {
         });
 
         const authData = await connectRes.json();
-        if (!connectRes.ok) throw new Error(authData.error || authData.message || 'Authentication failed');
+        
+        // If they are authenticated with Privy but don't exist in our backend DB yet,
+        // redirect them to onboarding to choose a role and sign up.
+        if (!connectRes.ok) {
+          console.log('User not registered in backend, redirecting to onboarding...');
+          router.push('/onboarding');
+          return;
+        }
 
-        const { token, user: dbUser } = authData.data;
-        localStorage.setItem('groovely_token', token);
+        const { token: jwtToken, user: dbUser } = authData.data;
+        localStorage.setItem('groovely_token', jwtToken);
         localStorage.setItem('groovely_user_id', String(dbUser.id));
         localStorage.setItem('groovely_wallet', dbUser.wallet ?? walletAddr);
         localStorage.setItem('groovely_role', dbUser.role ?? '');
@@ -59,15 +92,15 @@ export default function LoginPage() {
           router.push('/dashboard');
         }
       } catch (err: any) {
-        console.error('Login error:', err);
-        const errorMessage = err.message || 'Something went wrong during login';
-        setError(errorMessage);
-        toast.error(errorMessage);
+        console.error('Auto-login error:', err);
+        setError(err.message || 'Auto-login failed');
       } finally {
         setLoading(false);
       }
-    }
-  });
+    };
+
+    autoLoginBackend();
+  }, [ready, authenticated, user, router]);
 
   const handleConnectWallet = async () => {
     if (!wallet) return;
