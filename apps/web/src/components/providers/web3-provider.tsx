@@ -288,6 +288,8 @@ export function Web3Provider({ children }: { children: ReactNode }) {
     <PrivyProvider
       appId={privyAppId}
       config={{
+        defaultChain: polygonAmoy,
+        supportedChains: [polygonAmoy, mainnet],
         appearance: {
           theme: 'dark',
           accentColor: '#8B5CF6', // Accent purple matching Groovely theme

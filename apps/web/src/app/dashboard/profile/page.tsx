@@ -35,7 +35,8 @@ interface CreatorProfile {
 }
 
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<CreatorProfile | null>(null);
+  const [profile, setProfile] = useState<any | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,13 +44,17 @@ export default function ProfilePage() {
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem('groovely_token');
+        const userRole = localStorage.getItem('groovely_role') || 'creator';
+        setRole(userRole);
+
         if (!token) {
           setError('Not authenticated. Please log in.');
           setLoading(false);
           return;
         }
 
-        const res = await apiFetch('/api/creator/profile');
+        const endpoint = userRole === 'fan' ? '/api/fan/profile' : '/api/creator/profile';
+        const res = await apiFetch(endpoint);
         if (!res) return; // handleLogout already called
 
         const json = await res.json();
@@ -125,21 +130,29 @@ export default function ProfilePage() {
                     <div className="space-y-2">
                       <div className="flex items-center gap-4">
                         <h1 className="text-4xl font-black tracking-tight text-white">
-                          {profile.display_name || 'Unnamed Creator'}
+                          {profile.display_name || (role === 'fan' ? 'Unnamed User' : 'Unnamed Creator')}
                         </h1>
                         <span className="text-zinc-500 font-bold text-sm">@{profile.username}</span>
                       </div>
-                      {profile.creator_type && profile.creator_type.length > 0 && (
+                      {role === 'fan' ? (
                         <div className="flex flex-wrap gap-2">
-                          {profile.creator_type.map((type) => (
-                            <span
-                              key={type}
-                              className="inline-block bg-accent-purple/10 border border-accent-purple/20 px-4 py-1.5 rounded-full text-xs font-bold text-accent-purple capitalize"
-                            >
-                              {type}
-                            </span>
-                          ))}
+                          <span className="inline-block bg-[#00FF85]/10 border border-[#00FF85]/20 px-4 py-1.5 rounded-full text-xs font-bold text-[#00FF85] uppercase tracking-wider">
+                            Fan / Listener
+                          </span>
                         </div>
+                      ) : (
+                        profile.creator_type && profile.creator_type.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {profile.creator_type.map((type: string) => (
+                              <span
+                                key={type}
+                                className="inline-block bg-accent-purple/10 border border-accent-purple/20 px-4 py-1.5 rounded-full text-xs font-bold text-accent-purple capitalize"
+                              >
+                                {type}
+                              </span>
+                            ))}
+                          </div>
+                        )
                       )}
                     </div>
                   </div>
