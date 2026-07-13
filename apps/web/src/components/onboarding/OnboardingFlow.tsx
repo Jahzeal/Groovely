@@ -282,6 +282,15 @@ export const OnboardingFlow = () => {
   };
 
   const handleGoogleLogin = () => {
+    if (authenticated) {
+      // User is already logged in with Privy (e.g. from a previous session).
+      // The useEffect watcher will detect the wallet and register them automatically.
+      // If no wallet yet, show a message and wait.
+      if (!user?.wallet?.address) {
+        toast.loading('Setting up your wallet... please wait a moment.', { duration: 4000 });
+      }
+      return;
+    }
     login({ loginMethods: ['google'] });
   };
 
@@ -498,6 +507,15 @@ export const OnboardingFlow = () => {
                   >
                     {address ? 'Continue to Profile' : 'Continue without Wallet'}
                   </Button>
+                ) : authenticated ? (
+                  // Already logged in with Privy but wallet still generating
+                  <button 
+                    disabled
+                    className="w-full flex items-center justify-center gap-3 bg-white/5 border border-white/10 rounded-full py-4 opacity-60 cursor-not-allowed"
+                  >
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span className="text-white font-bold text-sm tracking-wide">Setting up your wallet...</span>
+                  </button>
                 ) : (
                   <button 
                     onClick={handleGoogleLogin}
