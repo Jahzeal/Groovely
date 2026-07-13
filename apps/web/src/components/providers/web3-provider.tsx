@@ -27,70 +27,87 @@ const queryClient = new QueryClient();
 function SmartAccountConnectorWrapper({ children }: { children: ReactNode }) {
   useEmbeddedSmartAccountConnector({
     getSmartAccountFromSigner: (async ({ signer }: any) => {
-      const publicClient = createPublicClient({
-        chain: polygonAmoy,
-        transport: http(),
-      });
+      console.log('[ZeroDev] ✅ getSmartAccountFromSigner called. Signer:', signer);
+      try {
+        const publicClient = createPublicClient({
+          chain: polygonAmoy,
+          transport: http(),
+        });
+        console.log('[ZeroDev] ✅ Public client created.');
 
-      const entryPointAddress = '0x0000000071727De22E5E9d8BAf0edAc6f37da032';
+        const entryPointAddress = '0x0000000071727De22E5E9d8BAf0edAc6f37da032';
 
-      // 1. Create ECDSA validator using the Privy signer
-      const ecdsaValidator = await signerToEcdsaValidator(publicClient, {
-        signer,
-        entryPoint: {
-          address: entryPointAddress,
-          version: '0.7',
-        },
-        kernelVersion: KERNEL_V3_1,
-      });
-
-      // 2. Create Kernel Account
-      const account = await createKernelAccount(publicClient, {
-        plugins: {
-          sudo: ecdsaValidator,
-        },
-        entryPoint: {
-          address: entryPointAddress,
-          version: '0.7',
-        },
-        kernelVersion: KERNEL_V3_1,
-      });
-
-      // 3. Create Kernel Account Client
-      const projectId = process.env.NEXT_PUBLIC_ZERODEV_PROJECT_ID || '';
-      const kernelClient = (createKernelAccountClient as any)({
-        account,
-        chain: polygonAmoy,
-        bundlerTransport: http(`https://rpc.zerodev.app/api/v2/bundler/${projectId}`),
-        middleware: {
-          sponsorUserOperation: async ({ userOperation }: any) => {
-            const zerodevPaymaster = (createZeroDevPaymasterClient as any)({
-              chain: polygonAmoy,
-              entryPoint: {
-                address: entryPointAddress,
-                version: '0.7',
-              },
-              transport: http(`https://rpc.zerodev.app/api/v2/paymaster/${projectId}`),
-            });
-            
-            return (zerodevPaymaster as any).sponsorUserOperation({
-              userOperation,
-              entryPoint: {
-                address: entryPointAddress,
-                version: '0.7',
-              },
-            });
+        // 1. Create ECDSA validator using the Privy signer
+        console.log('[ZeroDev] ⏳ Creating ECDSA validator...');
+        const ecdsaValidator = await signerToEcdsaValidator(publicClient, {
+          signer,
+          entryPoint: {
+            address: entryPointAddress,
+            version: '0.7',
           },
-        },
-      });
+          kernelVersion: KERNEL_V3_1,
+        });
+        console.log('[ZeroDev] ✅ ECDSA validator created.');
 
-      // 4. Return EIP-1193 provider wrapping the kernel client
-      return new KernelEIP1193Provider(kernelClient) as any;
+        // 2. Create Kernel Account
+        console.log('[ZeroDev] ⏳ Creating Kernel account...');
+        const account = await createKernelAccount(publicClient, {
+          plugins: {
+            sudo: ecdsaValidator,
+          },
+          entryPoint: {
+            address: entryPointAddress,
+            version: '0.7',
+          },
+          kernelVersion: KERNEL_V3_1,
+        });
+        console.log('[ZeroDev] ✅ Kernel account created. Address:', account.address);
+
+        // 3. Create Kernel Account Client
+        const projectId = process.env.NEXT_PUBLIC_ZERODEV_PROJECT_ID || '';
+        console.log('[ZeroDev] ⏳ Creating Kernel account client. ProjectId:', projectId ? '✅ set' : '❌ MISSING');
+        const kernelClient = (createKernelAccountClient as any)({
+          account,
+          chain: polygonAmoy,
+          bundlerTransport: http(`https://rpc.zerodev.app/api/v2/bundler/${projectId}`),
+          middleware: {
+            sponsorUserOperation: async ({ userOperation }: any) => {
+              const zerodevPaymaster = (createZeroDevPaymasterClient as any)({
+                chain: polygonAmoy,
+                entryPoint: {
+                  address: entryPointAddress,
+                  version: '0.7',
+                },
+                transport: http(`https://rpc.zerodev.app/api/v2/paymaster/${projectId}`),
+              });
+              
+              return (zerodevPaymaster as any).sponsorUserOperation({
+                userOperation,
+                entryPoint: {
+                  address: entryPointAddress,
+                  version: '0.7',
+                },
+              });
+            },
+          },
+        });
+        console.log('[ZeroDev] ✅ Kernel account client created.');
+
+        // 4. Return EIP-1193 provider wrapping the kernel client
+        const provider = new KernelEIP1193Provider(kernelClient) as any;
+        console.log('[ZeroDev] ✅ KernelEIP1193Provider created. Smart wallet ready!');
+        return provider;
+      } catch (err: any) {
+        console.error('[ZeroDev] ❌ Smart account creation FAILED:', err?.message || err);
+        console.error('[ZeroDev] ❌ Full error:', err);
+        throw err;
+      }
     }) as any,
   });
 
   return <>{children}</>;
 }
+
 
 function EnvSetupGuide({
   privyAppId,
