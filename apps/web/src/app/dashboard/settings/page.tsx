@@ -35,17 +35,22 @@ export default function SettingsPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const abbrevWallet = walletAddress ? `${walletAddress.slice(0, 10)}...${walletAddress.slice(-8)}` : '—';
 
   // Load existing profile on mount
   useEffect(() => {
     setWalletAddress(localStorage.getItem('groovely_wallet'));
+    const userRole = localStorage.getItem('groovely_role') || 'creator';
+    setRole(userRole);
+    
     const fetchProfile = async () => {
       try {
         const token = localStorage.getItem('groovely_token');
         if (!token) { setFetchError('Not authenticated'); setLoadingProfile(false); return; }
 
-        const res = await apiFetch('/api/creator/profile');
+        const endpoint = userRole === 'fan' ? '/api/fan/profile' : '/api/creator/profile';
+        const res = await apiFetch(endpoint);
         if (!res) return;
         const json = await res.json();
         if (!res.ok) throw new Error(json.message || json.error || 'Failed to load profile');
@@ -54,10 +59,11 @@ export default function SettingsPage() {
         setDisplayName(p.display_name ?? '');
         setUsername(p.username ?? '');
         setBio(p.bio ?? '');
-        setCreatorTypes(p.creator_types ?? []);
+        setCreatorTypes(p.creator_types ?? p.creator_type ?? []);
         setTwitter(p.twitter ?? '');
         setInstagram(p.instagram ?? '');
         setSoundcloud(p.soundcloud ?? '');
+        setAvatarPreview(p.avatar_url ?? null);
         if (p.avatar_url) setAvatarPreview(p.avatar_url);
       } catch (err: any) {
         setFetchError(err.message || 'Could not load profile');
@@ -110,17 +116,23 @@ export default function SettingsPage() {
       const token = localStorage.getItem('groovely_token');
       if (!token) throw new Error('Not authenticated. Please log in.');
 
-      const res = await apiFetch('/api/creator/profile', {
+      const isFan = role === 'fan';
+      const endpoint = isFan ? '/api/fan/profile' : '/api/creator/profile';
+      const bodyPayload = isFan 
+        ? { displayName, username }
+        : {
+            displayName,
+            username,
+            bio,
+            creatorTypes,
+            twitter: twitter || null,
+            instagram: instagram || null,
+            soundcloud: soundcloud || null,
+          };
+
+      const res = await apiFetch(endpoint, {
         method: 'PATCH',
-        body: JSON.stringify({
-          displayName,
-          username,
-          bio,
-          creatorTypes,
-          twitter: twitter || null,
-          instagram: instagram || null,
-          soundcloud: soundcloud || null,
-        }),
+        body: JSON.stringify(bodyPayload),
       });
 
       if (!res) return;

@@ -107,6 +107,27 @@ export const OnboardingFlow = () => {
     return () => clearTimeout(timer);
   }, [authenticated, user?.wallet?.address]);
 
+  // Pre-populate profile fields from Google/Social login metadata
+  useEffect(() => {
+    if (!user) return;
+    
+    if (!displayName) {
+      const suggestedName = user.google?.name || user.github?.name || user.twitter?.name || '';
+      if (suggestedName) setDisplayName(suggestedName);
+    }
+    
+    if (!username) {
+      const email = user.google?.email || user.email?.address || '';
+      let suggestedUser = '';
+      if (user.google?.username) {
+        suggestedUser = user.google.username;
+      } else if (email) {
+        suggestedUser = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+      }
+      if (suggestedUser) setUsername(suggestedUser);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (!ready || !authenticated || !user) return;
     
