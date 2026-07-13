@@ -119,8 +119,9 @@ export const OnboardingFlow = () => {
     if (!username) {
       const email = user.google?.email || user.email?.address || '';
       let suggestedUser = '';
-      if (user.google?.username) {
-        suggestedUser = user.google.username;
+      const socialUsername = user.github?.username || user.twitter?.username || '';
+      if (socialUsername) {
+        suggestedUser = socialUsername;
       } else if (email) {
         suggestedUser = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
       }
