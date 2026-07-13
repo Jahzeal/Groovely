@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown, Bell, ShoppingCart, Copy, LogOut, User, Settings, CheckCheck, ExternalLink } from 'lucide-react';
 import { useCart } from './CartContext';
 import { handleLogout } from '@/lib/api';
+import { useLogout } from '@privy-io/react-auth';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -10,6 +11,7 @@ export const MarketTopBar = () => {
   const [sortLabel, setSortLabel] = useState('Sort By');
   const { openCart } = useCart();
   const router = useRouter();
+  const { logout } = useLogout();
   const [searchQuery, setSearchQuery] = useState('');
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
@@ -221,7 +223,7 @@ export const MarketTopBar = () => {
                     <div className="h-px bg-white/5 mx-5 my-1" />
 
                     <button
-                      onClick={handleLogout}
+                      onClick={async () => { await logout(); handleLogout(); }}
                       className="w-full flex items-center gap-3 px-5 py-3 text-sm font-bold text-red-500 hover:bg-red-500/10 transition-all"
                     >
                       <LogOut size={16} />

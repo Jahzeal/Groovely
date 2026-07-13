@@ -8,11 +8,12 @@ import {
   Copy, LogOut, User, Settings, CheckCheck, ExternalLink
 } from 'lucide-react';
 import { handleLogout } from '@/lib/api';
-import { usePrivy } from '@privy-io/react-auth';
+import { usePrivy, useLogout } from '@privy-io/react-auth';
 
 export const TopBar = () => {
   const router = useRouter();
   const { user } = usePrivy();
+  const { logout } = useLogout();
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -66,8 +67,9 @@ export const TopBar = () => {
     }
   };
 
-  const handleDisconnect = () => {
-    handleLogout();
+  const handleDisconnect = async () => {
+    await logout();   // Clear Privy session so wallet doesn't auto-reconnect
+    handleLogout();   // Clear app tokens and redirect to /login
   };
 
   const handleSearch = (e: React.KeyboardEvent) => {

@@ -21,6 +21,7 @@ import {
   Plus
 } from 'lucide-react';
 import { handleLogout } from '@/lib/api';
+import { useLogout } from '@privy-io/react-auth';
 
 interface NavItemProps {
   icon: React.ElementType;
@@ -64,6 +65,7 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
   const [mounted, setMounted] = useState(false);
   const [token, setToken] = React.useState<string | null>(null);
   const [role, setRole] = React.useState<'creator' | 'fan'>(initialRole || 'creator');
+  const { logout } = useLogout();
 
   React.useEffect(() => {
     setMounted(true);
@@ -82,8 +84,9 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
   const isMarket = activePage === 'market' || pathname?.startsWith('/marketplace');
   const isDashboard = !isMarket && (activePage === 'dashboard' || pathname === '/dashboard');
 
-  const handleSignOut = () => {
-    handleLogout();
+  const handleSignOut = async () => {
+    await logout();   // Clear Privy session so wallet doesn't auto-reconnect
+    handleLogout();   // Clear app tokens and redirect to /login
   };
 
   const isPublicRoute = pathname?.startsWith('/marketplace') || pathname?.startsWith('/explore') || pathname?.includes('/login') || pathname?.includes('/onboarding') || pathname === '/';
