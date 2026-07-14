@@ -9,6 +9,7 @@ export class MarketService {
     const result = await this.db.query(
       `SELECT 
         t.id,
+        t.user_id as user_id,
         t.title,
         t.cover_url,
         t.audio_url,
@@ -34,6 +35,7 @@ export class MarketService {
     const result = await this.db.query(
       `SELECT 
         t.id,
+        t.user_id as user_id,
         t.title,
         t.cover_url,
         t.audio_url,
@@ -64,6 +66,7 @@ export class MarketService {
     const queryText = `
       SELECT 
         t.id,
+        t.user_id as user_id,
         t.title,
         t.cover_url,
         t.audio_url,
@@ -154,6 +157,7 @@ export class MarketService {
     return {
       track: {
         id: track.id,
+        user_id: track.creator_id,
         title: track.title,
         description: track.description,
         cover_url: track.cover_url,

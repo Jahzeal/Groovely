@@ -118,7 +118,8 @@ export default function ExplorePage() {
     title: t.title,
     artist: t.artist_name || t.artistName || t.creatorName || t.artist || 'Unknown Artist',
     image: t.cover_url || t.coverArt || t.image || '',
-    audioUrl: t.audio_url || t.audioUrl || t.preview_url
+    audioUrl: t.audio_url || t.audioUrl || t.preview_url,
+    uploaderId: t.user_id
   }));
 
   const handleFollow = async (id: string | number, currentStatus: boolean) => {
@@ -182,6 +183,7 @@ export default function ExplorePage() {
                         artist={track.artist_name || track.artistName || track.creatorName || track.artist || 'Unknown Artist'}
                         image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
                         audioUrl={track.audio_url || track.audioUrl || track.preview_url}
+                        uploaderId={track.user_id}
                         queue={mapTracksToQueue(trending)}
                       />
                     ))}
@@ -249,6 +251,7 @@ export default function ExplorePage() {
                         artist={track.artist_name || track.artistName || track.creatorName || track.artist || 'Unknown Artist'}
                         image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
                         audioUrl={track.audio_url || track.audioUrl || track.preview_url}
+                        uploaderId={track.user_id}
                         queue={mapTracksToQueue(recommended)}
                       />
                     ))}
@@ -281,6 +284,7 @@ export default function ExplorePage() {
                         artist={track.artist_name || track.artistName || track.creatorName || track.artist || 'Unknown Artist'}
                         image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1485603348612-40db7f90bbbe?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
                         audioUrl={track.audio_url || track.audioUrl || track.preview_url}
+                        uploaderId={track.user_id}
                         queue={mapTracksToQueue(recent)}
                       />
                     ))}

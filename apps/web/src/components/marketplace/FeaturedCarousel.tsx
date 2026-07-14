@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 
 interface FeaturedTrack {
   id: number;
+  uploaderId?: number;
   title: string;
   creator: string;
   image: string;
@@ -46,6 +47,7 @@ export const FeaturedCarousel = () => {
           if (Array.isArray(items) && items.length > 0) {
             setFeatured(items.map((item: any) => ({
               id: item.id,
+              uploaderId: item.user_id,
               title: item.title,
               creator: item.artist_name || item.artist_username || 'Unknown Artist',
               image: ipfsToHttp(item.cover_url || item.coverImage),
@@ -154,13 +156,15 @@ export const FeaturedCarousel = () => {
                 title: track.title, 
                 artist: track.creator, 
                 image: track.image,
-                audioUrl: track.audioUrl
+                audioUrl: track.audioUrl,
+                uploaderId: track.uploaderId
               }, featured.map(t => ({
                 id: t.id,
                 title: t.title,
                 artist: t.creator,
                 image: t.image,
-                audioUrl: t.audioUrl
+                audioUrl: t.audioUrl,
+                uploaderId: t.uploaderId
               })))}
               className="w-16 h-16 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_25px_rgba(139,92,246,0.5)] hover:scale-110 hover:shadow-[0_0_40px_rgba(139,92,246,0.7)] transition-all active:scale-95"
             >

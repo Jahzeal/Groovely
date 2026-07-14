@@ -49,7 +49,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     }
   }, []);
 
-  const isUploader = currentUserId !== null && trackData?.track?.user_id === currentUserId;
+  const isUploader = currentUserId !== null && (trackData?.track?.user_id === currentUserId || trackData?.creator?.id === currentUserId);
 
   React.useEffect(() => {
     const audioUrl = trackData?.track?.audio_url;
@@ -259,12 +259,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <div className="absolute bottom-10 right-10">
                 <button 
                   onClick={() => playTrack({
-                    id: displayTrack.id,
-                    title: displayTrack.title,
-                    artist: displayTrack.creator,
-                    image: displayTrack.image,
-                    audioUrl: displayTrack.audio_url,
-                    uploaderId: track.user_id
+                     id: displayTrack.id,
+                     title: displayTrack.title,
+                     artist: displayTrack.creator,
+                     image: displayTrack.image,
+                     audioUrl: displayTrack.audio_url,
+                     uploaderId: track.user_id || creator.id
                   })}
                   className="w-20 h-20 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(157,0,255,0.6)] hover:scale-105 transition-all"
                 >
@@ -343,6 +343,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                           licenseTypes={t.license_types || ['License']}
                           price={t.price || '0.00'}
                           currency={t.currency || '$0'}
+                          uploaderId={creator.id}
                         />
                       ))
                     ) : (

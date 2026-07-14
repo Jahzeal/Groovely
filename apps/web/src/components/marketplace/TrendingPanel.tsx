@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 
 interface TrendingTrack {
   id: number;
+  uploaderId?: number;
   title: string;
   creator: string;
   image: string;
@@ -38,6 +39,7 @@ export const TrendingPanel = () => {
             
             const mappedTracks = tracks.map((t: any) => ({
               id: t.id,
+              uploaderId: t.user_id,
               title: t.title,
               creator: t.artist_name || t.artistName || t.creatorName || t.creator || 'Unknown',
               image: t.cover_url || t.coverArt || t.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
@@ -134,13 +136,15 @@ export const TrendingPanel = () => {
                           title: track.title,
                           artist: track.creator,
                           image: track.image,
-                          audioUrl: track.audioUrl
+                          audioUrl: track.audioUrl,
+                          uploaderId: track.uploaderId
                         }, trending.map(t => ({
                           id: t.id,
                           title: t.title,
                           artist: t.creator,
                           image: t.image,
-                          audioUrl: t.audioUrl
+                          audioUrl: t.audioUrl,
+                          uploaderId: t.uploaderId
                         })));
                       }}
                       className={`w-7 h-7 bg-accent-purple rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ${hoveredId === track.id ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}

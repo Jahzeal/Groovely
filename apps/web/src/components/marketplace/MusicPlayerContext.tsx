@@ -62,17 +62,21 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     purchasedRef.current = purchasedTrackIds;
   }, [purchasedTrackIds]);
 
+  const isTrackPurchased = useCallback((trackId: string | number) => {
+    return Array.from(purchasedRef.current).some(pId => String(pId) === String(trackId));
+  }, []);
+
   const getIsUploader = useCallback((track: Track | null) => {
     if (!track || !track.uploaderId) return false;
     if (typeof window === 'undefined') return false;
     const stored = localStorage.getItem('groovely_user_id');
-    return stored ? Number(stored) === track.uploaderId : false;
+    return stored ? Number(stored) === Number(track.uploaderId) : false;
   }, []);
 
   const addPurchasedTrack = useCallback((id: string | number) => {
     setPurchasedTrackIds(prev => new Set([...prev, id]));
     // If the preview limit was reached for this track, dismiss it and resume
-    if (currentTrackRef.current?.id === id) {
+    if (currentTrackRef.current?.id && String(currentTrackRef.current.id) === String(id)) {
       setPreviewLimitReached(false);
       if (audioRef.current) {
         audioRef.current.play().catch(() => {});
@@ -131,7 +135,7 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
           if (
             activeTrack &&
             audio.currentTime >= PREVIEW_LIMIT_SECONDS &&
-            !purchasedRef.current.has(activeTrack.id) &&
+            !isTrackPurchased(activeTrack.id) &&
             !getIsUploader(activeTrack)
           ) {
             audio.pause();
@@ -226,7 +230,7 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (!audioRef.current || !currentTrack) return;
 
     // Don't allow resuming if preview limit is reached and track not purchased
-    if (previewLimitReached && !purchasedRef.current.has(currentTrack.id) && !getIsUploader(currentTrack)) return;
+    if (previewLimitReached && !isTrackPurchased(currentTrack.id) && !getIsUploader(currentTrack)) return;
 
     try {
       if (isPlaying) {
@@ -249,7 +253,7 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const seek = (time: number) => {
     if (!audioRef.current) return;
     // Prevent seeking past preview limit if not purchased
-    if (currentTrack && !purchasedRef.current.has(currentTrack.id) && !getIsUploader(currentTrack)) {
+    if (currentTrack && !isTrackPurchased(currentTrack.id) && !getIsUploader(currentTrack)) {
       time = Math.min(time, PREVIEW_LIMIT_SECONDS);
     }
     audioRef.current.currentTime = time;

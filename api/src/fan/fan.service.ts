@@ -9,6 +9,7 @@ export class FanService {
     const result = await this.db.query(
       `SELECT 
         t.id,
+        t.user_id as user_id,
         t.title,
         t.cover_url,
         t.audio_url,
@@ -20,7 +21,7 @@ export class FanService {
        JOIN users u ON t.user_id = u.id
        LEFT JOIN track_streams ts ON t.id = ts.track_id AND ts.played_at >= NOW() - INTERVAL '7 days'
        WHERE t.visibility = 'public'
-       GROUP BY t.id, u.display_name, u.username
+       GROUP BY t.id, t.user_id, u.display_name, u.username
        ORDER BY stream_count DESC
        LIMIT $1`,
       [limit]
@@ -32,6 +33,7 @@ export class FanService {
     const result = await this.db.query(
       `SELECT 
         t.id,
+        t.user_id as user_id,
         t.title,
         t.cover_url,
         t.audio_url,
@@ -112,6 +114,7 @@ export class FanService {
     const result = await this.db.query(
       `SELECT 
         t.id,
+        t.user_id as user_id,
         t.title,
         t.cover_url,
         t.audio_url,
