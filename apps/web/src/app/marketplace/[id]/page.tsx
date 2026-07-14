@@ -513,7 +513,7 @@ const PurchaseSidebar = ({
                 <span className="font-bold text-zinc-400 capitalize">{ed.editionType} Edition</span>
                 <div className="flex items-center gap-3">
                   <span className="text-zinc-600">
-                    {ed.maxSupply === 0 || ed.maxSupply >= 1000000 ? 'Unlimited' : `${ed.maxSupply - ed.mintedSupply} left`}
+                    {ed.maxSupply === null || ed.maxSupply === 0 || ed.maxSupply >= 1000000 ? 'Unlimited' : `${ed.maxSupply - ed.mintedSupply} left`}
                   </span>
                   <span className="font-black text-white">${ed.mintPriceUsdc.toFixed(2)}</span>
                 </div>
