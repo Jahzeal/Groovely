@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useMusicPlayer } from './MusicPlayerContext';
 import { ShoppingCart, ChevronLeft, ChevronRight, Play, Heart, Loader2, Pause } from 'lucide-react';
@@ -18,60 +18,60 @@ interface FeaturedTrack {
   currency: string;
 }
 
-const FEATURED: FeaturedTrack[] = [
-  {
-    id: 1,
-    title: 'Neon Soul',
-    creator: 'Midnight Vibe',
-    image: 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-    licenseType: 'Exclusive License',
-    price: '0.25 ETH',
-    currency: '$420',
-  },
-  {
-    id: 2,
-    title: 'Lagos at 2AM',
-    creator: 'Groove Master',
-    image: 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-    licenseType: 'Non-Exclusive',
-    price: '0.05 ETH',
-    currency: '$84',
-  },
-  {
-    id: 3,
-    title: 'Cosmic Drift',
-    creator: 'Synth Wave',
-    image: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-    licenseType: 'Stems Included',
-    price: '0.12 ETH',
-    currency: '$202',
-  },
-  {
-    id: 4,
-    title: 'After Rain',
-    creator: 'Static Echo',
-    image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
-    licenseType: 'Beat Lease',
-    price: '0.03 ETH',
-    currency: '$50',
-  },
-];
+const ipfsToHttp = (url?: string): string => {
+  if (!url) return '';
+  if (url.startsWith('ipfs://')) {
+    const cid = url.slice(7);
+    if (cid.length < 40) return '';
+    return `https://gateway.pinata.cloud/ipfs/${cid}`;
+  }
+  return url;
+};
 
 export const FeaturedCarousel = () => {
+  const [featured, setFeatured] = useState<FeaturedTrack[]>([]);
   const [active, setActive] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [savedIds, setSavedIds] = useState<number[]>([]);
+  const [loading, setLoading] = useState(true);
   const { playTrack, currentTrack, isPlaying } = useMusicPlayer();
 
-  const prev = () => setActive(i => (i === 0 ? FEATURED.length - 1 : i - 1));
-  const next = () => setActive(i => (i === FEATURED.length - 1 ? 0 : i + 1));
-  const track = FEATURED[active];
+  useEffect(() => {
+    async function loadFeatured() {
+      try {
+        const res = await apiFetch('/api/market/category/all?limit=10');
+        if (res && res.ok) {
+          const json = await res.json();
+          const items = json.data || json;
+          if (Array.isArray(items) && items.length > 0) {
+            setFeatured(items.map((item: any) => ({
+              id: item.id,
+              title: item.title,
+              creator: item.artist_name || item.artist_username || 'Unknown Artist',
+              image: ipfsToHttp(item.cover_url || item.coverImage),
+              audioUrl: item.audio_url,
+              licenseType: item.payment_model === 'free' ? 'Free License' : 'Exclusive License',
+              price: item.license_price ? `${item.license_price} USDC` : 'Free',
+              currency: item.license_price ? `$${item.license_price}` : '$0',
+            })));
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load featured tracks:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadFeatured();
+  }, []);
+
+  const prev = () => setActive(i => (i === 0 ? featured.length - 1 : i - 1));
+  const next = () => setActive(i => (i === featured.length - 1 ? 0 : i + 1));
+  
+  const track = featured[active];
 
   const handleSave = async (e: React.MouseEvent) => {
+    if (!track) return;
     e.preventDefault();
     e.stopPropagation();
     
@@ -100,6 +100,24 @@ export const FeaturedCarousel = () => {
       setIsSaving(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="relative rounded-3xl overflow-hidden h-[300px] shadow-2xl bg-[#0F0F1A]/60 border border-white/5 flex flex-col items-center justify-center gap-4">
+        <Loader2 className="w-8 h-8 text-accent-purple animate-spin" />
+        <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px]">Loading Featured Tracks...</p>
+      </div>
+    );
+  }
+
+  if (featured.length === 0) {
+    return (
+      <div className="relative rounded-3xl overflow-hidden h-[300px] shadow-2xl bg-[#0F0F1A]/60 border border-white/5 flex flex-col items-center justify-center p-8 text-center">
+        <h3 className="text-xl font-black text-white mb-2 uppercase tracking-tight">No Featured Tracks Yet</h3>
+        <p className="text-zinc-500 text-sm max-w-sm">When creators upload and mint tracks, they will automatically appear here in the spotlight!</p>
+      </div>
+    );
+  }
 
   return (
     <div className="relative rounded-3xl overflow-hidden h-[300px] shadow-2xl group">
@@ -137,7 +155,7 @@ export const FeaturedCarousel = () => {
                 artist: track.creator, 
                 image: track.image,
                 audioUrl: track.audioUrl
-              }, FEATURED.map(t => ({
+              }, featured.map(t => ({
                 id: t.id,
                 title: t.title,
                 artist: t.creator,
@@ -190,7 +208,7 @@ export const FeaturedCarousel = () => {
 
       {/* Dots */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2">
-        {FEATURED.map((_, i) => (
+        {featured.map((_, i) => (
           <button
             key={i}
             onClick={() => setActive(i)}

@@ -71,7 +71,7 @@ export class TrackService {
         user_id, title, description, audio_url, cover_url, visibility, 
         explicit, category, tags, bpm, key, isrc, usage_rights, payment_model,
         license_price, royalty_percentage, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'active')
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'draft')
       RETURNING *`,
       [
         userId, title, description, audioUrl, coverUrl, visibility || 'public',
@@ -124,6 +124,10 @@ export class TrackService {
     const values: any[] = [];
     let paramIndex = 1;
 
+    if (updates.status !== undefined) {
+      fields.push(`status = $${paramIndex++}`);
+      values.push(updates.status);
+    }
     if (updates.title !== undefined) {
       fields.push(`title = $${paramIndex++}`);
       values.push(updates.title);
@@ -311,6 +315,31 @@ export class TrackService {
         `;
         break;
 
+      case 'uploaded':
+        queryText = `
+          SELECT * FROM (
+            SELECT DISTINCT ON (t.id)
+              t.id,
+              t.title,
+              t.cover_url,
+              t.audio_url,
+              t.category,
+              u.display_name as artist_name,
+              u.username as artist_username,
+              'uploaded' as type,
+              t.created_at as action_date,
+              NULL::numeric as amount,
+              NULL::text as currency
+            FROM tracks t
+            JOIN users u ON t.user_id = u.id
+            WHERE t.user_id = $1 AND t.status = 'active'
+            ORDER BY t.id, t.created_at DESC
+          ) as distinct_uploaded
+          ORDER BY action_date DESC
+          LIMIT $2
+        `;
+        break;
+
       case 'all':
       default:
         queryText = `
@@ -371,6 +400,24 @@ export class TrackService {
               JOIN tracks t ON p.track_id = t.id
               JOIN users u ON t.user_id = u.id
               WHERE p.user_id = $1
+
+              UNION ALL
+
+              SELECT 
+                t.id,
+                t.title,
+                t.cover_url,
+                t.audio_url,
+                t.category,
+                u.display_name as artist_name,
+                u.username as artist_username,
+                'uploaded' as type,
+                t.created_at as action_date,
+                NULL::numeric as amount,
+                NULL::text as currency
+              FROM tracks t
+              JOIN users u ON t.user_id = u.id
+              WHERE t.user_id = $1 AND t.status = 'active'
             ) as all_actions
             ORDER BY id, action_date DESC
           ) as unique_tracks

@@ -50,6 +50,41 @@ export default function MintPage() {
   const [tokenId, setTokenId] = useState('');
 
   React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const params = new URLSearchParams(window.location.search);
+    const idParam = params.get('id');
+    
+    if (idParam) {
+      const trackIdNum = Number(idParam);
+      setTrackId(trackIdNum);
+      
+      const fetchTrackData = async () => {
+        try {
+          const res = await apiFetch(`/api/creator/tracks/${idParam}`);
+          if (res && res.ok) {
+            const json = await res.json();
+            const track = json.track || json.data || json;
+            
+            if (track.title) setTrackTitle(track.title);
+            if (track.cover_url) setTrackCover(track.cover_url);
+            if (track.category) setTrackGenre(track.category);
+            if (track.tags) setTrackTags(track.tags);
+            if (track.usage_rights) setTrackRights(track.usage_rights);
+            if (track.payment_model) setPaymentModel(track.payment_model);
+            if (track.license_price !== undefined) setLicensePrice(String(track.license_price));
+            if (track.royalty_percentage !== undefined) setRoyaltyPercentage(String(track.royalty_percentage));
+          }
+        } catch (err) {
+          console.error('Failed to fetch track details for minting:', err);
+          toast.error('Failed to fetch track details');
+        }
+      };
+      
+      fetchTrackData();
+      return;
+    }
+
     const id = localStorage.getItem('pending_track_id');
     const title = localStorage.getItem('pending_track_title');
     const cover = localStorage.getItem('pending_track_cover');
@@ -240,6 +275,19 @@ export default function MintPage() {
 
     } catch (err: any) {
       console.error('Minting error:', err);
+      
+      // Update track status to 'failed' in backend database
+      if (trackId) {
+        try {
+          await apiFetch(`/api/creator/tracks/${trackId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: 'failed' }),
+          });
+        } catch (dbErr) {
+          console.error('Failed to update track status to failed:', dbErr);
+        }
+      }
+
       const msg = err?.shortMessage || err?.message || 'Minting failed. Please try again.';
       toast.error(msg);
       setMintStatus('idle');

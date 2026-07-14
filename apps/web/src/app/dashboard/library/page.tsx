@@ -225,7 +225,7 @@ export default function LibraryPage() {
           {/* Filters */}
           <div className="flex items-center justify-between mb-10">
             <div className="flex items-center gap-2">
-              {['All', 'Played', 'Saved', 'Purchased'].map(tab => (
+              {['All', 'Played', 'Saved', 'Purchased', 'Uploaded'].map(tab => (
                 <FilterTab 
                   key={tab} 
                   label={tab} 

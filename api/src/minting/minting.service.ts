@@ -201,12 +201,32 @@ export class MintingService {
   }
 
   async updateEditionContractId(editionId: number, contractEditionId: number, txHash: string) {
-    await this.db.query(
-      `UPDATE editions
-       SET contract_edition_id = $1, deploy_tx_hash = $2
-       WHERE id = $3`,
-      [contractEditionId, txHash, editionId],
-    );
+    await this.db.query('BEGIN');
+    try {
+      await this.db.query(
+        `UPDATE editions
+         SET contract_edition_id = $1, deploy_tx_hash = $2
+         WHERE id = $3`,
+        [contractEditionId, txHash, editionId],
+      );
+
+      // Automatically update the associated track's status to 'active' (Live)
+      await this.db.query(
+        `UPDATE tracks
+         SET status = 'active'
+         WHERE id = (
+           SELECT s.track_id 
+           FROM songs s
+           JOIN editions e ON s.id = e.song_id
+           WHERE e.id = $1
+         )`,
+        [editionId],
+      );
+      await this.db.query('COMMIT');
+    } catch (err) {
+      await this.db.query('ROLLBACK');
+      throw err;
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────

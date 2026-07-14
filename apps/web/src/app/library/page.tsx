@@ -212,7 +212,7 @@ export default function LibraryPage() {
 
             {/* Filter Tabs */}
             <div className="flex items-center gap-3 mb-10 overflow-x-auto pb-2 no-scrollbar">
-              {['All', 'Played', 'Saved', 'Purchased'].map(tab => (
+              {['All', 'Played', 'Saved', 'Purchased', 'Uploaded'].map(tab => (
                 <FilterTab 
                   key={tab} 
                   label={tab} 

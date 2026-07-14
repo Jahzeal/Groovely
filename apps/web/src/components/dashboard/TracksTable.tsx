@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, Eye, MoreVertical, Edit2, RefreshCw, Loader2 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import { useRouter } from 'next/navigation';
 
 /** Convert ipfs:// URLs to a public HTTP gateway URL so browsers can load them */
 const ipfsToHttp = (url?: string): string => {
@@ -32,7 +33,8 @@ interface TrackRow {
 }
 
 const StatusBadge = ({ status }: { status: string }) => {
-  const normalizedStatus = status === 'active' ? 'Live' : status === 'Live' ? 'Live' : status === 'Minting' ? 'Minting' : status === 'Failed' ? 'Failed' : 'Draft';
+  const s = status?.toLowerCase();
+  const normalizedStatus = s === 'active' || s === 'live' ? 'Live' : s === 'minting' ? 'Minting' : s === 'failed' ? 'Failed' : 'Draft';
   const styles: Record<string, string> = {
     Live: "bg-[#00FF85]/10 text-[#00FF85] border-[#00FF85]/20",
     Draft: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
@@ -40,16 +42,36 @@ const StatusBadge = ({ status }: { status: string }) => {
     Minting: "bg-accent-purple/10 text-accent-purple border-accent-purple/20"
   };
 
+  const tooltips: Record<string, string> = {
+    Live: "This track is minted and live on the public marketplace.",
+    Draft: "This track is a draft. Click the action icon on the right to mint and publish it.",
+    Failed: "Minting failed. Click the retry icon on the right to run minting again.",
+    Minting: "This track is currently minting on the blockchain."
+  };
+
   return (
-    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${styles[normalizedStatus] || styles.Draft}`}>
+    <span 
+      title={tooltips[normalizedStatus]}
+      className={`cursor-help px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${styles[normalizedStatus] || styles.Draft}`}
+    >
       {normalizedStatus}
     </span>
   );
 };
 
 export const TracksTable = () => {
+  const router = useRouter();
   const [tracks, setTracks] = useState<TrackRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const handleActionClick = (track: TrackRow) => {
+    const s = track.status?.toLowerCase() || 'draft';
+    if (s === 'active' || s === 'live') {
+      router.push(`/marketplace/${(track as any).id}`);
+    } else {
+      router.push(`/dashboard/upload/mint?id=${(track as any).id}`);
+    }
+  };
 
   useEffect(() => {
     async function fetchTracks() {
@@ -145,9 +167,22 @@ export const TracksTable = () => {
                   </td>
                   <td className="py-5">
                     <div className="flex items-center justify-end gap-3 text-zinc-500">
-                      <button className="hover:text-white transition-colors">
-                         {track.status === 'Draft' ? <Edit2 size={16} /> : track.status === 'Failed' ? <RefreshCw size={16} /> : <Eye size={16} />}
-                      </button>
+                      {(() => {
+                        const s = track.status?.toLowerCase() || 'draft';
+                        const isLive = s === 'active' || s === 'live';
+                        const isFailed = s === 'failed';
+                        const isMinting = s === 'minting';
+                        return (
+                          <button 
+                            onClick={() => handleActionClick(track)}
+                            className="hover:text-white transition-colors"
+                            title={isLive ? "View in Marketplace" : isFailed ? "Retry Minting" : isMinting ? "Minting..." : "Mint Track"}
+                            disabled={isMinting}
+                          >
+                             {isLive ? <Eye size={16} /> : isFailed ? <RefreshCw size={16} /> : isMinting ? <Loader2 size={16} className="animate-spin" /> : <Edit2 size={16} />}
+                          </button>
+                        );
+                      })()}
                       <button className="hover:text-white transition-colors">
                          <MoreVertical size={16} />
                       </button>
