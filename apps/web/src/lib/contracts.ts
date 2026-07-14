@@ -22,6 +22,32 @@ export const USDC_AMOY = '0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582' as `0x${st
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const GROOVELI_ABI = [
+  // publishSong(string title, string metadataURI, tuple[] _contributors, string editionType, uint256 maxSupply, uint256 mintPrice, string editionMetadataURI)
+  {
+    name: 'publishSong',
+    type: 'function' as const,
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'title', type: 'string' },
+      { name: 'metadataURI', type: 'string' },
+      {
+        name: '_contributors',
+        type: 'tuple[]',
+        components: [
+          { name: 'wallet', type: 'address' },
+          { name: 'basisPoints', type: 'uint96' },
+        ],
+      },
+      { name: 'editionType', type: 'string' },
+      { name: 'maxSupply', type: 'uint256' },
+      { name: 'mintPrice', type: 'uint256' },
+      { name: 'editionMetadataURI', type: 'string' },
+    ],
+    outputs: [
+      { name: 'songId', type: 'uint256' },
+      { name: 'editionId', type: 'uint256' },
+    ],
+  },
   // mint(uint256 editionId, uint256 amount)
   {
     name: 'mint',
@@ -248,6 +274,33 @@ export async function createEditionOnChain(
     abi: GROOVELI_ABI,
     functionName: 'createEdition',
     args: [BigInt(songId), editionType, BigInt(maxSupply), parseUSDC(mintPriceUsdc), metadataUri],
+  });
+}
+
+/** Publish a song on-chain (registers track, splits, and edition in one call). Returns tx hash. */
+export async function publishSongOnChain(
+  config: Config,
+  title: string,
+  metadataUri: string,
+  contributors: { wallet: `0x${string}`; basisPoints: bigint }[],
+  editionType: string,
+  maxSupply: number,
+  mintPriceUsdc: number,
+  editionMetadataUri = ''
+): Promise<`0x${string}`> {
+  return writeContract(config, {
+    address: CONTRACT_ADDRESS,
+    abi: GROOVELI_ABI,
+    functionName: 'publishSong',
+    args: [
+      title,
+      metadataUri,
+      contributors,
+      editionType,
+      BigInt(maxSupply),
+      parseUSDC(mintPriceUsdc),
+      editionMetadataUri
+    ],
   });
 }
 

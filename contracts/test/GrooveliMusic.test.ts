@@ -34,12 +34,15 @@ describe("GrooveliMusic1155", () => {
       platform.address
     ) as GrooveliMusic1155;
 
-    // Mint USDC to fan for testing
+    // Mint USDC to fan, owner, and creator for testing
     await mockUSDC.mint(fan.address, toUSDC(1000));
-    // Approve contract to spend fan's USDC
-    await mockUSDC
-      .connect(fan)
-      .approve(await grooveli.getAddress(), toUSDC(1000));
+    await mockUSDC.connect(fan).approve(await grooveli.getAddress(), toUSDC(1000));
+
+    await mockUSDC.mint(owner.address, toUSDC(1000));
+    await mockUSDC.connect(owner).approve(await grooveli.getAddress(), toUSDC(1000));
+
+    await mockUSDC.mint(creator.address, toUSDC(1000));
+    await mockUSDC.connect(creator).approve(await grooveli.getAddress(), toUSDC(1000));
   });
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -58,10 +61,15 @@ describe("GrooveliMusic1155", () => {
       ).to.be.revertedWith("Title required");
     });
 
-    it("only owner can create songs", async () => {
-      await expect(
-        grooveli.connect(fan).createSong("Hack", "ipfs://x", fan.address)
-      ).to.be.reverted;
+    it("allows any user to create a song by paying the fee", async () => {
+      const platformBefore = await mockUSDC.balanceOf(platform.address);
+      await grooveli.connect(fan).createSong("Fan Song", "ipfs://x", fan.address);
+      const song = await grooveli.getSong(1);
+      expect(song.title).to.equal("Fan Song");
+      expect(song.creator).to.equal(fan.address);
+
+      const platformAfter = await mockUSDC.balanceOf(platform.address);
+      expect(platformAfter - platformBefore).to.equal(toUSDC(25) / 10n); // 2.50 USDC
     });
   });
 
@@ -72,7 +80,7 @@ describe("GrooveliMusic1155", () => {
     });
 
     it("sets valid contributor splits summing to 10000 bps", async () => {
-      await grooveli.setContributors(1, [
+      await grooveli.connect(creator).setContributors(1, [
         { wallet: creator.address,  basisPoints: 5000 },
         { wallet: producer.address, basisPoints: 3000 },
         { wallet: platform.address, basisPoints: 2000 },
@@ -84,11 +92,19 @@ describe("GrooveliMusic1155", () => {
 
     it("reverts when splits do not sum to 10000", async () => {
       await expect(
-        grooveli.setContributors(1, [
+        grooveli.connect(creator).setContributors(1, [
           { wallet: creator.address, basisPoints: 4000 },
           { wallet: producer.address, basisPoints: 4000 },
         ])
       ).to.be.revertedWith("Splits must equal 100%");
+    });
+
+    it("reverts when non-creator tries to set contributors", async () => {
+      await expect(
+        grooveli.connect(fan).setContributors(1, [
+          { wallet: fan.address, basisPoints: 10000 }
+        ])
+      ).to.be.revertedWith("Only song creator");
     });
   });
 
@@ -99,7 +115,7 @@ describe("GrooveliMusic1155", () => {
     });
 
     it("creates a limited edition with correct data", async () => {
-      await grooveli.createEdition(1, "collector", 100, toUSDC(50), "");
+      await grooveli.connect(creator).createEdition(1, "collector", 100, toUSDC(50), "");
       const ed = await grooveli.getEdition(1);
       expect(ed.editionType).to.equal("collector");
       expect(ed.maxSupply).to.equal(100n);
@@ -108,9 +124,55 @@ describe("GrooveliMusic1155", () => {
     });
 
     it("creates an unlimited edition when maxSupply is 0", async () => {
-      await grooveli.createEdition(1, "open", 0, toUSDC(2), "");
+      await grooveli.connect(creator).createEdition(1, "open", 0, toUSDC(2), "");
       const ed = await grooveli.getEdition(1);
       expect(ed.unlimited).to.be.true;
+    });
+
+    it("reverts when non-creator tries to create an edition", async () => {
+      await expect(
+        grooveli.connect(fan).createEdition(1, "fan", 100, toUSDC(10), "")
+      ).to.be.revertedWith("Only song creator");
+    });
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  describe("Unified song publication", () => {
+    it("publishes song, splits, and edition in one call and charges 2.50 USDC fee", async () => {
+      const platformBefore = await mockUSDC.balanceOf(platform.address);
+      const creatorBefore = await mockUSDC.balanceOf(creator.address);
+
+      await grooveli.connect(creator).publishSong(
+        "Unified Track",
+        "ipfs://QmSongMetadata",
+        [
+          { wallet: creator.address, basisPoints: 7000 },
+          { wallet: producer.address, basisPoints: 3000 }
+        ],
+        "fan",
+        500,
+        toUSDC(5),
+        "ipfs://QmEditionMetadata"
+      );
+
+      const song = await grooveli.getSong(1);
+      expect(song.title).to.equal("Unified Track");
+      expect(song.creator).to.equal(creator.address);
+
+      const contribs = await grooveli.getContributors(1);
+      expect(contribs.length).to.equal(2);
+      expect(contribs[0].basisPoints).to.equal(7000n);
+
+      const ed = await grooveli.getEdition(1);
+      expect(ed.editionType).to.equal("fan");
+      expect(ed.maxSupply).to.equal(500n);
+      expect(ed.mintPrice).to.equal(toUSDC(5));
+
+      const platformAfter = await mockUSDC.balanceOf(platform.address);
+      expect(platformAfter - platformBefore).to.equal(toUSDC(25) / 10n); // 2.50 USDC
+
+      const creatorAfter = await mockUSDC.balanceOf(creator.address);
+      expect(creatorBefore - creatorAfter).to.equal(toUSDC(25) / 10n); // 2.50 USDC
     });
   });
 
@@ -120,11 +182,11 @@ describe("GrooveliMusic1155", () => {
 
     beforeEach(async () => {
       await grooveli.createSong("My Song", "ipfs://Qm123", creator.address);
-      await grooveli.setContributors(1, [
+      await grooveli.connect(creator).setContributors(1, [
         { wallet: creator.address,  basisPoints: 8000 }, // 80%
         { wallet: producer.address, basisPoints: 2000 }, // 20%
       ]);
-      await grooveli.createEdition(1, "fan", 100, MINT_PRICE, "");
+      await grooveli.connect(creator).createEdition(1, "fan", 100, MINT_PRICE, "");
     });
 
     it("mints token to buyer", async () => {
@@ -165,7 +227,7 @@ describe("GrooveliMusic1155", () => {
 
     it("reverts when sold out", async () => {
       // Create a 1-supply edition
-      await grooveli.createEdition(1, "founder", 1, MINT_PRICE, "");
+      await grooveli.connect(creator).createEdition(1, "founder", 1, MINT_PRICE, "");
       await grooveli.connect(fan).mint(2, 1);
 
       await expect(grooveli.connect(fan).mint(2, 1)).to.be.revertedWith(

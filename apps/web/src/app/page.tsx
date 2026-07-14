@@ -28,7 +28,7 @@ export default function Home() {
             Sign Up
           </Link>
           <Link href="/marketplace" className="rounded-xl bg-accent-purple px-6 py-2.5 text-white text-xs font-bold hover:bg-accent-purple/90 transition-all uppercase tracking-widest shadow-[0_0_15px_rgba(139,92,246,0.3)]">
-            Explore Groovely
+            Explore Grooveli
           </Link>
         </div>
       </nav>
@@ -57,7 +57,7 @@ export default function Home() {
       {/* Why Choose Fragment */}
       <section className="py-32 px-6 relative z-10">
         <div className="max-w-7xl mx-auto text-center">
-          <h2 className="text-4xl lg:text-5xl font-black mb-6 uppercase tracking-tighter">Why choose Groovely?</h2>
+          <h2 className="text-4xl lg:text-5xl font-black mb-6 uppercase tracking-tighter">Why choose Grooveli?</h2>
           <p className="text-zinc-600 text-lg mb-24 max-w-2xl mx-auto font-medium">The future of audio is decentralized, fair, and fun.</p>
           <div className="grid md:grid-cols-3 gap-20">
             {[
@@ -110,7 +110,7 @@ export default function Home() {
                 Sign Up
               </Link>
               <Link href="/marketplace" className="w-full sm:w-auto rounded-xl bg-accent-purple px-12 py-5 text-white font-bold text-sm hover:bg-accent-purple/90 transition-all shadow-[0_0_25px_rgba(139,92,246,0.3)] hover:scale-105 uppercase tracking-widest">
-                Explore Groovely
+                Explore Grooveli
               </Link>
             </div>
          </div>
@@ -133,7 +133,7 @@ export default function Home() {
           </div>
         </div>
         <div className="max-w-7xl mx-auto mt-16 text-center text-[10px] text-zinc-800 tracking-widest uppercase font-bold">
-          © 2024 Groovely Inc. All rights reserved.
+          © 2024 Grooveli Inc. All rights reserved.
         </div>
       </footer>
     </div>

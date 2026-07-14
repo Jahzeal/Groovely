@@ -21,7 +21,7 @@ export const ExperienceMockup = () => {
             
             <h2 className="text-5xl lg:text-7xl font-black mb-8 leading-[1.1] uppercase tracking-tighter">Experience <br/> Tunes Together</h2>
             <p className="text-zinc-500 text-lg lg:text-xl max-w-2xl mb-20 leading-relaxed font-medium">
-               Groovely Listening Rooms bring the concert vibe to your browser. Chat with artists, meet other fans, and participate in live drops.
+               Grooveli Listening Rooms bring the concert vibe to your browser. Chat with artists, meet other fans, and participate in live drops.
             </p>
             
             {/* Sophisticated Player UI */}

@@ -19,9 +19,9 @@ import { MintConfirmationModal } from '@/components/dashboard/MintConfirmationMo
 import { MintSuccessModal } from '@/components/dashboard/MintSuccessModal';
 import { useConfig, useAccount } from 'wagmi';
 import { 
-  createSongOnChain, 
-  setContributorsOnChain, 
-  createEditionOnChain, 
+  publishSongOnChain, 
+  approveUSDC,
+  parseUSDC,
   waitForTx 
 } from '@/lib/contracts';
 import { apiFetch } from '@/lib/api';
@@ -49,6 +49,56 @@ export default function MintPage() {
   const [royaltyPercentage, setRoyaltyPercentage] = useState('10');
   const [txHash, setTxHash] = useState('');
   const [tokenId, setTokenId] = useState('');
+
+  // Collaborators configuration
+  const [collaborators, setCollaborators] = useState<{ username: string; wallet: string; percentage: number }[]>([]);
+  const [collabUsername, setCollabUsername] = useState('');
+  const [collabPercentage, setCollabPercentage] = useState(10);
+  const [isSearchingCollab, setIsSearchingCollab] = useState(false);
+
+  const handleAddCollabClick = async () => {
+    const username = collabUsername.trim();
+    if (!username) {
+      toast.error('Please enter a username');
+      return;
+    }
+    if (collaborators.some(c => c.username.toLowerCase() === username.toLowerCase())) {
+      toast.error('Collaborator already added');
+      return;
+    }
+    const currentTotal = collaborators.reduce((acc, c) => acc + c.percentage, 0);
+    if (currentTotal + collabPercentage >= 100) {
+      toast.error('Total splits cannot exceed 100%');
+      return;
+    }
+
+    setIsSearchingCollab(true);
+    try {
+      const res = await apiFetch(`/api/profile/${username}`);
+      if (!res || !res.ok) {
+        throw new Error('User not found');
+      }
+      const user = await res.json();
+      if (!user.wallet) {
+        throw new Error('User does not have a wallet registered');
+      }
+
+      setCollaborators([
+        ...collaborators,
+        {
+          username: user.username,
+          wallet: user.wallet,
+          percentage: collabPercentage,
+        }
+      ]);
+      setCollabUsername('');
+      toast.success(`Added @${user.username}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to verify username');
+    } finally {
+      setIsSearchingCollab(false);
+    }
+  };
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -133,7 +183,13 @@ export default function MintPage() {
     setMintStatus('minting');
 
     try {
-      // 1. Create Song in database
+      // 1. Approve USDC Upload Fee of 2.50 USDC
+      setMintStepLabel('Step 1/2: Approving USDC transaction fee (please confirm in wallet)...');
+      const approveTx = await approveUSDC(config, parseUSDC(2.50));
+      await waitForTx(config, approveTx);
+
+      // 2. Create Song in database
+      setMintStepLabel('Step 2/2: Publishing track on-chain (please confirm in wallet)...');
       const songRes = await apiFetch('/api/songs', {
         method: 'POST',
         body: JSON.stringify({
@@ -150,25 +206,34 @@ export default function MintPage() {
       const songDbId = songDb.id;
       const songMetadataUri = songDb.metadata_uri || `ipfs://QmSongMetadataPlaceholder`;
 
-      // 2. Set Contributors in database
+      // 3. Set Contributors in database
+      const totalCollabPercent = collaborators.reduce((acc, c) => acc + c.percentage, 0);
+      const dbContributors = [
+        {
+          wallet_address: address,
+          basis_points: (100 - totalCollabPercent) * 100,
+          role: 'artist',
+          display_name: 'Creator',
+        },
+        ...collaborators.map(c => ({
+          wallet_address: c.wallet,
+          basis_points: c.percentage * 100,
+          role: 'collaborator',
+          display_name: c.username,
+        }))
+      ];
+
       const contributorsRes = await apiFetch(`/api/songs/${songDbId}/contributors`, {
         method: 'POST',
         body: JSON.stringify({
-          contributors: [
-            {
-              wallet_address: address,
-              basis_points: 10000,
-              role: 'artist',
-              display_name: 'Creator',
-            },
-          ],
+          contributors: dbContributors,
         }),
       });
       if (!contributorsRes || !contributorsRes.ok) {
         throw new Error('Failed to set contributors in database');
       }
 
-      // 3. Create Edition in database
+      // 4. Create Edition in database
       const editionRes = await apiFetch(`/api/songs/${songDbId}/editions`, {
         method: 'POST',
         body: JSON.stringify({
@@ -184,30 +249,46 @@ export default function MintPage() {
       const editionDb = editionJson.data || editionJson.edition || editionJson;
       const editionDbId = editionDb.id;
 
-      // 4. Create Song on-chain
-      setMintStepLabel('Step 1/3: Registering track on-chain (please confirm in wallet)...');
-      const songTx = await createSongOnChain(
+      // 5. Publish song on-chain (combined call)
+      const contributorsArg = dbContributors.map(c => ({
+        wallet: c.wallet_address as `0x${string}`,
+        basisPoints: BigInt(c.basis_points),
+      }));
+
+      const publishTx = await publishSongOnChain(
         config,
         trackTitle,
         songMetadataUri,
-        address
+        contributorsArg,
+        'open',
+        0,
+        Number(licensePrice) || 0,
+        ''
       );
-      const songReceipt = await waitForTx(config, songTx);
+      const publishReceipt = await waitForTx(config, publishTx);
 
-      // Parse songId from receipt logs using event selector
+      // Parse songId and editionId from receipt logs
       let onChainSongId = 1;
+      let onChainEditionId = 1;
       try {
-        const songLog = songReceipt.logs.find(
+        const songLog = publishReceipt.logs.find(
           (log) => log.topics[0] === '0x2cf607229937514d342113433bf500c4287cba30f599f96dbdb595701e6bf8d8'
         );
         if (songLog && songLog.topics[1]) {
           onChainSongId = parseInt(songLog.topics[1], 16);
         }
+
+        const editionLog = publishReceipt.logs.find(
+          (log) => log.topics[0] === '0xdea513584a6187bd083673763b9a1321f417e674a36df7c0e66c4e99368d6d50'
+        );
+        if (editionLog && editionLog.topics[1]) {
+          onChainEditionId = parseInt(editionLog.topics[1], 16);
+        }
       } catch (err) {
-        console.error('Error parsing song ID log:', err);
+        console.error('Error parsing on-chain event logs:', err);
       }
 
-      // 5. Update Song Contract ID on backend
+      // 6. Update Song Contract ID on backend
       const updateSongRes = await apiFetch(`/api/songs/${songDbId}/contract-id`, {
         method: 'PATCH',
         body: JSON.stringify({
@@ -218,50 +299,19 @@ export default function MintPage() {
         throw new Error('Failed to sync song contract ID with backend');
       }
 
-      // 6. Set Contributors on-chain
-      setMintStepLabel('Step 2/3: Configuring royalty splits (please confirm in wallet)...');
-      const contributorsTx = await setContributorsOnChain(config, onChainSongId, [
-        { wallet: address, basisPoints: BigInt(10000) },
-      ]);
-      await waitForTx(config, contributorsTx);
-
-      // 7. Create Edition on-chain
-      setMintStepLabel('Step 3/3: Deploying licensing contract (please confirm in wallet)...');
-      const editionTx = await createEditionOnChain(
-        config,
-        onChainSongId,
-        'open',
-        0,
-        Number(licensePrice) || 0
-      );
-      const editionReceipt = await waitForTx(config, editionTx);
-
-      // Parse editionId from receipt logs using event selector
-      let onChainEditionId = 1;
-      try {
-        const editionLog = editionReceipt.logs.find(
-          (log) => log.topics[0] === '0xdea513584a6187bd083673763b9a1321f417e674a36df7c0e66c4e99368d6d50'
-        );
-        if (editionLog && editionLog.topics[1]) {
-          onChainEditionId = parseInt(editionLog.topics[1], 16);
-        }
-      } catch (err) {
-        console.error('Error parsing edition ID log:', err);
-      }
-
-      // 8. Update Edition Contract ID on backend
+      // 7. Update Edition Contract ID on backend
       const updateEditionRes = await apiFetch(`/api/editions/${editionDbId}/contract-id`, {
         method: 'PATCH',
         body: JSON.stringify({
           contract_edition_id: onChainEditionId,
-          tx_hash: editionTx,
+          tx_hash: publishTx,
         }),
       });
       if (!updateEditionRes || !updateEditionRes.ok) {
         throw new Error('Failed to sync edition contract ID with backend');
       }
 
-      // 9. Clear localStorage pending data
+      // 8. Clear localStorage pending data
       localStorage.removeItem('pending_track_id');
       localStorage.removeItem('pending_track_title');
       localStorage.removeItem('pending_track_cover');
@@ -272,10 +322,10 @@ export default function MintPage() {
       localStorage.removeItem('pending_track_price');
       localStorage.removeItem('pending_track_royalty');
 
-      setTxHash(editionTx);
+      setTxHash(publishTx);
       setTokenId(`#${onChainEditionId}`);
       setMintStatus('success');
-      toast.success('Track minted successfully!');
+      toast.success('Track published successfully!');
 
     } catch (err: any) {
       console.error('Minting error:', err);
@@ -396,21 +446,19 @@ export default function MintPage() {
                         <span className="text-sm font-bold">Multi-Edition (ERC-1155 Platform Contract)</span>
                       </div>
                       <div className="bg-[#0F0F1A] border border-white/10 rounded-lg px-4 py-2 text-xs font-bold text-zinc-400 text-center uppercase tracking-widest">
-                        {paymentModel === 'none' ? 'No licensing fee' : paymentModel === 'royalty' ? `${royaltyPercentage}% royalty` : `$${licensePrice} USDC`}
+                        {paymentModel === 'none' ? 'No licensing fee' : `$${licensePrice} USDC`}
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Royalty Split */}
+              {/* Revenue Splits */}
               <div className="bg-white/5 border border-white/5 rounded-[40px] p-10 space-y-8">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-white">Royalty Share split</h3>
-                  <div className="flex items-center gap-2">
-                     <span className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Secondary Royalty</span>
-                     <span className="text-sm font-black text-[#00FF85]">{royaltyPercentage}%</span>
-                  </div>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-white">
+                    Revenue Splits
+                  </h3>
                 </div>
 
                 <div className="space-y-6">
@@ -427,9 +475,83 @@ export default function MintPage() {
                       </div>
                    </div>
 
-                   <div className="bg-[#0F0F1A]/50 border-2 border-dashed border-white/5 rounded-2xl py-12 flex items-center justify-center">
-                      <p className="text-xs font-bold uppercase tracking-widest text-zinc-700">No Collaborators Added Yet</p>
-                   </div>
+                    {/* Add Collaborator Form */}
+                    {addCollaborator && (
+                      <div className="bg-[#0F0F1A] border border-white/5 rounded-2xl p-6 space-y-4">
+                        <h4 className="text-xs font-black uppercase tracking-widest text-white">Add Collaborator</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="space-y-1">
+                            <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Username</label>
+                            <input
+                              type="text"
+                              value={collabUsername}
+                              onChange={(e) => setCollabUsername(e.target.value)}
+                              placeholder="e.g. producer_john"
+                              className="w-full bg-[#050510] border border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-white outline-none focus:border-accent-purple/50"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Split (%)</label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="99"
+                              value={collabPercentage}
+                              onChange={(e) => setCollabPercentage(Number(e.target.value))}
+                              className="w-full bg-[#050510] border border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-white outline-none focus:border-accent-purple/50"
+                            />
+                          </div>
+                          <div className="flex items-end">
+                            <Button
+                              onClick={handleAddCollabClick}
+                              disabled={isSearchingCollab}
+                              className="w-full bg-accent-purple text-xs font-bold py-2 rounded-lg"
+                            >
+                              {isSearchingCollab ? 'Checking...' : 'Add'}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Splits List */}
+                    <div className="space-y-3">
+                      {/* Creator (100% minus collabs) */}
+                      <div className="flex items-center justify-between bg-[#0F0F1A] border border-white/5 rounded-xl p-4">
+                        <div>
+                          <p className="text-xs font-black text-white">You (Creator)</p>
+                          <p className="text-[9px] text-zinc-500 font-bold truncate max-w-[200px]">{address}</p>
+                        </div>
+                        <span className="text-sm font-black text-accent-cyan">{100 - collaborators.reduce((acc, c) => acc + c.percentage, 0)}%</span>
+                      </div>
+
+                      {/* Added Collaborators */}
+                      {collaborators.map((c, idx) => (
+                        <div key={c.username} className="flex items-center justify-between bg-[#0F0F1A] border border-white/5 rounded-xl p-4">
+                          <div>
+                            <p className="text-xs font-black text-white">@{c.username}</p>
+                            <p className="text-[9px] text-zinc-500 font-bold truncate max-w-[200px]">{c.wallet}</p>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-sm font-black text-[#00FF85]">{c.percentage}%</span>
+                            <button
+                              onClick={() => {
+                                setCollaborators(collaborators.filter((_, i) => i !== idx));
+                              }}
+                              className="text-red-500 hover:text-red-400 text-xs font-bold"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {collaborators.length === 0 && !addCollaborator && (
+                      <div className="bg-[#0F0F1A]/50 border-2 border-dashed border-white/5 rounded-2xl py-12 flex items-center justify-center">
+                         <p className="text-xs font-bold uppercase tracking-widest text-zinc-700">No Collaborators Added Yet</p>
+                      </div>
+                    )}
                 </div>
               </div>
 

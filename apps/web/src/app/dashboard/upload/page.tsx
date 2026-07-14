@@ -520,61 +520,7 @@ export default function UploadPage() {
                         </div>
                       </div>
 
-                      {/* Royalty */}
-                      <div className="space-y-4">
-                        <div 
-                          className="flex items-center justify-between gap-4 cursor-pointer"
-                          onClick={() => setPaymentModel('royalty')}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${paymentModel === 'royalty' ? 'border-accent-purple bg-accent-purple/20' : 'border-zinc-700 bg-transparent'}`}>
-                              {paymentModel === 'royalty' && <div className="w-2 h-2 bg-accent-purple rounded-full" />}
-                            </div>
-                            <span className={`text-sm font-bold transition-colors ${paymentModel === 'royalty' ? 'text-white' : 'text-zinc-500'}`}>Royalty</span>
-                          </div>
-                          <div className="w-24 relative" onClick={(e) => e.stopPropagation()}>
-                            <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-sm transition-colors ${paymentModel === 'royalty' ? 'text-zinc-400' : 'text-zinc-600'}`}>%</span>
-                            <input 
-                              type="text" 
-                              value={royaltyPercentage}
-                              onChange={(e) => {
-                                let val = parseInt(e.target.value.replace(/[^0-9]/g, ''));
-                                if (isNaN(val)) val = 0;
-                                if (val > 100) val = 100;
-                                setRoyaltyPercentage(val);
-                              }}
-                              disabled={paymentModel !== 'royalty'}
-                              className={`w-full bg-transparent border border-white/10 rounded-lg pl-6 pr-3 py-2 text-sm font-bold text-right outline-none focus:border-accent-purple/50 transition-colors ${paymentModel === 'royalty' ? 'text-white' : 'text-zinc-500'}`} 
-                            />
-                          </div>
-                        </div>
-                        <div className="px-2 relative pt-2">
-                          <div className={`h-2 rounded-full w-full relative ${paymentModel === 'royalty' ? 'bg-zinc-800' : 'bg-zinc-900 opacity-50'}`}>
-                            <div 
-                              className="h-full bg-accent-purple rounded-full relative transition-all duration-75"
-                              style={{ width: `${royaltyPercentage}%` }}
-                            >
-                              {paymentModel === 'royalty' && (
-                                <div className="absolute -right-3 -top-8 bg-zinc-800 border border-white/10 px-1.5 py-1 rounded-md text-[10px] font-black text-white shadow-xl pointer-events-none">
-                                  {royaltyPercentage}%
-                                  <div className="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-zinc-800 border-r border-b border-white/10 rotate-45" />
-                                </div>
-                              )}
-                              <div className={`absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)] pointer-events-none ${paymentModel === 'royalty' ? 'bg-white' : 'bg-zinc-600'}`} />
-                            </div>
-                          </div>
-                          {paymentModel === 'royalty' && (
-                            <input 
-                              type="range" 
-                              min="0" 
-                              max="100" 
-                              value={royaltyPercentage}
-                              onChange={(e) => setRoyaltyPercentage(Number(e.target.value))}
-                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            />
-                          )}
-                        </div>
-                      </div>
+
 
                       {/* No License Fee */}
                       <div 

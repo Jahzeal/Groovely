@@ -319,7 +319,7 @@ export class ProfileService {
 
   async getPublicProfile(username: string) {
     const result = await this.db.query(
-      `SELECT id, display_name, username, bio, creator_type, twitter, instagram, soundcloud, avatar_url, role 
+      `SELECT id, display_name, username, bio, creator_type, twitter, instagram, soundcloud, avatar_url, role, wallet 
        FROM users 
        WHERE username = $1`,
       [username]

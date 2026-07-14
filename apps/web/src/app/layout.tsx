@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Groovely | Web3 Music Licensing & Marketplace",
-  description: "Discover, stream, and license high-quality beats, podcasts, and songs with on-chain ownership on Groovely.",
+  title: "Grooveli | Web3 Music Licensing & Marketplace",
+  description: "Discover, stream, and license high-quality beats, podcasts, and songs with on-chain ownership on Grooveli.",
 };
 
 import { Web3Provider } from "@/components/providers/web3-provider";

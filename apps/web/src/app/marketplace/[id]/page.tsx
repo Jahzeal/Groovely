@@ -147,46 +147,35 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#050510] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-accent-purple border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  const track = trackData?.track;
+  const creator = trackData?.creator;
+  const more_from_creator = trackData?.more_from_creator;
 
-  if (error || !trackData) {
-    return (
-      <div className="min-h-screen bg-[#050510] flex flex-col items-center justify-center p-6 text-center">
-        <h1 className="text-2xl font-black mb-4">Oops! {error || 'Track not found'}</h1>
-        <Button onClick={() => router.push('/marketplace')}>Back to Marketplace</Button>
-      </div>
-    );
-  }
+  // Map backend fields to the UI needs (hook is always called at top level)
+  const displayTrack = React.useMemo(() => {
+    if (!track || !creator) return null;
+    return {
+      ...track,
+      creator: creator.name || 'Unknown',
+      handle: creator.username ? `@${creator.username}` : '@unknown',
+      image: track.cover_url || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+      description: track.description || 'No description provided.',
+      price: track.price || '0.00',
+      priceUsd: (parseFloat(track.price || '0') * 2400).toFixed(2), // Mock conversion
+      bpm: track.bpm || 'N/A',
+      key: track.key || 'N/A',
+      duration: audioDuration,
+      fileType: track.file_type || 'WAV',
+      nftId: track.nft_id || 'Not Minted',
+      royalty: track.royalty_percentage ? `${track.royalty_percentage}%` : '0%',
+      licenses: track.license_types || ['Standard License']
+    };
+  }, [track, creator, audioDuration]);
 
-  const { track, creator, more_from_creator } = trackData;
-
-  // Map backend fields to the UI needs
-  const displayTrack = {
-    ...track,
-    creator: creator.name || 'Unknown',
-    handle: creator.username ? `@${creator.username}` : '@unknown',
-    image: track.cover_url || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
-    description: track.description || 'No description provided.',
-    price: track.price || '0.00',
-    priceUsd: (parseFloat(track.price || '0') * 2400).toFixed(2), // Mock conversion
-    bpm: track.bpm || 'N/A',
-    key: track.key || 'N/A',
-    duration: audioDuration,
-    fileType: track.file_type || 'WAV',
-    nftId: track.nft_id || 'Not Minted',
-    royalty: track.royalty_percentage ? `${track.royalty_percentage}%` : '0%',
-    licenses: track.license_types || ['Standard License']
-  };
-
-  // Build editions list from database or fallback
+  // Build editions list from database or fallback (hook is always called at top level)
   const editionsList: EditionInfo[] = React.useMemo(() => {
-    if (trackData?.editions && trackData.editions.length > 0) {
+    if (!trackData || !displayTrack) return [];
+    if (trackData.editions && trackData.editions.length > 0) {
       return trackData.editions.map((e: any) => ({
         id: e.id,
         contractEditionId: Number(e.contract_edition_id) || 1, // Fallback to 1 if not yet synced/indexed
@@ -210,7 +199,24 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         active: true,
       }
     ];
-  }, [trackData, displayTrack.id, displayTrack.price]);
+  }, [trackData, displayTrack]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#050510] flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-accent-purple border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error || !trackData || !displayTrack) {
+    return (
+      <div className="min-h-screen bg-[#050510] flex flex-col items-center justify-center p-6 text-center">
+        <h1 className="text-2xl font-black mb-4">Oops! {error || 'Track not found'}</h1>
+        <Button onClick={() => router.push('/marketplace')}>Back to Marketplace</Button>
+      </div>
+    );
+  }
 
   return (
     <CartProvider>

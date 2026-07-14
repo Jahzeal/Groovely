@@ -5,7 +5,7 @@ import { Play, ShoppingCart, Heart, Loader2, Pause } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCart } from './CartContext';
 import { useMusicPlayer } from './MusicPlayerContext';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, resolveIpfsUrl } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 interface TrackCardProps {
@@ -68,7 +68,7 @@ export const TrackCard = ({ id, title, creator, image, audioUrl, licenseTypes, p
     >
       {/* Image */}
       <img
-        src={image}
+        src={resolveIpfsUrl(image) || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
         alt={title}
         className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
       />
@@ -96,7 +96,7 @@ export const TrackCard = ({ id, title, creator, image, audioUrl, licenseTypes, p
         onClick={(e) => { 
           e.preventDefault(); 
           e.stopPropagation(); 
-          playTrack({ id: id || title, title, artist: creator, image, audioUrl, uploaderId }, queue);
+          playTrack({ id: id || title, title, artist: creator, image: resolveIpfsUrl(image), audioUrl: resolveIpfsUrl(audioUrl), uploaderId }, queue);
         }}
         className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-all duration-300
           ${hovered ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}

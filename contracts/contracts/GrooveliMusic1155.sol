@@ -53,6 +53,7 @@ contract GrooveliMusic1155 is ERC1155, ERC1155Supply, ERC2981, Ownable, Reentran
     IERC20 public immutable usdc;
     address public platformWallet;
     uint96  public platformFeeBps = 500; // 5%
+    uint256 public constant UPLOAD_FEE = 2_500_000; // 2.50 USDC (6 decimals)
 
     uint256 private _songCounter;
     uint256 private _editionCounter;
@@ -100,9 +101,17 @@ contract GrooveliMusic1155 is ERC1155, ERC1155Supply, ERC2981, Ownable, Reentran
         string calldata title,
         string calldata metadataURI,
         address creator
-    ) external onlyOwner returns (uint256 songId) {
+    ) external returns (uint256 songId) {
         require(bytes(title).length > 0, "Title required");
         require(creator != address(0), "Invalid creator");
+
+        // Charge $2.50 USDC upload fee
+        if (UPLOAD_FEE > 0) {
+            require(
+                usdc.transferFrom(msg.sender, platformWallet, UPLOAD_FEE),
+                "USDC upload fee transfer failed"
+            );
+        }
 
         songId = ++_songCounter;
         songs[songId] = Song({
@@ -125,8 +134,9 @@ contract GrooveliMusic1155 is ERC1155, ERC1155Supply, ERC2981, Ownable, Reentran
     function setContributors(
         uint256 songId,
         Contributor[] calldata _contributors
-    ) external onlyOwner {
-        require(songs[songId].active, "Song not found");
+    ) external {
+        require(songs[songId].active, "Song not active");
+        require(songs[songId].creator == msg.sender, "Only song creator");
         require(_contributors.length > 0, "No contributors");
         require(_contributors.length <= 20, "Max 20 contributors");
 
@@ -164,8 +174,9 @@ contract GrooveliMusic1155 is ERC1155, ERC1155Supply, ERC2981, Ownable, Reentran
         uint256 maxSupply,
         uint256 mintPrice,
         string  calldata metadataURI
-    ) external onlyOwner returns (uint256 editionId) {
-        require(songs[songId].active, "Song not found");
+    ) external returns (uint256 editionId) {
+        require(songs[songId].active, "Song not active");
+        require(songs[songId].creator == msg.sender, "Only song creator");
 
         editionId = ++_editionCounter;
         bool unlimited = (maxSupply == 0);
@@ -185,6 +196,82 @@ contract GrooveliMusic1155 is ERC1155, ERC1155Supply, ERC2981, Ownable, Reentran
         string memory _metaArg   = string(metadataURI);
         string memory _songMeta  = songs[songId].metadataURI;
         string memory _resolvedUri = bytes(_metaArg).length > 0 ? _metaArg : _songMeta;
+        _tokenURIs[editionId] = _resolvedUri;
+
+        // Set ERC-2981 royalty: 10% back to the platform revenue splitter
+        _setTokenRoyalty(editionId, platformWallet, 1000);
+
+        emit EditionCreated(editionId, songId, editionType, mintPrice);
+    }
+
+    /**
+     * @notice Unified method to register a song, configure splits, and deploy a licensing edition in a single transaction.
+     *         Requires an upfront upload fee of 2.50 USDC.
+     */
+    function publishSong(
+        string calldata title,
+        string calldata metadataURI,
+        Contributor[] calldata _contributors,
+        string calldata editionType,
+        uint256 maxSupply,
+        uint256 mintPrice,
+        string calldata editionMetadataURI
+    ) external returns (uint256 songId, uint256 editionId) {
+        require(bytes(title).length > 0, "Title required");
+
+        // 1. Charge $2.50 USDC upload fee
+        if (UPLOAD_FEE > 0) {
+            require(
+                usdc.transferFrom(msg.sender, platformWallet, UPLOAD_FEE),
+                "USDC upload fee transfer failed"
+            );
+        }
+
+        // 2. Create Song
+        songId = ++_songCounter;
+        songs[songId] = Song({
+            songId:      songId,
+            title:       title,
+            metadataURI: metadataURI,
+            creator:     msg.sender,
+            active:      true
+        });
+        emit SongCreated(songId, msg.sender, title);
+
+        // 3. Set Contributors (Splits)
+        if (_contributors.length > 0) {
+            require(_contributors.length <= 20, "Max 20 contributors");
+            uint96 total;
+            for (uint256 i = 0; i < _contributors.length; i++) {
+                require(_contributors[i].wallet != address(0), "Invalid wallet");
+                require(_contributors[i].basisPoints > 0, "Zero bps");
+                total += _contributors[i].basisPoints;
+            }
+            require(total == 10_000, "Splits must equal 100%");
+
+            for (uint256 i = 0; i < _contributors.length; i++) {
+                contributors[songId].push(_contributors[i]);
+            }
+            emit ContributorsSet(songId, _contributors.length);
+        }
+
+        // 4. Create Edition
+        editionId = ++_editionCounter;
+        bool unlimited = (maxSupply == 0);
+
+        editions[editionId] = Edition({
+            editionId:    editionId,
+            songId:       songId,
+            maxSupply:    maxSupply,
+            mintedSupply: 0,
+            mintPrice:    mintPrice,
+            unlimited:    unlimited,
+            active:       true,
+            editionType:  editionType
+        });
+
+        // Set per-token URI — fall back to song metadata if none provided
+        string memory _resolvedUri = bytes(editionMetadataURI).length > 0 ? editionMetadataURI : metadataURI;
         _tokenURIs[editionId] = _resolvedUri;
 
         // Set ERC-2981 royalty: 10% back to the platform revenue splitter
