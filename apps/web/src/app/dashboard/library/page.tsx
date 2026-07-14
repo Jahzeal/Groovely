@@ -30,6 +30,7 @@ interface Track {
   audio_url?: string;
   status?: string;
   category?: string;
+  uploader_id?: number;
 }
 
 const FilterTab = ({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) => (
