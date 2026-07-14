@@ -35,6 +35,7 @@ export default function MintPage() {
   const [addCollaborator, setAddCollaborator] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mintStatus, setMintStatus] = useState<'idle' | 'confirming' | 'minting' | 'success'>('idle');
+  const [mintStepLabel, setMintStepLabel] = useState('Step 1/3: Registering track on-chain...');
 
   // Load from localStorage
   const [trackId, setTrackId] = useState<number | null>(null);
@@ -184,6 +185,7 @@ export default function MintPage() {
       const editionDbId = editionDb.id;
 
       // 4. Create Song on-chain
+      setMintStepLabel('Step 1/3: Registering track on-chain (please confirm in wallet)...');
       const songTx = await createSongOnChain(
         config,
         trackTitle,
@@ -217,12 +219,14 @@ export default function MintPage() {
       }
 
       // 6. Set Contributors on-chain
+      setMintStepLabel('Step 2/3: Configuring royalty splits (please confirm in wallet)...');
       const contributorsTx = await setContributorsOnChain(config, onChainSongId, [
         { wallet: address, basisPoints: BigInt(10000) },
       ]);
       await waitForTx(config, contributorsTx);
 
       // 7. Create Edition on-chain
+      setMintStepLabel('Step 3/3: Deploying licensing contract (please confirm in wallet)...');
       const editionTx = await createEditionOnChain(
         config,
         onChainSongId,
@@ -580,7 +584,7 @@ export default function MintPage() {
           <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-xl">
              <div className="flex flex-col items-center gap-6">
                 <div className="w-16 h-16 border-4 border-accent-purple border-t-transparent rounded-full animate-spin shadow-[0_0_30px_rgba(157,0,255,0.4)]" />
-                <p className="text-xl font-black text-white uppercase tracking-widest animate-pulse">Minting Your Track...</p>
+                <p className="text-lg font-black text-white uppercase tracking-widest animate-pulse">{mintStepLabel}</p>
              </div>
           </div>
         )}
