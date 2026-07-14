@@ -39,6 +39,41 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [searchQuery, setSearchQuery] = React.useState('');
   const [isPurchased, setIsPurchased] = React.useState(false);
   const [mintModalOpen, setMintModalOpen] = React.useState(false);
+  const [audioDuration, setAudioDuration] = React.useState<string>('Loading...');
+
+  React.useEffect(() => {
+    const audioUrl = trackData?.track?.audio_url;
+    if (audioUrl) {
+      const audio = new Audio();
+      audio.src = audioUrl;
+      
+      const onLoadedMetadata = () => {
+        const d = audio.duration;
+        if (d && !isNaN(d)) {
+          const minutes = Math.floor(d / 60);
+          const seconds = Math.floor(d % 60);
+          setAudioDuration(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+        } else {
+          setAudioDuration('N/A');
+        }
+      };
+
+      const onError = () => {
+        setAudioDuration('N/A');
+      };
+
+      audio.addEventListener('loadedmetadata', onLoadedMetadata);
+      audio.addEventListener('error', onError);
+      audio.load();
+
+      return () => {
+        audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+        audio.removeEventListener('error', onError);
+      };
+    } else {
+      setAudioDuration('N/A');
+    }
+  }, [trackData]);
 
   // Fetch purchase status to lift 40s limit if already owned
   React.useEffect(() => {
@@ -79,6 +114,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     fetchTrack();
   }, [id]);
 
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('action') === 'mint') {
+      setMintModalOpen(true);
+      router.replace(`/marketplace/${id}`);
+    }
+  }, [id, router]);
+
   const handleSearch = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
       router.push(`/marketplace?q=${encodeURIComponent(searchQuery.trim())}`);
@@ -115,7 +159,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     priceUsd: (parseFloat(track.price || '0') * 2400).toFixed(2), // Mock conversion
     bpm: track.bpm || 'N/A',
     key: track.key || 'N/A',
-    duration: track.duration || 'N/A',
+    duration: audioDuration,
     fileType: track.file_type || 'WAV',
     nftId: track.nft_id || 'Not Minted',
     royalty: track.royalty_percentage ? `${track.royalty_percentage}%` : '0%',

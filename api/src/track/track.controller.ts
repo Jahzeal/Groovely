@@ -67,6 +67,9 @@ export class TrackController {
     if (!title) {
       throw new BadRequestException('Title is required');
     }
+    if (!description || !description.trim()) {
+      throw new BadRequestException('Description is required');
+    }
     if (!category) {
       throw new BadRequestException('Category is required');
     }

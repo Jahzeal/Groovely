@@ -143,6 +143,10 @@ export default function UploadPage() {
       toast.error('Please enter a track title');
       return;
     }
+    if (!description || !description.trim()) {
+      toast.error('Please enter a track description');
+      return;
+    }
     if (!agreedToTerms) {
       toast.error('You must confirm ownership and agree to the Terms & Conditions');
       return;
@@ -320,7 +324,7 @@ export default function UploadPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 ml-1">Description (Optional)</label>
+                    <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 ml-1">Description</label>
                     <textarea
                       rows={5}
                       value={description}

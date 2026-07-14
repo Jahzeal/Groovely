@@ -332,7 +332,7 @@ export class TrackService {
               NULL::text as currency
             FROM tracks t
             JOIN users u ON t.user_id = u.id
-            WHERE t.user_id = $1 AND t.status = 'active'
+            WHERE t.user_id = $1
             ORDER BY t.id, t.created_at DESC
           ) as distinct_uploaded
           ORDER BY action_date DESC
@@ -417,7 +417,7 @@ export class TrackService {
                 NULL::text as currency
               FROM tracks t
               JOIN users u ON t.user_id = u.id
-              WHERE t.user_id = $1 AND t.status = 'active'
+              WHERE t.user_id = $1
             ) as all_actions
             ORDER BY id, action_date DESC
           ) as unique_tracks

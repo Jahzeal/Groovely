@@ -95,7 +95,7 @@ export const PreviewLimitModal: React.FC = () => {
             {/* CTA Buttons */}
             <div className="flex flex-col gap-3 w-full">
               <Link
-                href={`/marketplace/${currentTrack.id}`}
+                href={`/marketplace/${currentTrack.id}?action=mint`}
                 onClick={dismissPreviewLimit}
                 className="w-full flex items-center justify-center gap-3 py-4 bg-accent-purple hover:bg-accent-purple/90 text-white font-black text-sm rounded-2xl transition-all shadow-[0_8px_30px_rgba(139,92,246,0.5)] hover:shadow-[0_12px_40px_rgba(139,92,246,0.6)] hover:scale-[1.02] active:scale-[0.98]"
               >
