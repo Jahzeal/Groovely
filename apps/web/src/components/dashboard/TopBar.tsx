@@ -9,8 +9,9 @@ import {
 } from 'lucide-react';
 import { handleLogout } from '@/lib/api';
 import { usePrivy, useLogout } from '@privy-io/react-auth';
-import { useAccount, useBalance } from 'wagmi';
+import { useAccount, useBalance, useReadContract } from 'wagmi';
 import { USDC_ADDRESS } from '@/lib/contracts';
+import { formatUnits } from 'viem';
 
 export const TopBar = () => {
   const router = useRouter();
@@ -62,9 +63,22 @@ export const TopBar = () => {
     address: activeAddress as `0x${string}`,
   });
 
-  const { data: usdcBalance } = useBalance({
-    address: activeAddress as `0x${string}`,
-    token: USDC_ADDRESS,
+  const { data: usdcBalance } = useReadContract({
+    address: USDC_ADDRESS as `0x${string}`,
+    abi: [
+      {
+        name: 'balanceOf',
+        type: 'function',
+        stateMutability: 'view',
+        inputs: [{ name: 'owner', type: 'address' }],
+        outputs: [{ name: 'balance', type: 'uint256' }],
+      },
+    ] as const,
+    functionName: 'balanceOf',
+    args: activeAddress ? [activeAddress as `0x${string}`] : undefined,
+    query: {
+      enabled: !!activeAddress,
+    },
   });
 
   const abbrev = activeAddress
@@ -186,13 +200,13 @@ export const TopBar = () => {
                   <div className="bg-black/30 rounded-xl p-2.5 border border-white/5">
                     <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">Gas Token (POL)</p>
                     <p className="text-sm font-black text-white font-mono">
-                      {nativeBalance ? `${parseFloat(nativeBalance.formatted).toFixed(4)} POL` : '0.0000 POL'}
+                      {nativeBalance ? `${parseFloat(formatUnits(nativeBalance.value, nativeBalance.decimals)).toFixed(4)} POL` : '0.0000 POL'}
                     </p>
                   </div>
                   <div className="bg-black/30 rounded-xl p-2.5 border border-white/5">
                     <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">USDC Balance</p>
                     <p className="text-sm font-black text-accent-cyan font-mono">
-                      {usdcBalance ? `$${parseFloat(usdcBalance.formatted).toFixed(2)}` : '$0.00'}
+                      {usdcBalance !== undefined ? `$${(Number(usdcBalance) / 1e6).toFixed(2)}` : '$0.00'}
                     </p>
                   </div>
                 </div>
