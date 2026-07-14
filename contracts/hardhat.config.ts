@@ -30,6 +30,7 @@ const config: HardhatUserConfig = {
       url: POLYGON_AMOY_RPC,
       accounts: [PRIVATE_KEY],
       chainId: 80002,
+      gasPrice: 30000000000, // 30 Gwei override for Polygon Amoy
     },
     polygon: {
       url: POLYGON_RPC,

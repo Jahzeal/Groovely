@@ -123,8 +123,12 @@ export default function MintPage() {
             if (track.tags) setTrackTags(track.tags);
             if (track.usage_rights) setTrackRights(track.usage_rights);
             if (track.payment_model) setPaymentModel(track.payment_model);
-            if (track.license_price !== undefined) setLicensePrice(String(track.license_price));
-            if (track.royalty_percentage !== undefined) setRoyaltyPercentage(String(track.royalty_percentage));
+            if (track.license_price !== undefined && track.license_price !== null) {
+              setLicensePrice(String(track.license_price));
+            }
+            if (track.royalty_percentage !== undefined && track.royalty_percentage !== null) {
+              setRoyaltyPercentage(String(track.royalty_percentage));
+            }
           }
         } catch (err) {
           console.error('Failed to fetch track details for minting:', err);
@@ -255,6 +259,19 @@ export default function MintPage() {
         basisPoints: BigInt(c.basis_points),
       }));
 
+      const parsedPrice = Number(licensePrice);
+      const safePrice = isNaN(parsedPrice) ? 0 : parsedPrice;
+
+      console.log('Contract Call Parameters (publishSongOnChain):', {
+        title: trackTitle,
+        metadataUri: songMetadataUri,
+        contributors: contributorsArg,
+        editionType: 'open',
+        maxSupply: 0,
+        mintPrice: safePrice,
+        editionMetadataUri: ''
+      });
+
       const publishTx = await publishSongOnChain(
         config,
         trackTitle,
@@ -262,7 +279,7 @@ export default function MintPage() {
         contributorsArg,
         'open',
         0,
-        Number(licensePrice) || 0,
+        safePrice,
         ''
       );
       const publishReceipt = await waitForTx(config, publishTx);
@@ -670,19 +687,18 @@ export default function MintPage() {
            </Button>
         </footer>
 
-        {/* Mint Confirmation Modal */}
         <MintConfirmationModal 
           isOpen={isModalOpen && mintStatus === 'confirming'}
           onClose={handleCloseModal}
           onConfirm={handleMintConfirmed}
           data={{
-            fee: '0.00',
-            from: '0.00',
-            to: '0.00',
+            fee: '2.50 USDC',
+            from: address ? `${address.substring(0, 6)}...${address.substring(address.length - 4)}` : '0x000...0000',
+            to: 'Grooveli Contract',
             network: 'POLYGON',
-            gasFee: '0.02 MATIC',
-            totalEth: '0.02 MATIC',
-            totalUsd: '0.01'
+            gasFee: '0.02 POL',
+            totalEth: '2.50 USDC',
+            totalUsd: '2.50'
           }}
         />
 
