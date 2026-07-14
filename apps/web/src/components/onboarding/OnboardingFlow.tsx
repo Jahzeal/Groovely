@@ -236,12 +236,13 @@ export const OnboardingFlow = () => {
         return cId.includes(target) || cName.includes(target);
       });
 
-      // Special case: If still not found for 'metamask', try generic 'injected'
-      if (!connector && target === 'metamask') {
+      if (!connector && (target === 'metamask' || target === 'phantom')) {
         connector = connectors.find((c: any) => c.id === 'injected');
       }
 
-      if (!connector) connector = connectors[0];
+      if (!connector) {
+        throw new Error(`No compatible extension detected for ${wallet === 'metamask' ? 'MetaMask' : 'Phantom'}. Please install the extension or ensure it is enabled.`);
+      }
 
       // 2. Connect
       let walletAddr = address;

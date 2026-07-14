@@ -124,15 +124,13 @@ export default function LoginPage() {
         return cId.includes(target) || cName.includes(target);
       });
 
-      if (!connector && target === 'metamask') {
+      if (!connector && (target === 'metamask' || target === 'phantom')) {
         connector = connectors.find((c: any) => c.id === 'injected');
       }
 
-      if (connectors.length === 0) {
-        throw new Error('No web3 wallets detected. Please install MetaMask or another compatible wallet.');
+      if (!connector) {
+        throw new Error(`No compatible extension detected for ${wallet === 'metamask' ? 'MetaMask' : 'Phantom'}. Please install the extension or ensure it is enabled.`);
       }
-
-      if (!connector) connector = connectors[0];
       
       console.log('Selected connector:', connector?.id, connector?.name);
 

@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { handleLogout } from '@/lib/api';
 import { usePrivy, useLogout } from '@privy-io/react-auth';
+import { useAccount, useBalance } from 'wagmi';
+import { USDC_ADDRESS } from '@/lib/contracts';
 
 export const TopBar = () => {
   const router = useRouter();
@@ -53,7 +55,17 @@ export const TopBar = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const activeAddress = user?.wallet?.address || walletAddress;
+  const { address: wagmiAddress } = useAccount();
+  const activeAddress = wagmiAddress || user?.wallet?.address || walletAddress;
+
+  const { data: nativeBalance } = useBalance({
+    address: activeAddress as `0x${string}`,
+  });
+
+  const { data: usdcBalance } = useBalance({
+    address: activeAddress as `0x${string}`,
+    token: USDC_ADDRESS,
+  });
 
   const abbrev = activeAddress
     ? `${activeAddress.slice(0, 6)}...${activeAddress.slice(-4)}`
@@ -167,6 +179,22 @@ export const TopBar = () => {
                   >
                     {copied ? <CheckCheck size={14} className="text-emerald-400" /> : <Copy size={14} />}
                   </button>
+                </div>
+
+                {/* Balances */}
+                <div className="mt-3 grid grid-cols-2 gap-2 text-left">
+                  <div className="bg-black/30 rounded-xl p-2.5 border border-white/5">
+                    <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">Gas Token (POL)</p>
+                    <p className="text-sm font-black text-white font-mono">
+                      {nativeBalance ? `${parseFloat(nativeBalance.formatted).toFixed(4)} POL` : '0.0000 POL'}
+                    </p>
+                  </div>
+                  <div className="bg-black/30 rounded-xl p-2.5 border border-white/5">
+                    <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">USDC Balance</p>
+                    <p className="text-sm font-black text-accent-cyan font-mono">
+                      {usdcBalance ? `$${parseFloat(usdcBalance.formatted).toFixed(2)}` : '$0.00'}
+                    </p>
+                  </div>
                 </div>
               </div>
 

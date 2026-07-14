@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown, Bell, ShoppingCart, Copy, LogOut, User, Settings, CheckCheck, ExternalLink } from 'lucide-react';
 import { useCart } from './CartContext';
 import { handleLogout } from '@/lib/api';
-import { useLogout } from '@privy-io/react-auth';
+import { useLogout, usePrivy } from '@privy-io/react-auth';
+import { useAccount, useBalance } from 'wagmi';
+import { USDC_ADDRESS } from '@/lib/contracts';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -12,6 +14,7 @@ export const MarketTopBar = () => {
   const { openCart } = useCart();
   const router = useRouter();
   const { logout } = useLogout();
+  const { user } = usePrivy();
   const [searchQuery, setSearchQuery] = useState('');
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
@@ -45,13 +48,25 @@ export const MarketTopBar = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const abbrev = walletAddress
-    ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+  const { address: wagmiAddress } = useAccount();
+  const activeAddress = wagmiAddress || user?.wallet?.address || walletAddress;
+
+  const { data: nativeBalance } = useBalance({
+    address: activeAddress as `0x${string}`,
+  });
+
+  const { data: usdcBalance } = useBalance({
+    address: activeAddress as `0x${string}`,
+    token: USDC_ADDRESS,
+  });
+
+  const abbrev = activeAddress
+    ? `${activeAddress.slice(0, 6)}...${activeAddress.slice(-4)}`
     : '0x...';
 
   const handleCopy = () => {
-    if (walletAddress) {
-      navigator.clipboard.writeText(walletAddress);
+    if (activeAddress) {
+      navigator.clipboard.writeText(activeAddress);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -180,7 +195,7 @@ export const MarketTopBar = () => {
 
                     <div className="mt-3 bg-black/30 rounded-xl px-3 py-2 flex items-center justify-between gap-2">
                       <p className="text-[10px] text-zinc-500 font-mono truncate flex-1">
-                        {walletAddress ?? 'Not connected'}
+                        {activeAddress ?? 'Not connected'}
                       </p>
                       <button
                         onClick={handleCopy}
@@ -188,6 +203,22 @@ export const MarketTopBar = () => {
                       >
                         {copied ? <CheckCheck size={14} className="text-emerald-400" /> : <Copy size={14} />}
                       </button>
+                    </div>
+
+                    {/* Balances */}
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-left">
+                      <div className="bg-black/30 rounded-xl p-2.5 border border-white/5">
+                        <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">Gas Token (POL)</p>
+                        <p className="text-sm font-black text-white font-mono">
+                          {nativeBalance ? `${parseFloat(nativeBalance.formatted).toFixed(4)} POL` : '0.0000 POL'}
+                        </p>
+                      </div>
+                      <div className="bg-black/30 rounded-xl p-2.5 border border-white/5">
+                        <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider mb-0.5">USDC Balance</p>
+                        <p className="text-sm font-black text-accent-cyan font-mono">
+                          {usdcBalance ? `$${parseFloat(usdcBalance.formatted).toFixed(2)}` : '$0.00'}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
