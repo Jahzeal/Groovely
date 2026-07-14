@@ -104,6 +104,12 @@ export default function LoginPage() {
 
   const handleConnectWallet = async () => {
     if (!wallet) return;
+    
+    if (wallet === 'walletconnect') {
+      login({ loginMethods: ['wallet'] });
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {

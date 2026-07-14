@@ -3,6 +3,7 @@
 import { createConfig } from '@privy-io/wagmi';
 import { mainnet, polygonAmoy } from 'wagmi/chains';
 import { http } from 'wagmi';
+import { injected } from 'wagmi/connectors';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode, useState, useEffect } from 'react';
 import { PrivyProvider } from '@privy-io/react-auth';
@@ -19,6 +20,7 @@ const config = createConfig({
     [polygonAmoy.id]: http(),
     [mainnet.id]: http(),
   },
+  connectors: [injected()],
 });
 
 const queryClient = new QueryClient();
