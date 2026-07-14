@@ -18,6 +18,7 @@ import {
 import { Twitter, Instagram } from '@/components/ui/SocialIcons';
 import { apiFetch } from '@/lib/api';
 import { useMusicPlayer } from '@/components/marketplace/MusicPlayerContext';
+import { MusicPlayer } from '@/components/marketplace/MusicPlayer';
 import toast from 'react-hot-toast';
 
 interface Track {
@@ -80,7 +81,8 @@ const TrackCard = ({ track, onSave }: { track: Track; onSave: (id: number, isSav
               title: track.title,
               artist: track.artist_name || track.artist_username || 'Unknown Artist',
               image: track.cover_url || '',
-              audioUrl: track.audio_url
+              audioUrl: track.audio_url,
+              uploaderId: track.uploader_id
             })}
             className="w-8 h-8 bg-accent-purple rounded-full flex items-center justify-center text-white"
           >
@@ -280,6 +282,7 @@ export default function LibraryPage() {
           </div>
         </main>
       </div>
+      <MusicPlayer />
     </div>
   );
 }

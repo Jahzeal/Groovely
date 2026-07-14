@@ -29,7 +29,9 @@ export const MusicPlayer = () => {
 
   if (!currentTrack) return null;
 
-  const isPurchased = purchasedTrackIds.has(currentTrack.id);
+  const currentUserId = typeof window !== 'undefined' ? Number(localStorage.getItem('groovely_user_id')) : null;
+  const isUploader = currentUserId !== null && currentTrack.uploaderId === currentUserId;
+  const isPurchased = purchasedTrackIds.has(currentTrack.id) || isUploader;
   const isLocked = previewLimitReached && !isPurchased;
 
   const handleBarClick = (e: React.MouseEvent<HTMLDivElement>) => {

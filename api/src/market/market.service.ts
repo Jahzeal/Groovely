@@ -136,6 +136,21 @@ export class MarketService {
       [track.creator_id, trackId]
     );
 
+    const editionResult = await this.db.query(
+      `SELECT 
+        e.id, 
+        e.contract_edition_id, 
+        e.edition_type, 
+        e.max_supply, 
+        e.minted_supply, 
+        e.mint_price_usdc,
+        e.active
+       FROM editions e
+       JOIN songs s ON e.song_id = s.id
+       WHERE s.track_id = $1 AND e.active = true`,
+      [trackId]
+    );
+
     return {
       track: {
         id: track.id,
@@ -156,7 +171,8 @@ export class MarketService {
         name: track.creator_name,
         username: track.creator_username
       },
-      more_from_creator: moreResult.rows
+      more_from_creator: moreResult.rows,
+      editions: editionResult.rows
     };
   }
 }

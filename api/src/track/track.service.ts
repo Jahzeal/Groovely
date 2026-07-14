@@ -242,6 +242,7 @@ export class TrackService {
           SELECT * FROM (
             SELECT DISTINCT ON (t.id)
               t.id,
+              t.user_id as uploader_id,
               t.title,
               t.cover_url,
               t.audio_url,
@@ -268,6 +269,7 @@ export class TrackService {
           SELECT * FROM (
             SELECT DISTINCT ON (t.id)
               t.id,
+              t.user_id as uploader_id,
               t.title,
               t.cover_url,
               t.audio_url,
@@ -294,6 +296,7 @@ export class TrackService {
           SELECT * FROM (
             SELECT DISTINCT ON (t.id)
               t.id,
+              t.user_id as uploader_id,
               t.title,
               t.cover_url,
               t.audio_url,
@@ -320,6 +323,7 @@ export class TrackService {
           SELECT * FROM (
             SELECT DISTINCT ON (t.id)
               t.id,
+              t.user_id as uploader_id,
               t.title,
               t.cover_url,
               t.audio_url,
@@ -348,6 +352,7 @@ export class TrackService {
             FROM (
               SELECT 
                 t.id,
+                t.user_id as uploader_id,
                 t.title,
                 t.cover_url,
                 t.audio_url,
@@ -367,6 +372,7 @@ export class TrackService {
               
               SELECT 
                 t.id,
+                t.user_id as uploader_id,
                 t.title,
                 t.cover_url,
                 t.audio_url,
@@ -386,6 +392,7 @@ export class TrackService {
               
               SELECT 
                 t.id,
+                t.user_id as uploader_id,
                 t.title,
                 t.cover_url,
                 t.audio_url,
@@ -400,11 +407,12 @@ export class TrackService {
               JOIN tracks t ON p.track_id = t.id
               JOIN users u ON t.user_id = u.id
               WHERE p.user_id = $1
-
+ 
               UNION ALL
-
+ 
               SELECT 
                 t.id,
+                t.user_id as uploader_id,
                 t.title,
                 t.cover_url,
                 t.audio_url,

@@ -9,6 +9,7 @@ interface Track {
   artist: string;
   image: string;
   audioUrl?: string;
+  uploaderId?: number;
 }
 
 interface MusicPlayerContextType {
@@ -60,6 +61,13 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
   useEffect(() => {
     purchasedRef.current = purchasedTrackIds;
   }, [purchasedTrackIds]);
+
+  const getIsUploader = useCallback((track: Track | null) => {
+    if (!track || !track.uploaderId) return false;
+    if (typeof window === 'undefined') return false;
+    const stored = localStorage.getItem('groovely_user_id');
+    return stored ? Number(stored) === track.uploaderId : false;
+  }, []);
 
   const addPurchasedTrack = useCallback((id: string | number) => {
     setPurchasedTrackIds(prev => new Set([...prev, id]));
@@ -123,7 +131,8 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
           if (
             activeTrack &&
             audio.currentTime >= PREVIEW_LIMIT_SECONDS &&
-            !purchasedRef.current.has(activeTrack.id)
+            !purchasedRef.current.has(activeTrack.id) &&
+            !getIsUploader(activeTrack)
           ) {
             audio.pause();
             setIsPlaying(false);
@@ -132,21 +141,24 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         }
       };
 
-      audio.addEventListener('timeupdate', updateProgress);
-      audio.addEventListener('ended', () => {
+      const onEnded = () => {
         const activeTrack = currentTrackRef.current;
         if (activeTrack) recordStream(activeTrack.id);
         setIsPlaying(false);
         setPreviewLimitReached(false);
         playNext();
-      });
+      };
+
+      audio.addEventListener('timeupdate', updateProgress);
+      audio.addEventListener('ended', onEnded);
 
       return () => {
         audio.removeEventListener('timeupdate', updateProgress);
+        audio.removeEventListener('ended', onEnded);
         audio.pause();
       };
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [getIsUploader]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (audioRef.current) {
@@ -214,7 +226,7 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (!audioRef.current || !currentTrack) return;
 
     // Don't allow resuming if preview limit is reached and track not purchased
-    if (previewLimitReached && !purchasedRef.current.has(currentTrack.id)) return;
+    if (previewLimitReached && !purchasedRef.current.has(currentTrack.id) && !getIsUploader(currentTrack)) return;
 
     try {
       if (isPlaying) {
@@ -237,7 +249,7 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const seek = (time: number) => {
     if (!audioRef.current) return;
     // Prevent seeking past preview limit if not purchased
-    if (currentTrack && !purchasedRef.current.has(currentTrack.id)) {
+    if (currentTrack && !purchasedRef.current.has(currentTrack.id) && !getIsUploader(currentTrack)) {
       time = Math.min(time, PREVIEW_LIMIT_SECONDS);
     }
     audioRef.current.currentTime = time;

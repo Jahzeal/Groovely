@@ -40,12 +40,24 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [isPurchased, setIsPurchased] = React.useState(false);
   const [mintModalOpen, setMintModalOpen] = React.useState(false);
   const [audioDuration, setAudioDuration] = React.useState<string>('Loading...');
+  const [currentUserId, setCurrentUserId] = React.useState<number | null>(null);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('groovely_user_id');
+      if (stored) setCurrentUserId(Number(stored));
+    }
+  }, []);
+
+  const isUploader = currentUserId !== null && trackData?.track?.user_id === currentUserId;
 
   React.useEffect(() => {
     const audioUrl = trackData?.track?.audio_url;
     if (audioUrl) {
       const audio = new Audio();
-      audio.src = audioUrl;
+      audio.crossOrigin = "anonymous";
+      audio.preload = "metadata";
+      audio.src = audioUrl.includes('?') ? `${audioUrl}&t=${Date.now()}` : `${audioUrl}?t=${Date.now()}`;
       
       const onLoadedMetadata = () => {
         const d = audio.duration;
@@ -77,6 +89,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   // Fetch purchase status to lift 40s limit if already owned
   React.useEffect(() => {
+    if (isUploader) {
+      setIsPurchased(true);
+      addPurchasedTrack(id);
+      return;
+    }
+
     apiFetch(`/api/tracks/${id}/purchased`, { skipAuthRedirect: true })
       .then(async (res) => {
         if (res && res.ok) {
@@ -88,7 +106,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         }
       })
       .catch(() => {});
-  }, [id]); // eslint-disable-line
+  }, [id, isUploader]); // eslint-disable-line
 
   React.useEffect(() => {
     async function fetchTrack() {
@@ -166,6 +184,34 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     licenses: track.license_types || ['Standard License']
   };
 
+  // Build editions list from database or fallback
+  const editionsList: EditionInfo[] = React.useMemo(() => {
+    if (trackData?.editions && trackData.editions.length > 0) {
+      return trackData.editions.map((e: any) => ({
+        id: e.id,
+        contractEditionId: Number(e.contract_edition_id) || 1, // Fallback to 1 if not yet synced/indexed
+        editionType: e.edition_type === 'open' ? 'fan' : e.edition_type, // map open to fan for UI matching
+        mintPriceUsdc: parseFloat(e.mint_price_usdc) || parseFloat(displayTrack.price) || 5,
+        maxSupply: Number(e.max_supply) || 0,
+        mintedSupply: Number(e.minted_supply) || 0,
+        active: e.active !== false,
+      }));
+    }
+
+    // Dynamic fallback matching what the creator set up
+    return [
+      {
+        id: displayTrack.id,
+        contractEditionId: 1,
+        editionType: 'fan',
+        mintPriceUsdc: parseFloat(displayTrack.price) || 5,
+        maxSupply: 1000,
+        mintedSupply: 0,
+        active: true,
+      }
+    ];
+  }, [trackData, displayTrack.id, displayTrack.price]);
+
   return (
     <CartProvider>
       <div className="flex min-h-screen bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
@@ -217,7 +263,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     title: displayTrack.title,
                     artist: displayTrack.creator,
                     image: displayTrack.image,
-                    audioUrl: displayTrack.audio_url
+                    audioUrl: displayTrack.audio_url,
+                    uploaderId: track.user_id
                   })}
                   className="w-20 h-20 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(157,0,255,0.6)] hover:scale-105 transition-all"
                 >
@@ -309,6 +356,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <PurchaseSidebar
                   track={displayTrack}
                   isPurchased={isPurchased}
+                  isUploader={isUploader}
+                  editionsList={editionsList}
                   onBuy={() => setMintModalOpen(true)}
                 />
               </aside>
@@ -340,27 +389,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         trackTitle={displayTrack.title}
         trackImage={displayTrack.image}
         creatorName={displayTrack.creator}
-        editions={[
-          // Build editions from track data; fall back to sensible defaults
-          {
-            id: displayTrack.id,
-            contractEditionId: 0, // 0 until contract is deployed
-            editionType: 'fan',
-            mintPriceUsdc: parseFloat(displayTrack.price) || 5,
-            maxSupply: 1000,
-            mintedSupply: 0,
-            active: true,
-          },
-          {
-            id: displayTrack.id * 10 + 1,
-            contractEditionId: 0,
-            editionType: 'collector',
-            mintPriceUsdc: (parseFloat(displayTrack.price) || 5) * 5,
-            maxSupply: 100,
-            mintedSupply: 0,
-            active: true,
-          },
-        ] as EditionInfo[]}
+        editions={editionsList}
       />
 
       <style jsx>{`
@@ -413,10 +442,14 @@ const HeaderActions = () => {
 const PurchaseSidebar = ({
   track,
   isPurchased,
+  isUploader,
+  editionsList,
   onBuy,
 }: {
   track: any;
   isPurchased?: boolean;
+  isUploader?: boolean;
+  editionsList: EditionInfo[];
   onBuy?: () => void;
 }) => {
   return (
@@ -436,7 +469,17 @@ const PurchaseSidebar = ({
         <div className="text-zinc-500 font-bold text-sm">Starting price per edition</div>
       </div>
 
-      {isPurchased ? (
+      {isUploader ? (
+        /* ── Uploader state ── */
+        <div className="mb-8">
+          <div className="flex items-center justify-center gap-2 py-4 bg-accent-cyan/10 border border-accent-cyan/20 rounded-2xl mb-3">
+            <span className="text-sm font-black text-accent-cyan">You Uploaded This Track</span>
+          </div>
+          <p className="text-center text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
+            Owner Access Enabled
+          </p>
+        </div>
+      ) : isPurchased ? (
         /* ── Owned state ── */
         <div className="mb-8">
           <div className="flex items-center justify-center gap-2 py-4 bg-accent-purple/10 border border-accent-purple/20 rounded-2xl mb-3">
@@ -465,15 +508,14 @@ const PurchaseSidebar = ({
             <span className="bg-[#0F0F1A] px-4 -mt-px">Editions Available</span>
           </div>
           <div className="space-y-2">
-            {[
-              { label: 'Fan Edition', supply: '1,000', price: track.price || '5.00' },
-              { label: 'Collector Edition', supply: '100', price: ((parseFloat(track.price) || 5) * 5).toFixed(2) },
-            ].map((ed) => (
-              <div key={ed.label} className="flex items-center justify-between bg-[#050510] border border-white/5 rounded-xl py-2.5 px-4 text-xs">
-                <span className="font-bold text-zinc-400">{ed.label}</span>
+            {editionsList.map((ed) => (
+              <div key={ed.editionType} className="flex items-center justify-between bg-[#050510] border border-white/5 rounded-xl py-2.5 px-4 text-xs">
+                <span className="font-bold text-zinc-400 capitalize">{ed.editionType} Edition</span>
                 <div className="flex items-center gap-3">
-                  <span className="text-zinc-600">{ed.supply} left</span>
-                  <span className="font-black text-white">${ed.price}</span>
+                  <span className="text-zinc-600">
+                    {ed.maxSupply === 0 || ed.maxSupply >= 1000000 ? 'Unlimited' : `${ed.maxSupply - ed.mintedSupply} left`}
+                  </span>
+                  <span className="font-black text-white">${ed.mintPriceUsdc.toFixed(2)}</span>
                 </div>
               </div>
             ))}

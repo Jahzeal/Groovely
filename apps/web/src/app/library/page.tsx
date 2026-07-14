@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { useMusicPlayer } from '@/components/marketplace/MusicPlayerContext';
+import { MusicPlayer } from '@/components/marketplace/MusicPlayer';
 import toast from 'react-hot-toast';
 
 interface Track {
@@ -74,7 +75,8 @@ const TrackCard = ({ track, onSave }: { track: Track, onSave: (id: number, isSav
               title: track.title,
               artist: track.artist_name || track.artist_username || 'Unknown Artist',
               image: track.cover_url || '',
-              audioUrl: track.audio_url
+              audioUrl: track.audio_url,
+              uploaderId: track.uploader_id
             })}
             className="w-10 h-10 bg-accent-purple rounded-full flex items-center justify-center text-white shadow-xl transform scale-75 group-hover:scale-100 transition-transform duration-300"
           >
@@ -126,6 +128,19 @@ export default function LibraryPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('All');
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('groovely_token');
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          setRole(payload.role);
+        } catch (_) {}
+      }
+    }
+  }, []);
 
   const fetchLibrary = async (filter: string) => {
     setLoading(true);
@@ -212,7 +227,7 @@ export default function LibraryPage() {
 
             {/* Filter Tabs */}
             <div className="flex items-center gap-3 mb-10 overflow-x-auto pb-2 no-scrollbar">
-              {['All', 'Played', 'Saved', 'Purchased', 'Uploaded'].map(tab => (
+              {['All', 'Played', 'Saved', 'Purchased', ...(role === 'creator' ? ['Uploaded'] : [])].map(tab => (
                 <FilterTab 
                   key={tab} 
                   label={tab} 
@@ -254,6 +269,7 @@ export default function LibraryPage() {
           </div>
         </main>
       </div>
+      <MusicPlayer />
     </div>
   );
 }
