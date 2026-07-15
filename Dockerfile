@@ -17,7 +17,7 @@ FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
 # Copy the built JAR from stage 1
-COPY --from=build /app/target/groovely-backend-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=build /app/target/grooveli-backend-0.0.1-SNAPSHOT.jar app.jar
 
 # Expose port
 EXPOSE 8080

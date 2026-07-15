@@ -115,7 +115,7 @@ export const PreviewLimitModal: React.FC = () => {
             {/* Footer note */}
             <p className="mt-6 text-[10px] font-bold text-zinc-700 uppercase tracking-widest flex items-center gap-2">
               <Music2 size={10} />
-              Powered by Groovely Rights Protocol
+              Powered by Grooveli Rights Protocol
             </p>
           </div>
         </div>

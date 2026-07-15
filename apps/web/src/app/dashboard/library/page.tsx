@@ -132,7 +132,7 @@ export default function LibraryPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setWalletAddress(localStorage.getItem('groovely_wallet'));
+    setWalletAddress(localStorage.getItem('grooveli_wallet'));
   }, []);
 
   const fetchLibrary = async (filter: string) => {
@@ -266,7 +266,7 @@ export default function LibraryPage() {
           {/* Footer */}
           <footer className="mt-24 pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-10 opacity-70">
             <div className="flex flex-wrap items-center gap-x-8 gap-y-4 text-[10px] font-black uppercase tracking-widest text-zinc-500">
-              <a href="#" className="hover:text-accent-purple transition-colors">About Groovely</a>
+              <a href="#" className="hover:text-accent-purple transition-colors">About Grooveli</a>
               <a href="#" className="hover:text-accent-purple transition-colors">Privacy Policy</a>
               <a href="#" className="hover:text-accent-purple transition-colors">Terms of Use</a>
               <a href="#" className="hover:text-accent-purple transition-colors">Docs/Developer API</a>

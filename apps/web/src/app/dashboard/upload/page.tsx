@@ -544,7 +544,7 @@ export default function UploadPage() {
                         {agreedToTerms && <CheckCircle2 size={12} className="text-white" />}
                       </div>
                       <p className="text-[10px] font-bold text-zinc-500 leading-normal">
-                        I confirm I own the rights to this audio and agree to Groovely's <span className="text-accent-purple">Terms & Conditions</span>
+                        I confirm I own the rights to this audio and agree to Grooveli's <span className="text-accent-purple">Terms & Conditions</span>
                       </p>
                     </div>
                   </div>

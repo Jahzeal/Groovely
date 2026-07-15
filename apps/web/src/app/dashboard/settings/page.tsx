@@ -40,13 +40,13 @@ export default function SettingsPage() {
 
   // Load existing profile on mount
   useEffect(() => {
-    setWalletAddress(localStorage.getItem('groovely_wallet'));
-    const userRole = localStorage.getItem('groovely_role') || 'creator';
+    setWalletAddress(localStorage.getItem('grooveli_wallet'));
+    const userRole = localStorage.getItem('grooveli_role') || 'creator';
     setRole(userRole);
     
     const fetchProfile = async () => {
       try {
-        const token = localStorage.getItem('groovely_token');
+        const token = localStorage.getItem('grooveli_token');
         if (!token) { setFetchError('Not authenticated'); setLoadingProfile(false); return; }
 
         const endpoint = userRole === 'fan' ? '/api/fan/profile' : '/api/creator/profile';
@@ -113,7 +113,7 @@ export default function SettingsPage() {
     setSaving(true);
     setSaveError(null);
     try {
-      const token = localStorage.getItem('groovely_token');
+      const token = localStorage.getItem('grooveli_token');
       if (!token) throw new Error('Not authenticated. Please log in.');
 
       const isFan = role === 'fan';
@@ -156,10 +156,10 @@ export default function SettingsPage() {
   };
 
   const handleDisconnect = () => {
-    localStorage.removeItem('groovely_token');
-    localStorage.removeItem('groovely_user_id');
-    localStorage.removeItem('groovely_wallet');
-    localStorage.removeItem('groovely_role');
+    localStorage.removeItem('grooveli_token');
+    localStorage.removeItem('grooveli_user_id');
+    localStorage.removeItem('grooveli_wallet');
+    localStorage.removeItem('grooveli_role');
     router.push('/login');
   };
 
@@ -431,7 +431,7 @@ export default function SettingsPage() {
               </section>
 
               <footer className="mt-20 pt-10 border-t border-white/5 flex flex-wrap items-center gap-x-6 gap-y-4 text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                <a href="#" className="hover:text-white transition-colors">About Groovely</a>
+                <a href="#" className="hover:text-white transition-colors">About Grooveli</a>
                 <span className="w-1 h-1 bg-zinc-800 rounded-full" />
                 <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
                 <span className="w-1 h-1 bg-zinc-800 rounded-full" />

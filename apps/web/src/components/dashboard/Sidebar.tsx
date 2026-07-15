@@ -78,12 +78,12 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
 
   React.useEffect(() => {
     setMounted(true);
-    setToken(localStorage.getItem('groovely_token'));
+    setToken(localStorage.getItem('grooveli_token'));
 
     if (initialRole) {
       setRole(initialRole);
     } else {
-      const storedRole = localStorage.getItem('groovely_role');
+      const storedRole = localStorage.getItem('grooveli_role');
       if (storedRole === 'fan' || storedRole === 'creator') {
         setRole(storedRole);
       }
@@ -163,7 +163,7 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
 
             <div className="h-px bg-white/5 my-6 mx-6" />
 
-            <NavItem icon={Store} label="Groovely Market" href="/marketplace" active={isMarket} />
+            <NavItem icon={Store} label="Grooveli Market" href="/marketplace" active={isMarket} />
             <NavItem icon={BarChart3} label="Analytics" href="/dashboard/analytics" active={pathname === '/dashboard/analytics'} />
             <NavItem icon={Sparkles} label="AI Tools" comingSoon />
             <NavItem icon={Headphones} label="Listening Rooms" comingSoon />
@@ -179,7 +179,7 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
           <>
             <NavItem icon={LayoutDashboard} label="Discover" href="/explore" active={activePage === 'explore' || pathname === '/explore'} />
             <NavItem icon={Library} label="My Library" href="/library" active={pathname === '/library'} />
-            <NavItem icon={Store} label="Groovely Market" href="/marketplace" active={isMarket} />
+            <NavItem icon={Store} label="Grooveli Market" href="/marketplace" active={isMarket} />
           </>
         )}
       </nav>

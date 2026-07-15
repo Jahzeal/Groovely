@@ -30,7 +30,7 @@ export class AuthController {
   @Get('nonce/:walletAddress')
   getNonce(@Param('walletAddress') walletAddress: string) {
     const nonce = Math.floor(Math.random() * 1000000).toString();
-    const message = `Welcome to Groovely!\n\nSign this message to log in or register.\n\nWallet address: ${walletAddress}\nNonce: ${nonce}`;
+    const message = `Welcome to Grooveli!\n\nSign this message to log in or register.\n\nWallet address: ${walletAddress}\nNonce: ${nonce}`;
     return {
       success: true,
       nonce,

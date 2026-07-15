@@ -43,8 +43,8 @@ export default function ProfilePage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const token = localStorage.getItem('groovely_token');
-        const userRole = localStorage.getItem('groovely_role') || 'creator';
+        const token = localStorage.getItem('grooveli_token');
+        const userRole = localStorage.getItem('grooveli_role') || 'creator';
         setRole(userRole);
 
         if (!token) {

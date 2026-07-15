@@ -44,7 +44,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('groovely_user_id');
+      const stored = localStorage.getItem('grooveli_user_id');
       if (stored) setCurrentUserId(Number(stored));
     }
   }, []);
@@ -372,7 +372,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
             <footer className="px-10 py-10 border-t border-white/5 opacity-40 hover:opacity-100 transition-opacity flex justify-between items-center text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
               <div className="flex gap-8">
-                <a href="#" className="hover:text-white transition-colors">About Groovely</a>
+                <a href="#" className="hover:text-white transition-colors">About Grooveli</a>
                 <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
                 <a href="#" className="hover:text-white transition-colors">Terms of Use</a>
               </div>

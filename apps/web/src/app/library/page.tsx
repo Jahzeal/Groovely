@@ -133,7 +133,7 @@ export default function LibraryPage() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('groovely_token');
+      const token = localStorage.getItem('grooveli_token');
       if (token) {
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));

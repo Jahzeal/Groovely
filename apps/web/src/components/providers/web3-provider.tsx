@@ -33,7 +33,7 @@ function SmartAccountConnectorWrapper({ children }: { children: ReactNode }) {
       try {
         const publicClient = createPublicClient({
           chain: polygonAmoy,
-          transport: http(),
+          transport: http("https://polygon-amoy.drpc.org"),
         });
         console.log('[ZeroDev] ✅ Public client created.');
 
@@ -150,10 +150,10 @@ NEXT_PUBLIC_ZERODEV_PROJECT_ID=${isZeroDevValid ? zeroDevProjectId : 'your_actua
           </div>
 
           <h1 className="text-4xl md:text-5xl font-black mb-4 tracking-tight leading-tight">
-            Configure Your <span className="text-gradient-purple font-extrabold">Groovely</span> Web3 Stack
+            Configure Your <span className="text-gradient-purple font-extrabold">Grooveli</span> Web3 Stack
           </h1>
           <p className="text-neutral-400 text-lg mb-8 max-w-2xl">
-            Groovely uses <span className="text-white font-semibold">Privy</span> for social login/auth and <span className="text-white font-semibold">ZeroDev</span> for gasless smart accounts. To start the application, you need to configure these providers in your <code className="text-purple-300 bg-purple-950/40 px-2 py-0.5 rounded border border-purple-800/30 font-mono text-sm">apps/web/.env.local</code> file.
+            Grooveli uses <span className="text-white font-semibold">Privy</span> for social login/auth and <span className="text-white font-semibold">ZeroDev</span> for gasless smart accounts. To start the application, you need to configure these providers in your <code className="text-purple-300 bg-purple-950/40 px-2 py-0.5 rounded border border-purple-800/30 font-mono text-sm">apps/web/.env.local</code> file.
           </p>
 
           <div className="grid md:grid-cols-2 gap-6 mb-8">
@@ -175,7 +175,7 @@ NEXT_PUBLIC_ZERODEV_PROJECT_ID=${isZeroDevValid ? zeroDevProjectId : 'your_actua
                   </li>
                   <li className="flex items-start">
                     <span className="text-purple-400 mr-2">•</span>
-                    <span>Create a new application named <strong>Groovely</strong></span>
+                    <span>Create a new application named <strong>Grooveli</strong></span>
                   </li>
                   <li className="flex items-start">
                     <span className="text-purple-400 mr-2">•</span>
@@ -294,7 +294,7 @@ export function Web3Provider({ children }: { children: ReactNode }) {
         supportedChains: [polygonAmoy, mainnet],
         appearance: {
           theme: 'dark',
-          accentColor: '#8B5CF6', // Accent purple matching Groovely theme
+          accentColor: '#8B5CF6', // Accent purple matching Grooveli theme
         },
         embeddedWallets: {
           ethereum: {

@@ -46,14 +46,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     // Check role and redirect fans
-    let role = localStorage.getItem('groovely_role');
+    let role = localStorage.getItem('grooveli_role');
     if (!role) {
-      const token = localStorage.getItem('groovely_token');
+      const token = localStorage.getItem('grooveli_token');
       if (token) {
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
           const userRole = payload.role ?? '';
-          localStorage.setItem('groovely_role', userRole);
+          localStorage.setItem('grooveli_role', userRole);
           role = userRole;
         } catch {}
       }
@@ -168,7 +168,7 @@ export default function DashboardPage() {
           {/* Footer */}
           <footer className="mt-20 py-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-10 opacity-70 hover:opacity-100 transition-opacity">
             <div className="flex flex-wrap items-center gap-x-8 gap-y-4 text-[10px] font-black uppercase tracking-widest text-zinc-500">
-              <a href="#" className="hover:text-accent-purple transition-colors">About Groovely</a>
+              <a href="#" className="hover:text-accent-purple transition-colors">About Grooveli</a>
               <span className="w-1 h-1 bg-zinc-800 rounded-full" />
               <a href="#" className="hover:text-accent-purple transition-colors">Privacy Policy</a>
               <span className="w-1 h-1 bg-zinc-800 rounded-full" />

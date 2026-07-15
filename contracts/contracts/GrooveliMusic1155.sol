@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title GrooveliMusic1155
- * @notice ERC-1155 music rights contract for the Groovely platform.
+ * @notice ERC-1155 music rights contract for the Grooveli platform.
  *         Creators mint songs, define editions (Open / Fan / Collector / Founder),
  *         set contributor splits, and fans purchase editions with USDC.
  *         Revenue is automatically split between contributors on every mint.
@@ -78,7 +78,7 @@ contract GrooveliMusic1155 is ERC1155, ERC1155Supply, ERC2981, Ownable, Reentran
     // ─────────────────────────────────────────────────────────────────────────
 
     constructor(address _usdc, address _platformWallet)
-        ERC1155("https://api.groovely.xyz/metadata/{id}.json")
+        ERC1155("https://api.grooveli.xyz/metadata/{id}.json")
         Ownable(msg.sender)
     {
         require(_usdc != address(0), "Invalid USDC address");

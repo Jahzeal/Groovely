@@ -27,8 +27,8 @@ export const MarketTopBar = () => {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setWalletAddress(localStorage.getItem('groovely_wallet'));
-      const token = localStorage.getItem('groovely_token');
+      setWalletAddress(localStorage.getItem('grooveli_wallet'));
+      const token = localStorage.getItem('grooveli_token');
       if (token) {
         setIsAuthenticated(true);
         try {

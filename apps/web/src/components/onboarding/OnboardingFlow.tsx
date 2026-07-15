@@ -58,14 +58,14 @@ export const OnboardingFlow = () => {
 
   useEffect(() => {
     setMounted(true);
-    const savedRole = localStorage.getItem('groovely_role');
+    const savedRole = localStorage.getItem('grooveli_role');
     if (savedRole === 'creator') {
       setRole('creator');
     } else if (savedRole === 'fan' || savedRole === 'listener') {
       setRole('listener');
     }
 
-    const token = localStorage.getItem('groovely_token');
+    const token = localStorage.getItem('grooveli_token');
     if (token) {
       setStep(3);
       try {
@@ -133,7 +133,7 @@ export const OnboardingFlow = () => {
     if (!ready || !authenticated || !user) return;
     
     // Check if we already have a backend token
-    const token = localStorage.getItem('groovely_token');
+    const token = localStorage.getItem('grooveli_token');
     if (token) return; // Already registered/logged in on backend
     
     const smartWallet = user.linkedAccounts.find(
@@ -179,10 +179,10 @@ export const OnboardingFlow = () => {
         const actualWallet = walletAddr || authData.user?.wallet || authData.data?.user?.wallet;
         const actualRole = payloadRole || authData.user?.role || authData.data?.user?.role;
 
-        localStorage.setItem('groovely_token', actualToken);
-        localStorage.setItem('groovely_user_id', actualUserId);
-        localStorage.setItem('groovely_wallet', actualWallet || '');
-        localStorage.setItem('groovely_role', actualRole);
+        localStorage.setItem('grooveli_token', actualToken);
+        localStorage.setItem('grooveli_user_id', actualUserId);
+        localStorage.setItem('grooveli_wallet', actualWallet || '');
+        localStorage.setItem('grooveli_role', actualRole);
 
         // Decode email to state
         try {
@@ -297,9 +297,9 @@ export const OnboardingFlow = () => {
       console.log('Step 5 SUCCESS. authData:', { isNewUser: authData.isNewUser, userId: authData.userId });
 
       // 6. Store JWT
-      localStorage.setItem('groovely_token', authData.token);
-      localStorage.setItem('groovely_user_id', authData.userId);
-      localStorage.setItem('groovely_wallet', walletAddr || '');
+      localStorage.setItem('grooveli_token', authData.token);
+      localStorage.setItem('grooveli_user_id', authData.userId);
+      localStorage.setItem('grooveli_wallet', walletAddr || '');
 
       // Move to Step 3 if new, else dashboard
       if (authData.isNewUser) {
@@ -366,12 +366,12 @@ export const OnboardingFlow = () => {
         const json = await res.json();
         const data = json.data ?? json;
         if (data.token) {
-          localStorage.setItem('groovely_token', data.token);
+          localStorage.setItem('grooveli_token', data.token);
         }
         if (data.role) {
-          localStorage.setItem('groovely_role', data.role);
+          localStorage.setItem('grooveli_role', data.role);
         } else {
-          localStorage.setItem('groovely_role', role === 'creator' ? 'creator' : 'fan');
+          localStorage.setItem('grooveli_role', role === 'creator' ? 'creator' : 'fan');
         }
       } catch (e) {
         console.error('Error saving updated token:', e);
@@ -538,7 +538,7 @@ export const OnboardingFlow = () => {
                 </div>
 
                 {/* Google Button or Skip button if already on Google */}
-                {(mounted && localStorage.getItem('groovely_token')) ? (
+                {(mounted && localStorage.getItem('grooveli_token')) ? (
                   <Button 
                     fullWidth 
                     variant="secondary"
@@ -550,27 +550,39 @@ export const OnboardingFlow = () => {
                   // Already logged in with Privy — wallet generating or timed out
                   walletTimedOut ? (
                     <div className="w-full flex flex-col items-center gap-3">
-                      <p className="text-red-400 text-xs text-center">Wallet setup timed out. Please try again.</p>
+                      <p className="text-red-400 text-xs text-center font-bold uppercase tracking-wider">Wallet setup timed out. Please try again.</p>
                       <button
                         onClick={async () => { setWalletTimedOut(false); await logout(); }}
-                        className="w-full flex items-center justify-center gap-3 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 transition-all rounded-full py-4"
+                        className="w-full flex items-center justify-center gap-3 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 transition-all rounded-full py-4 cursor-pointer"
                       >
                         <span className="text-red-400 font-bold text-sm tracking-wide">Retry — Sign in with Google</span>
                       </button>
                     </div>
                   ) : (
-                    <button
-                      disabled
-                      className="w-full flex items-center justify-center gap-3 bg-white/5 border border-white/10 rounded-full py-4 opacity-60 cursor-not-allowed"
-                    >
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span className="text-white font-bold text-sm tracking-wide">Setting up your wallet...</span>
-                    </button>
+                    <div className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-center space-y-4">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-8 h-8 border-2 border-accent-purple border-t-transparent rounded-full animate-spin" />
+                        <h3 className="font-bold text-white text-sm">Creating Your Smart Wallet</h3>
+                        <p className="text-xs text-zinc-400 max-w-xs mx-auto">Please wait while we initialize your Web3 smart account on the blockchain.</p>
+                      </div>
+                      {user?.email?.address && (
+                        <div className="bg-black/40 rounded-xl px-4 py-2 border border-white/5 inline-block mx-auto">
+                          <span className="text-[9px] text-zinc-500 uppercase tracking-widest block mb-0.5 font-bold">Logged In Account</span>
+                          <span className="text-xs font-bold text-white font-mono">{user.email.address}</span>
+                        </div>
+                      )}
+                      <button
+                        onClick={async () => { setWalletTimedOut(false); await logout(); }}
+                        className="text-xs text-red-400 hover:text-red-300 underline font-semibold transition-colors mt-2 block mx-auto cursor-pointer"
+                      >
+                        Stuck? Click here to sign out and retry
+                      </button>
+                    </div>
                   )
                 ) : (
                   <button 
                     onClick={handleGoogleLogin}
-                    className="w-full flex items-center justify-center gap-3 bg-white/5 border border-white/10 hover:bg-white/10 transition-all rounded-full py-4 group active:scale-[0.98]"
+                    className="w-full flex items-center justify-center gap-3 bg-white/5 border border-white/10 hover:bg-white/10 transition-all rounded-full py-4 group active:scale-[0.98] cursor-pointer"
                   >
                     <GoogleIcon size={18} />
                     <span className="text-white font-bold text-sm tracking-wide">Continue with Google</span>
@@ -758,10 +770,10 @@ export const OnboardingFlow = () => {
               </div>
               <div className="w-full md:w-1/2 flex flex-col justify-center py-4">
                 <h1 className="text-[32px] md:text-4xl font-extrabold tracking-tight mb-4 text-white">
-                  {role === 'creator' ? `You're all set, ${displayName}!` : `Welcome to Groovely, ${displayName}!`}
+                  {role === 'creator' ? `You're all set, ${displayName}!` : `Welcome to Grooveli, ${displayName}!`}
                 </h1>
                 <p className="text-zinc-400 text-base font-medium mb-10 leading-relaxed max-w-sm mx-auto md:mx-0">
-                  Your wallet and profile are now connected to Groovely<br /><br />
+                  Your wallet and profile are now connected to Grooveli<br /><br />
                   {role === 'creator'
                     ? "Start creating, streaming, and connecting with your sound"
                     : "Start streaming and connecting with your sound"
@@ -774,7 +786,7 @@ export const OnboardingFlow = () => {
                   </Button>
                 </div>
                 <p className="text-zinc-500 text-[11px] font-medium px-4 md:px-0">
-                  Groovely keeps your data secure, your wallet stays under your control
+                  Grooveli keeps your data secure, your wallet stays under your control
                 </p>
               </div>
             </div>

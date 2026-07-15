@@ -33,8 +33,8 @@ export default function LoginPage() {
 
   useEffect(() => {
     // If the user already has a token in localStorage, redirect immediately
-    const token = localStorage.getItem('groovely_token');
-    const role = localStorage.getItem('groovely_role');
+    const token = localStorage.getItem('grooveli_token');
+    const role = localStorage.getItem('grooveli_role');
     if (token) {
       if (role === 'fan') {
         router.push('/explore');
@@ -81,10 +81,10 @@ export default function LoginPage() {
         }
 
         const { token: jwtToken, user: dbUser } = authData.data;
-        localStorage.setItem('groovely_token', jwtToken);
-        localStorage.setItem('groovely_user_id', String(dbUser.id));
-        localStorage.setItem('groovely_wallet', dbUser.wallet ?? walletAddr);
-        localStorage.setItem('groovely_role', dbUser.role ?? '');
+        localStorage.setItem('grooveli_token', jwtToken);
+        localStorage.setItem('grooveli_user_id', String(dbUser.id));
+        localStorage.setItem('grooveli_wallet', dbUser.wallet ?? walletAddr);
+        localStorage.setItem('grooveli_role', dbUser.role ?? '');
 
         if (dbUser.role === 'fan') {
           router.push('/explore');
@@ -174,10 +174,10 @@ export default function LoginPage() {
       // 4. Store JWT
       const { token, user } = authData.data;
       console.log('Login successful, storing credentials');
-      localStorage.setItem('groovely_token', token);
-      localStorage.setItem('groovely_user_id', String(user.id));
-      localStorage.setItem('groovely_wallet', user.wallet ?? walletAddr);
-      localStorage.setItem('groovely_role', user.role ?? '');
+      localStorage.setItem('grooveli_token', token);
+      localStorage.setItem('grooveli_user_id', String(user.id));
+      localStorage.setItem('grooveli_wallet', user.wallet ?? walletAddr);
+      localStorage.setItem('grooveli_role', user.role ?? '');
 
       // Redirect based on user role
       if (user.role === 'fan') {
