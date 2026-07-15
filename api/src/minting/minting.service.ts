@@ -111,6 +111,29 @@ export class MintingService {
     };
   }
 
+  async getSongByTrack(trackId: number, userId: number) {
+    const songResult = await this.db.query(
+      `SELECT s.*, u.display_name as creator_name, u.username as creator_username
+       FROM songs s
+       JOIN users u ON s.user_id = u.id
+       WHERE s.track_id = $1 AND s.user_id = $2`,
+      [trackId, userId],
+    );
+    const song = songResult.rows[0];
+    if (!song) return null;
+
+    const [editionsResult, contributorsResult] = await Promise.all([
+      this.db.query('SELECT * FROM editions WHERE song_id = $1 ORDER BY created_at ASC', [song.id]),
+      this.db.query('SELECT * FROM song_contributors WHERE song_id = $1', [song.id]),
+    ]);
+
+    return {
+      song,
+      editions: editionsResult.rows,
+      contributors: contributorsResult.rows,
+    };
+  }
+
   async getMySongs(userId: number) {
     const result = await this.db.query(
       `SELECT s.*,
@@ -141,10 +164,14 @@ export class MintingService {
   async setContributors(songId: number, userId: number, contributors: ContributorDto[]) {
     // Verify song belongs to user
     const songCheck = await this.db.query(
-      'SELECT id FROM songs WHERE id = $1 AND user_id = $2',
+      'SELECT id, user_id FROM songs WHERE id = $1 AND user_id = $2',
       [songId, userId],
     );
     if (!songCheck.rows[0]) throw new NotFoundException('Song not found');
+
+    // Get creator's wallet address
+    const creatorUser = await this.db.query('SELECT wallet FROM users WHERE id = $1', [userId]);
+    const creatorWallet = creatorUser.rows[0]?.wallet || '';
 
     // Validate splits sum to exactly 10000
     const total = contributors.reduce((acc, c) => acc + c.basis_points, 0);
@@ -162,10 +189,35 @@ export class MintingService {
     try {
       await this.db.query('DELETE FROM song_contributors WHERE song_id = $1', [songId]);
       for (const c of contributors) {
+        // Resolve user_id from wallet_address if not provided
+        let resolvedUserId = c.user_id || null;
+        if (!resolvedUserId && c.wallet_address) {
+          const userRes = await this.db.query(
+            'SELECT id FROM users WHERE LOWER(wallet) = LOWER($1)',
+            [c.wallet_address],
+          );
+          if (userRes.rows[0]) {
+            resolvedUserId = userRes.rows[0].id;
+          }
+        }
+
+        // Determine approval status: creator accepts instantly, co-creators start as pending
+        const isCreator = creatorWallet && c.wallet_address && 
+          creatorWallet.toLowerCase() === c.wallet_address.toLowerCase();
+        const approvalStatus = isCreator ? 'accepted' : 'pending';
+
         await this.db.query(
-          `INSERT INTO song_contributors (song_id, user_id, wallet_address, basis_points, role, display_name)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
-          [songId, c.user_id || null, c.wallet_address, c.basis_points, c.role || null, c.display_name || null],
+          `INSERT INTO song_contributors (song_id, user_id, wallet_address, basis_points, role, display_name, approval_status)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [
+            songId,
+            resolvedUserId,
+            c.wallet_address,
+            c.basis_points,
+            c.role || null,
+            c.display_name || null,
+            approvalStatus
+          ],
         );
       }
       await this.db.query('COMMIT');
@@ -176,6 +228,45 @@ export class MintingService {
 
     return this.db.query('SELECT * FROM song_contributors WHERE song_id = $1', [songId])
       .then(r => r.rows);
+  }
+
+  async getPendingInvitations(userId: number) {
+    const query = `
+      SELECT sc.*, s.title as song_title, u.username as creator_username, u.display_name as creator_display_name
+      FROM song_contributors sc
+      JOIN songs s ON sc.song_id = s.id
+      JOIN users u ON s.user_id = u.id
+      WHERE sc.user_id = $1 AND sc.approval_status = 'pending'
+      ORDER BY sc.created_at DESC
+    `;
+    const result = await this.db.query(query, [userId]);
+    return result.rows;
+  }
+
+  async respondToInvitation(userId: number, contributorId: number, accept: boolean) {
+    const checkQuery = `
+      SELECT sc.*, s.user_id as creator_user_id 
+      FROM song_contributors sc
+      JOIN songs s ON sc.song_id = s.id
+      WHERE sc.id = $1 AND sc.user_id = $2
+    `;
+    const checkRes = await this.db.query(checkQuery, [contributorId, userId]);
+    const contributor = checkRes.rows[0];
+    if (!contributor) {
+      throw new NotFoundException('Invitation not found or not assigned to you.');
+    }
+
+    if (contributor.approval_status !== 'pending') {
+      throw new BadRequestException('You have already responded to this invitation.');
+    }
+
+    const newStatus = accept ? 'accepted' : 'rejected';
+    await this.db.query(
+      'UPDATE song_contributors SET approval_status = $1 WHERE id = $2',
+      [newStatus, contributorId],
+    );
+
+    return { id: contributorId, approval_status: newStatus };
   }
 
   // ─────────────────────────────────────────────────────────────────────────

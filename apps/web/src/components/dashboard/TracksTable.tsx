@@ -34,19 +34,21 @@ interface TrackRow {
 
 const StatusBadge = ({ status }: { status: string }) => {
   const s = status?.toLowerCase();
-  const normalizedStatus = s === 'active' || s === 'live' ? 'Live' : s === 'minting' ? 'Minting' : s === 'failed' ? 'Failed' : 'Draft';
+  const normalizedStatus = s === 'active' || s === 'live' ? 'Live' : s === 'minting' ? 'Minting' : s === 'failed' ? 'Failed' : s === 'pending_approval' ? 'Pending splits' : 'Draft';
   const styles: Record<string, string> = {
     Live: "bg-[#00FF85]/10 text-[#00FF85] border-[#00FF85]/20",
     Draft: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
     Failed: "bg-red-500/10 text-red-500 border-red-500/20",
-    Minting: "bg-accent-purple/10 text-accent-purple border-accent-purple/20"
+    Minting: "bg-accent-purple/10 text-accent-purple border-accent-purple/20",
+    "Pending splits": "bg-amber-500/10 text-amber-500 border-amber-500/20"
   };
 
   const tooltips: Record<string, string> = {
     Live: "This track is minted and live on the public marketplace.",
     Draft: "This track is a draft. Click the action icon on the right to mint and publish it.",
     Failed: "Minting failed. Click the retry icon on the right to run minting again.",
-    Minting: "This track is currently minting on the blockchain."
+    Minting: "This track is currently minting on the blockchain.",
+    "Pending splits": "This track splits are awaiting approvals from collaborators."
   };
 
   return (
@@ -149,9 +151,16 @@ export const TracksTable = () => {
                       <img src={ipfsToHttp(track.image || track.cover_url || track.coverImage) || "https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=100&q=80"} alt={track.name || track.title || "Track"} className="w-10 h-10 rounded-lg object-cover" />
                       <div className="flex flex-col">
                          <span className="text-sm font-bold text-white group-hover:text-accent-purple transition-colors">{track.name || track.title || "Untitled Track"}</span>
-                         <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider mt-1">
-                           {track.artist_name || track.artist || (track.artist_username ? `@${track.artist_username}` : "Unknown Artist")}
-                         </span>
+                         <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
+                              {track.artist_name || track.artist || (track.artist_username ? `@${track.artist_username}` : "Unknown Artist")}
+                            </span>
+                            {(track as any).contributor_role && (track as any).contributor_role !== 'creator' && (
+                              <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-accent-purple/15 text-accent-purple border border-accent-purple/20">
+                                {(track as any).contributor_role}
+                              </span>
+                            )}
+                         </div>
                       </div>
                     </div>
                   </td>
@@ -172,14 +181,15 @@ export const TracksTable = () => {
                         const isLive = s === 'active' || s === 'live';
                         const isFailed = s === 'failed';
                         const isMinting = s === 'minting';
+                        const isContributor = (track as any).contributor_role && (track as any).contributor_role !== 'creator';
                         return (
                           <button 
                             onClick={() => handleActionClick(track)}
                             className="hover:text-white transition-colors"
-                            title={isLive ? "View in Marketplace" : isFailed ? "Retry Minting" : isMinting ? "Minting..." : "Mint Track"}
-                            disabled={isMinting}
+                            title={isLive ? "View in Marketplace" : isFailed ? "Retry Minting" : isMinting ? "Minting..." : isContributor ? "Awaiting approvals" : "Mint Track"}
+                            disabled={isMinting || (!isLive && isContributor)}
                           >
-                             {isLive ? <Eye size={16} /> : isFailed ? <RefreshCw size={16} /> : isMinting ? <Loader2 size={16} className="animate-spin" /> : <Edit2 size={16} />}
+                             {isLive ? <Eye size={16} /> : isFailed ? <RefreshCw size={16} /> : isMinting ? <Loader2 size={16} className="animate-spin" /> : isContributor ? null : <Edit2 size={16} />}
                           </button>
                         );
                       })()}

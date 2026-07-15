@@ -49,11 +49,13 @@ export default function MintPage() {
   const [royaltyPercentage, setRoyaltyPercentage] = useState('10');
   const [txHash, setTxHash] = useState('');
   const [tokenId, setTokenId] = useState('');
+  const [existingSong, setExistingSong] = useState<any>(null);
 
   // Collaborators configuration
-  const [collaborators, setCollaborators] = useState<{ username: string; wallet: string; percentage: number }[]>([]);
+  const [collaborators, setCollaborators] = useState<{ username: string; wallet: string; percentage: number; approval_status?: string; role?: string }[]>([]);
   const [collabUsername, setCollabUsername] = useState('');
   const [collabPercentage, setCollabPercentage] = useState(10);
+  const [collabRole, setCollabRole] = useState('writer');
   const [isSearchingCollab, setIsSearchingCollab] = useState(false);
 
   const handleAddCollabClick = async () => {
@@ -89,10 +91,11 @@ export default function MintPage() {
           username: user.username,
           wallet: user.wallet,
           percentage: collabPercentage,
+          role: collabRole,
         }
       ]);
       setCollabUsername('');
-      toast.success(`Added @${user.username}`);
+      toast.success(`Added @${user.username} as ${collabRole}`);
     } catch (err: any) {
       toast.error(err.message || 'Failed to verify username');
     } finally {
@@ -135,8 +138,35 @@ export default function MintPage() {
           toast.error('Failed to fetch track details');
         }
       };
+
+      const fetchSongData = async () => {
+        try {
+          const res = await apiFetch(`/api/songs/track/${idParam}`);
+          if (res && res.ok) {
+            const songData = await res.json();
+            if (songData) {
+              setExistingSong(songData);
+              if (songData.contributors && Array.isArray(songData.contributors)) {
+                const collabs = songData.contributors
+                  .filter((c: any) => c.role !== 'artist')
+                  .map((c: any) => ({
+                    username: c.display_name,
+                    wallet: c.wallet_address,
+                    percentage: c.basis_points / 100,
+                    approval_status: c.approval_status,
+                    role: c.role
+                  }));
+                setCollaborators(collabs);
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Failed to fetch existing song details:', err);
+        }
+      };
       
       fetchTrackData();
+      fetchSongData();
       return;
     }
 
@@ -170,6 +200,100 @@ export default function MintPage() {
     setMintStatus('confirming');
   };
 
+  const handleSaveSplitsAndInvite = async () => {
+    if (!trackId) {
+      toast.error('No pending track found.');
+      return;
+    }
+    setMintStatus('minting');
+    setMintStepLabel('Saving splits & sending invitations...');
+    try {
+      // 1. Create Song in database
+      const songRes = await apiFetch('/api/songs', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: trackTitle,
+          track_id: trackId,
+        }),
+      });
+
+      if (!songRes || !songRes.ok) {
+        throw new Error('Failed to create song in database');
+      }
+      const songJson = await songRes.json();
+      const songDb = songJson.data || songJson.song || songJson;
+      const songDbId = songDb.id;
+
+      // 2. Set Contributors in database
+      const totalCollabPercent = collaborators.reduce((acc, c) => acc + c.percentage, 0);
+      const dbContributors = [
+        {
+          wallet_address: address,
+          basis_points: (100 - totalCollabPercent) * 100,
+          role: 'artist',
+          display_name: 'Creator',
+        },
+        ...collaborators.map(c => ({
+          wallet_address: c.wallet,
+          basis_points: c.percentage * 100,
+          role: c.role || 'collaborator',
+          display_name: c.username,
+        }))
+      ];
+
+      const contributorsRes = await apiFetch(`/api/songs/${songDbId}/contributors`, {
+        method: 'POST',
+        body: JSON.stringify({
+          contributors: dbContributors,
+        }),
+      });
+      if (!contributorsRes || !contributorsRes.ok) {
+        throw new Error('Failed to set contributors in database');
+      }
+
+      // 3. Create Edition in database
+      const parsedPrice = Number(licensePrice);
+      const safePrice = isNaN(parsedPrice) ? 0 : parsedPrice;
+
+      const editionRes = await apiFetch(`/api/songs/${songDbId}/editions`, {
+        method: 'POST',
+        body: JSON.stringify({
+          edition_type: 'open',
+          max_supply: 0,
+          mint_price_usdc: safePrice,
+        }),
+      });
+      if (!editionRes || !editionRes.ok) {
+        throw new Error('Failed to create edition in database');
+      }
+
+      // 4. Update track status to pending_approval on backend
+      await apiFetch(`/api/creator/tracks/${trackId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'pending_approval' }),
+      });
+
+      toast.success('Split invitations sent successfully! Awaiting collaborator approvals.');
+      
+      // Clear localStorage
+      localStorage.removeItem('pending_track_id');
+      localStorage.removeItem('pending_track_title');
+      localStorage.removeItem('pending_track_cover');
+      localStorage.removeItem('pending_track_genre');
+      localStorage.removeItem('pending_track_tags');
+      localStorage.removeItem('pending_track_rights');
+      localStorage.removeItem('pending_track_payment');
+      localStorage.removeItem('pending_track_price');
+      localStorage.removeItem('pending_track_royalty');
+
+      router.push('/dashboard');
+    } catch (err: any) {
+      console.error('Error saving splits:', err);
+      toast.error(err.message || 'Failed to send split invitations.');
+      setMintStatus('idle');
+    }
+  };
+
   const handleMintConfirmed = async () => {
     if (!address) {
       toast.error('Please connect your wallet first.');
@@ -192,71 +316,87 @@ export default function MintPage() {
       const approveTx = await approveUSDC(config, parseUSDC(2.50));
       await waitForTx(config, approveTx);
 
-      // 2. Create Song in database
+      let songDbId: number;
+      let songMetadataUri: string;
+      let editionDbId: number;
+      let dbContributors: any[];
+
       setMintStepLabel('Step 2/2: Publishing track on-chain (please confirm in wallet)...');
-      const songRes = await apiFetch('/api/songs', {
-        method: 'POST',
-        body: JSON.stringify({
-          title: trackTitle,
-          track_id: trackId,
-        }),
-      });
 
-      if (!songRes || !songRes.ok) {
-        throw new Error('Failed to create song in database');
+      if (existingSong) {
+        songDbId = existingSong.song.id;
+        songMetadataUri = existingSong.song.metadata_uri || `ipfs://QmSongMetadataPlaceholder`;
+        editionDbId = existingSong.editions?.[0]?.id;
+        dbContributors = existingSong.contributors;
+      } else {
+        // 2. Create Song in database
+        const songRes = await apiFetch('/api/songs', {
+          method: 'POST',
+          body: JSON.stringify({
+            title: trackTitle,
+            track_id: trackId,
+          }),
+        });
+
+        if (!songRes || !songRes.ok) {
+          throw new Error('Failed to create song in database');
+        }
+        const songJson = await songRes.json();
+        const songDb = songJson.data || songJson.song || songJson;
+        songDbId = songDb.id;
+        songMetadataUri = songDb.metadata_uri || `ipfs://QmSongMetadataPlaceholder`;
+
+        // 3. Set Contributors in database
+        const totalCollabPercent = collaborators.reduce((acc, c) => acc + c.percentage, 0);
+        dbContributors = [
+          {
+            wallet_address: address,
+            basis_points: (100 - totalCollabPercent) * 100,
+            role: 'artist',
+            display_name: 'Creator',
+          },
+          ...collaborators.map(c => ({
+            wallet_address: c.wallet,
+            basis_points: c.percentage * 100,
+            role: c.role || 'collaborator',
+            display_name: c.username,
+          }))
+        ];
+
+        const contributorsRes = await apiFetch(`/api/songs/${songDbId}/contributors`, {
+          method: 'POST',
+          body: JSON.stringify({
+            contributors: dbContributors,
+          }),
+        });
+        if (!contributorsRes || !contributorsRes.ok) {
+          throw new Error('Failed to set contributors in database');
+        }
+
+        // 4. Create Edition in database
+        const parsedPriceVal = Number(licensePrice);
+        const safePriceVal = isNaN(parsedPriceVal) ? 0 : parsedPriceVal;
+
+        const editionRes = await apiFetch(`/api/songs/${songDbId}/editions`, {
+          method: 'POST',
+          body: JSON.stringify({
+            edition_type: 'open',
+            max_supply: 0,
+            mint_price_usdc: safePriceVal,
+          }),
+        });
+        if (!editionRes || !editionRes.ok) {
+          throw new Error('Failed to create edition in database');
+        }
+        const editionJson = await editionRes.json();
+        const editionDb = editionJson.data || editionJson.edition || editionJson;
+        editionDbId = editionDb.id;
       }
-      const songJson = await songRes.json();
-      const songDb = songJson.data || songJson.song || songJson;
-      const songDbId = songDb.id;
-      const songMetadataUri = songDb.metadata_uri || `ipfs://QmSongMetadataPlaceholder`;
-
-      // 3. Set Contributors in database
-      const totalCollabPercent = collaborators.reduce((acc, c) => acc + c.percentage, 0);
-      const dbContributors = [
-        {
-          wallet_address: address,
-          basis_points: (100 - totalCollabPercent) * 100,
-          role: 'artist',
-          display_name: 'Creator',
-        },
-        ...collaborators.map(c => ({
-          wallet_address: c.wallet,
-          basis_points: c.percentage * 100,
-          role: 'collaborator',
-          display_name: c.username,
-        }))
-      ];
-
-      const contributorsRes = await apiFetch(`/api/songs/${songDbId}/contributors`, {
-        method: 'POST',
-        body: JSON.stringify({
-          contributors: dbContributors,
-        }),
-      });
-      if (!contributorsRes || !contributorsRes.ok) {
-        throw new Error('Failed to set contributors in database');
-      }
-
-      // 4. Create Edition in database
-      const editionRes = await apiFetch(`/api/songs/${songDbId}/editions`, {
-        method: 'POST',
-        body: JSON.stringify({
-          edition_type: 'open',
-          max_supply: 0,
-          mint_price_usdc: Number(licensePrice) || 0,
-        }),
-      });
-      if (!editionRes || !editionRes.ok) {
-        throw new Error('Failed to create edition in database');
-      }
-      const editionJson = await editionRes.json();
-      const editionDb = editionJson.data || editionJson.edition || editionJson;
-      const editionDbId = editionDb.id;
 
       // 5. Publish song on-chain (combined call)
       const contributorsArg = dbContributors.map(c => ({
-        wallet: c.wallet_address as `0x${string}`,
-        basisPoints: BigInt(c.basis_points),
+        wallet: (c.wallet_address || c.wallet) as `0x${string}`,
+        basisPoints: BigInt(c.basis_points || c.basisPoints),
       }));
 
       const parsedPrice = Number(licensePrice);
@@ -370,6 +510,32 @@ export default function MintPage() {
     setIsModalOpen(false);
     setTimeout(() => setMintStatus('idle'), 300);
   };
+
+  const hasCollaborators = collaborators.length > 0;
+  const isSplitsSaved = existingSong !== null;
+  const allApproved = collaborators.every(c => c.approval_status === 'accepted');
+
+  let buttonLabel = 'Mint Track';
+  let buttonAction = handleStartMinting;
+  let buttonDisabled = mintStatus === 'minting';
+
+  if (hasCollaborators) {
+    if (isSplitsSaved) {
+      if (allApproved) {
+        buttonLabel = 'Mint Track';
+        buttonAction = handleStartMinting;
+      } else {
+        buttonLabel = 'Awaiting Splits Approval';
+        buttonDisabled = true;
+      }
+    } else {
+      buttonLabel = 'Send Split Invites';
+      buttonAction = handleSaveSplitsAndInvite;
+    }
+  } else {
+    buttonLabel = 'Mint Track';
+    buttonAction = handleStartMinting;
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
@@ -496,7 +662,7 @@ export default function MintPage() {
                     {addCollaborator && (
                       <div className="bg-[#0F0F1A] border border-white/5 rounded-2xl p-6 space-y-4">
                         <h4 className="text-xs font-black uppercase tracking-widest text-white">Add Collaborator</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                           <div className="space-y-1">
                             <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Username</label>
                             <input
@@ -506,6 +672,21 @@ export default function MintPage() {
                               placeholder="e.g. producer_john"
                               className="w-full bg-[#050510] border border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-white outline-none focus:border-accent-purple/50"
                             />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Title / Role</label>
+                            <select
+                              value={collabRole}
+                              onChange={(e) => setCollabRole(e.target.value)}
+                              className="w-full bg-[#050510] border border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-zinc-400 outline-none focus:border-accent-purple/50 appearance-none cursor-pointer"
+                            >
+                              <option value="writer">Writer</option>
+                              <option value="producer">Producer</option>
+                              <option value="composer">Composer</option>
+                              <option value="vocalist">Vocalist</option>
+                              <option value="engineer">Engineer</option>
+                              <option value="lyricist">Lyricist</option>
+                            </select>
                           </div>
                           <div className="space-y-1">
                             <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Split (%)</label>
@@ -546,19 +727,37 @@ export default function MintPage() {
                       {collaborators.map((c, idx) => (
                         <div key={c.username} className="flex items-center justify-between bg-[#0F0F1A] border border-white/5 rounded-xl p-4">
                           <div>
-                            <p className="text-xs font-black text-white">@{c.username}</p>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-xs font-black text-white">@{c.username}</p>
+                              {c.role && (
+                                <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
+                                  {c.role}
+                                </span>
+                              )}
+                              {c.approval_status && (
+                                <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded border ${
+                                  c.approval_status === 'accepted' ? 'bg-emerald-950/20 text-emerald-400 border-emerald-500/20' :
+                                  c.approval_status === 'rejected' ? 'bg-red-950/20 text-red-400 border-red-500/20' :
+                                  'bg-amber-950/20 text-amber-400 border-amber-500/20'
+                                }`}>
+                                  {c.approval_status}
+                                </span>
+                              )}
+                            </div>
                             <p className="text-[9px] text-zinc-500 font-bold truncate max-w-[200px]">{c.wallet}</p>
                           </div>
                           <div className="flex items-center gap-4">
                             <span className="text-sm font-black text-[#00FF85]">{c.percentage}%</span>
-                            <button
-                              onClick={() => {
-                                setCollaborators(collaborators.filter((_, i) => i !== idx));
-                              }}
-                              className="text-red-500 hover:text-red-400 text-xs font-bold"
-                            >
-                              Remove
-                            </button>
+                            {!c.approval_status && (
+                              <button
+                                onClick={() => {
+                                  setCollaborators(collaborators.filter((_, i) => i !== idx));
+                                }}
+                                className="text-red-500 hover:text-red-400 text-xs font-bold"
+                              >
+                                Remove
+                              </button>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -659,14 +858,16 @@ export default function MintPage() {
                           <Wallet size={18} className="text-zinc-500" />
                           <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Wallet</span>
                        </div>
-                       <span className="text-sm font-black text-white">0xc...y69</span>
+                        <span className="text-sm font-black text-white">
+                          {address ? `${address.substring(0, 6)}...${address.substring(address.length - 4)}` : 'Not Connected'}
+                        </span>
                     </div>
                     <div className="flex items-center justify-between py-2 border-t border-white/5 pt-6">
                        <div className="flex items-center gap-3">
                           <Zap size={18} className="text-accent-cyan" />
                           <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Gas Fee (est.)</span>
                        </div>
-                       <span className="text-xl font-black text-white">0.02 MATIC (~$0.01)</span>
+                       <span className="text-xl font-black text-white">0.02 POL (~$0.01)</span>
                     </div>
                  </div>
               </div>
@@ -676,14 +877,14 @@ export default function MintPage() {
 
         {/* Sticky Footer */}
         <footer className="fixed bottom-0 right-0 left-64 bg-[#0F0F1A]/80 backdrop-blur-xl border-t border-white/5 px-10 py-6 flex items-center justify-end gap-4 z-40">
-           <Button variant="secondary" className="px-10">Save as Draft</Button>
+           <Button variant="secondary" className="px-10" onClick={() => router.push('/dashboard')}>Back to Dashboard</Button>
            <Button 
              variant="primary" 
-             onClick={handleStartMinting}
-             disabled={mintStatus === 'minting'}
+             onClick={buttonAction}
+             disabled={buttonDisabled}
              className="px-16 bg-accent-purple shadow-[0_0_30px_rgba(157,0,255,0.4)] hover:shadow-[0_0_40px_rgba(157,0,255,0.6)]"
            >
-             {mintStatus === 'minting' ? 'Minting...' : 'Mint Track'}
+             {mintStatus === 'minting' ? (buttonLabel === 'Send Split Invites' ? 'Sending...' : 'Minting...') : buttonLabel}
            </Button>
         </footer>
 

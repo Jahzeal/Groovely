@@ -46,6 +46,17 @@ export class MintingController {
     return this.mintingService.getSong(songId);
   }
 
+  @Get('songs/track/:trackId')
+  @ResponseMessage('Song details retrieved by track ID')
+  async getSongByTrack(
+    @Req() req: any,
+    @Param('trackId') trackIdStr: string
+  ) {
+    const trackId = parseInt(trackIdStr);
+    if (isNaN(trackId)) throw new BadRequestException('Invalid track ID');
+    return this.mintingService.getSongByTrack(trackId, req.userId);
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   // Contributors
   // ─────────────────────────────────────────────────────────────────────────
@@ -68,6 +79,31 @@ export class MintingController {
       body.contributors,
     );
     return { contributors };
+  }
+
+  @Get('creator/invitations')
+  @ResponseMessage('Pending invitations retrieved successfully')
+  async getPendingInvitations(@Req() req: any) {
+    const invitations = await this.mintingService.getPendingInvitations(req.userId);
+    return { data: invitations };
+  }
+
+  @Post('creator/invitations/:id/respond')
+  @ResponseMessage('Invitation status updated successfully')
+  async respondToInvitation(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() body: { accept: boolean },
+  ) {
+    const contributorId = parseInt(id);
+    if (isNaN(contributorId)) throw new BadRequestException('Invalid invitation ID');
+    if (body.accept === undefined) throw new BadRequestException('accept (boolean) is required');
+    
+    return this.mintingService.respondToInvitation(
+      req.userId,
+      contributorId,
+      body.accept,
+    );
   }
 
   // ─────────────────────────────────────────────────────────────────────────

@@ -18,9 +18,10 @@ import {
   LogOut,
   Upload,
   Settings,
-  Plus
+  Plus,
+  UserCheck
 } from 'lucide-react';
-import { handleLogout } from '@/lib/api';
+import { handleLogout, apiFetch } from '@/lib/api';
 import { useLogout } from '@privy-io/react-auth';
 
 interface NavItemProps {
@@ -29,9 +30,10 @@ interface NavItemProps {
   href?: string;
   active?: boolean;
   comingSoon?: boolean;
+  badgeCount?: number;
 }
 
-const NavItem = ({ icon: Icon, label, href, active, comingSoon }: NavItemProps) => {
+const NavItem = ({ icon: Icon, label, href, active, comingSoon, badgeCount }: NavItemProps) => {
   const inner = (
     <div className={`
       flex items-center gap-3 px-6 py-3.5 cursor-pointer transition-all duration-300
@@ -42,6 +44,11 @@ const NavItem = ({ icon: Icon, label, href, active, comingSoon }: NavItemProps) 
     `}>
       <Icon size={20} className={active ? 'text-accent-purple' : ''} />
       <span className="text-sm tracking-wide">{label}</span>
+      {badgeCount !== undefined && badgeCount > 0 && (
+        <span className="ml-auto flex items-center justify-center h-5 w-5 rounded-full bg-accent-purple text-[10px] font-black text-white shadow-[0_0_10px_rgba(157,0,255,0.4)]">
+          {badgeCount}
+        </span>
+      )}
       {comingSoon && (
         <span className="ml-auto text-[8px] font-black uppercase bg-[#00FF85] text-black px-1.5 py-0.5 rounded-sm">
           Coming soon
@@ -67,6 +74,8 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
   const [role, setRole] = React.useState<'creator' | 'fan'>(initialRole || 'creator');
   const { logout } = useLogout();
 
+  const [inviteCount, setInviteCount] = useState(0);
+
   React.useEffect(() => {
     setMounted(true);
     setToken(localStorage.getItem('groovely_token'));
@@ -80,6 +89,25 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
       }
     }
   }, [initialRole]);
+
+  useEffect(() => {
+    if (!mounted || !token || role !== 'creator') return;
+    const fetchInvites = async () => {
+      try {
+        const res = await apiFetch('/api/creator/invitations');
+        if (res && res.ok) {
+          const json = await res.json();
+          const invites = json.data || [];
+          setInviteCount(invites.length);
+        }
+      } catch (err) {
+        console.error('Failed to fetch invitations count:', err);
+      }
+    };
+    fetchInvites();
+    const interval = setInterval(fetchInvites, 30000);
+    return () => clearInterval(interval);
+  }, [mounted, token, role]);
 
   const isMarket = activePage === 'market' || pathname?.startsWith('/marketplace');
   const isDashboard = !isMarket && (activePage === 'dashboard' || pathname === '/dashboard');
@@ -130,6 +158,7 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
           <>
             <NavItem icon={LayoutDashboard} label="Dashboard" href="/dashboard" active={isDashboard} />
             <NavItem icon={Library} label="My Library" href="/library" active={pathname === '/library'} />
+            <NavItem icon={UserCheck} label="Split Invites" href="/dashboard/invitations" active={pathname === '/dashboard/invitations'} badgeCount={inviteCount} />
             <NavItem icon={Wallet} label="Earnings" href="/dashboard/earnings" active={pathname === '/dashboard/earnings'} />
 
             <div className="h-px bg-white/5 my-6 mx-6" />

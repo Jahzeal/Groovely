@@ -85,15 +85,28 @@ export class TrackService {
 
   async getCreatorTracks(userId: number) {
     const result = await this.db.query(
-      `SELECT 
+      `SELECT DISTINCT
         t.*,
         u.id as user_id,
         u.display_name as artist_name,
-        u.username as artist_username
-       FROM tracks t
-       JOIN users u ON t.user_id = u.id
-       WHERE t.user_id = $1
-       ORDER BY t.created_at DESC`,
+        u.username as artist_username,
+        CASE 
+          WHEN t.user_id = $1 THEN 'creator'
+          ELSE (
+            SELECT sc.role 
+            FROM song_contributors sc 
+            JOIN songs s ON sc.song_id = s.id 
+            WHERE s.track_id = t.id AND sc.user_id = $1 AND sc.approval_status = 'accepted' 
+            LIMIT 1
+          )
+        END as contributor_role
+      FROM tracks t
+      JOIN users u ON t.user_id = u.id
+      LEFT JOIN songs s ON t.id = s.track_id
+      LEFT JOIN song_contributors sc ON s.id = sc.song_id
+      WHERE t.user_id = $1 
+         OR (sc.user_id = $1 AND sc.approval_status = 'accepted')
+      ORDER BY t.created_at DESC`,
       [userId]
     );
     return result.rows;
