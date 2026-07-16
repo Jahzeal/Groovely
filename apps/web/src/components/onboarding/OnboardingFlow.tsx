@@ -79,6 +79,21 @@ export const OnboardingFlow = () => {
     }
   }, []);
 
+  useEffect(() => {
+    const handleZeroDevError = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      setError(detail || 'Smart wallet creation failed. Please try again.');
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('zerodev_error', handleZeroDevError);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('zerodev_error', handleZeroDevError);
+      }
+    };
+  }, []);
+
   // Profile data (Step 3)
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
@@ -547,12 +562,14 @@ export const OnboardingFlow = () => {
                     {address ? 'Continue to Profile' : 'Continue without Wallet'}
                   </Button>
                 ) : authenticated ? (
-                  // Already logged in with Privy — wallet generating or timed out
-                  walletTimedOut ? (
+                  // Already logged in with Privy — wallet generating, failed or timed out
+                  (walletTimedOut || error) ? (
                     <div className="w-full flex flex-col items-center gap-3">
-                      <p className="text-red-400 text-xs text-center font-bold uppercase tracking-wider">Wallet setup timed out. Please try again.</p>
+                      <p className="text-red-400 text-xs text-center font-bold uppercase tracking-wider">
+                        {error ? 'Wallet Setup Failed' : 'Wallet setup timed out. Please try again.'}
+                      </p>
                       <button
-                        onClick={async () => { setWalletTimedOut(false); await logout(); }}
+                        onClick={async () => { setWalletTimedOut(false); setError(null); await logout(); }}
                         className="w-full flex items-center justify-center gap-3 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 transition-all rounded-full py-4 cursor-pointer"
                       >
                         <span className="text-red-400 font-bold text-sm tracking-wide">Retry — Sign in with Google</span>

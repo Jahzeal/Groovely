@@ -102,6 +102,9 @@ function SmartAccountConnectorWrapper({ children }: { children: ReactNode }) {
       } catch (err: any) {
         console.error('[ZeroDev] ❌ Smart account creation FAILED:', err?.message || err);
         console.error('[ZeroDev] ❌ Full error:', err);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('zerodev_error', { detail: err?.message || String(err) }));
+        }
         throw err;
       }
     }) as any,

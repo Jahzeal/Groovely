@@ -121,13 +121,13 @@ export class FanService {
         t.category,
         u.display_name as artist_name,
         u.username as artist_username,
-        CASE WHEN f.id IS NOT NULL THEN true ELSE false END as follows_artist
+        CASE WHEN f.follower_id IS NOT NULL THEN true ELSE false END as follows_artist
        FROM tracks t
        JOIN users u ON t.user_id = u.id
        LEFT JOIN follows f ON f.following_id = u.id AND f.follower_id = $1
        WHERE t.visibility = 'public'
        ORDER BY 
-         CASE WHEN f.id IS NOT NULL THEN 1 ELSE 2 END,
+         CASE WHEN f.follower_id IS NOT NULL THEN 1 ELSE 2 END,
          t.created_at DESC
        LIMIT $2`,
       [userId, limit]
