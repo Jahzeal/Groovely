@@ -12,7 +12,10 @@ export const CONTRACT_ADDRESS = (
 
 export const USDC_ADDRESS = (
   process.env.NEXT_PUBLIC_USDC_ADDRESS ||
-  '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359' // Polygon mainnet USDC
+  (process.env.NEXT_PUBLIC_CHAIN_ID === '137'
+    ? '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359' // Polygon mainnet USDC
+    : '0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582' // Polygon Amoy testnet USDC
+  )
 ) as `0x${string}`;
 
 export const USDC_AMOY = '0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582' as `0x${string}`;

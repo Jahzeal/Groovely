@@ -97,6 +97,24 @@ function SmartAccountConnectorWrapper({ children }: { children: ReactNode }) {
 
         // 4. Return EIP-1193 provider wrapping the kernel client
         const provider = new KernelEIP1193Provider(kernelClient) as any;
+        
+        // Intercept and reject EIP-5792 wallet_* capabilities to force viem to fall back to eth_sendTransaction
+        const originalRequest = provider.request.bind(provider);
+        provider.request = async (args: any) => {
+          const method = args?.method;
+          if (
+            method === 'wallet_getCapabilities' ||
+            method === 'wallet_sendTransaction' ||
+            method === 'wallet_showCallsStatus' ||
+            method === 'wallet_getCallsStatus'
+          ) {
+            const error = new Error(`Method ${method} not supported by this provider wrapper.`);
+            (error as any).code = -32601; // Standard JSON-RPC Method Not Found
+            throw error;
+          }
+          return originalRequest(args);
+        };
+
         console.log('[ZeroDev] ✅ KernelEIP1193Provider created. Smart wallet ready!');
         return provider;
       } catch (err: any) {

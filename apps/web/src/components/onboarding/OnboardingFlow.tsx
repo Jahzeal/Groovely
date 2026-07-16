@@ -352,7 +352,7 @@ export const OnboardingFlow = () => {
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem('groovely_token');
+      const token = localStorage.getItem('grooveli_token');
       const res = await fetch(`/api/users/me`, {
         method: 'PUT',
         headers: {
