@@ -23,7 +23,7 @@ export default function LoginPage() {
   const { disconnect } = useDisconnect();
   const config = useConfig();
 
-  const { ready, authenticated, user } = usePrivy();
+  const { ready, authenticated, user, logout } = usePrivy();
 
   const { login } = useLogin({
     onComplete: () => {
@@ -54,9 +54,9 @@ export default function LoginPage() {
 
     if (!walletAddr) {
       // Privy is logged in, but no wallet exists (corrupted state).
-      // Automatically redirect to onboarding to resolve this and provision a wallet.
-      console.log('No wallet found for logged-in user, redirecting to onboarding...');
-      router.push('/onboarding');
+      // Automatically log them out so they can start fresh.
+      console.log('No wallet found for logged-in user, logging out...');
+      logout();
       return;
     }
 
