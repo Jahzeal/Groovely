@@ -1,7 +1,7 @@
 'use client';
 
 import { createConfig } from '@privy-io/wagmi';
-import { mainnet, polygonAmoy } from 'wagmi/chains';
+import { mainnet, polygonAmoy, polygon } from 'wagmi/chains';
 import { http } from 'wagmi';
 import { injected } from 'wagmi/connectors';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -13,10 +13,15 @@ import { createKernelAccount, createKernelAccountClient, createZeroDevPaymasterC
 import { KernelEIP1193Provider } from '@zerodev/sdk/providers';
 import { signerToEcdsaValidator } from '@zerodev/ecdsa-validator';
 import { KERNEL_V3_1 } from '@zerodev/sdk/constants';
+import { USDC_ADDRESS } from '../../lib/contracts';
+
+const isMainnet = process.env.NEXT_PUBLIC_CHAIN_ID === '137';
+const targetChain = isMainnet ? polygon : polygonAmoy;
 
 const config = createConfig({
-  chains: [polygonAmoy, mainnet],
+  chains: [polygon, polygonAmoy, mainnet],
   transports: {
+    [polygon.id]: http(),
     [polygonAmoy.id]: http(),
     [mainnet.id]: http(),
   },
@@ -32,8 +37,8 @@ function SmartAccountConnectorWrapper({ children }: { children: ReactNode }) {
       console.log('[ZeroDev] ✅ getSmartAccountFromSigner called. Signer:', signer);
       try {
         const publicClient = createPublicClient({
-          chain: polygonAmoy,
-          transport: http("https://polygon-amoy.drpc.org"),
+          chain: targetChain,
+          transport: http(isMainnet ? "https://1rpc.io/matic" : "https://polygon-amoy.drpc.org"),
         });
         console.log('[ZeroDev] ✅ Public client created.');
 
@@ -70,12 +75,12 @@ function SmartAccountConnectorWrapper({ children }: { children: ReactNode }) {
         console.log('[ZeroDev] ⏳ Creating Kernel account client. ProjectId:', projectId ? '✅ set' : '❌ MISSING');
         const kernelClient = (createKernelAccountClient as any)({
           account,
-          chain: polygonAmoy,
+          chain: targetChain,
           bundlerTransport: http(`https://rpc.zerodev.app/api/v2/bundler/${projectId}`),
           middleware: {
             sponsorUserOperation: async ({ userOperation }: any) => {
               const zerodevPaymaster = (createZeroDevPaymasterClient as any)({
-                chain: polygonAmoy,
+                chain: targetChain,
                 entryPoint: {
                   address: entryPointAddress,
                   version: '0.7',
@@ -83,13 +88,20 @@ function SmartAccountConnectorWrapper({ children }: { children: ReactNode }) {
                 transport: http(`https://rpc.zerodev.app/api/v2/paymaster/${projectId}`),
               });
               
-              return (zerodevPaymaster as any).sponsorUserOperation({
+              const sponsorOptions: any = {
                 userOperation,
                 entryPoint: {
                   address: entryPointAddress,
                   version: '0.7',
                 },
-              });
+              };
+              
+              if (isMainnet) {
+                // Instruct ZeroDev to charge the user's Smart Wallet in USDC to cover the gas fee
+                sponsorOptions.gasToken = USDC_ADDRESS;
+              }
+
+              return (zerodevPaymaster as any).sponsorUserOperation(sponsorOptions);
             },
           },
         });
@@ -311,8 +323,8 @@ export function Web3Provider({ children }: { children: ReactNode }) {
     <PrivyProvider
       appId={privyAppId}
       config={{
-        defaultChain: polygonAmoy,
-        supportedChains: [polygonAmoy, mainnet],
+        defaultChain: targetChain,
+        supportedChains: [targetChain, mainnet],
         appearance: {
           theme: 'dark',
           accentColor: '#8B5CF6', // Accent purple matching Grooveli theme
