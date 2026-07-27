@@ -70,11 +70,23 @@ export default function LoginPage() {
           body: JSON.stringify({ walletAddress: walletAddr }),
         });
 
-        const authData = await connectRes.json();
+        const contentType = connectRes.headers.get('content-type') || '';
+        let authData: any = null;
+        if (contentType.includes('application/json')) {
+          authData = await connectRes.json();
+        } else {
+          const rawText = await connectRes.text();
+          console.warn(`[Auto-login] Received non-JSON response (${connectRes.status}):`, rawText);
+          if (!connectRes.ok) {
+            console.log('User not registered in backend or server error, redirecting to onboarding...');
+            router.push('/onboarding');
+            return;
+          }
+        }
         
         // If they are authenticated with Privy but don't exist in our backend DB yet,
         // redirect them to onboarding to choose a role and sign up.
-        if (!connectRes.ok) {
+        if (!connectRes.ok || !authData?.data) {
           console.log('User not registered in backend, redirecting to onboarding...');
           router.push('/onboarding');
           return;
@@ -168,8 +180,18 @@ export default function LoginPage() {
         body: JSON.stringify({ walletAddress: walletAddr }),
       });
 
-      const authData = await connectRes.json();
-      if (!connectRes.ok) throw new Error(authData.error || authData.message || 'Authentication failed');
+      const contentType = connectRes.headers.get('content-type') || '';
+      let authData: any = null;
+      if (contentType.includes('application/json')) {
+        authData = await connectRes.json();
+      } else {
+        const rawText = await connectRes.text();
+        throw new Error(`Server error (${connectRes.status}). Please check backend database connection.`);
+      }
+
+      if (!connectRes.ok || !authData?.data) {
+        throw new Error(authData?.error || authData?.message || 'Authentication failed');
+      }
 
       // 4. Store JWT
       const { token, user } = authData.data;

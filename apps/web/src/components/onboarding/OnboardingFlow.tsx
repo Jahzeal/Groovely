@@ -172,18 +172,20 @@ export const OnboardingFlow = () => {
           body: JSON.stringify({ walletAddress: walletAddr, role: payloadRole }),
         });
 
-        let authData = await signupRes.json();
+        const signupContentType = signupRes.headers.get('content-type') || '';
+        let authData = signupContentType.includes('application/json') ? await signupRes.json() : null;
         
-        if (!signupRes.ok) {
+        if (!signupRes.ok || !authData) {
           // If conflict/error, let's login instead
           const loginRes = await fetch('/api/auth/login/wallet', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ walletAddress: walletAddr }),
           });
-          const loginData = await loginRes.json();
-          if (!loginRes.ok) {
-            throw new Error(loginData.error || loginData.message || 'Authentication failed');
+          const loginContentType = loginRes.headers.get('content-type') || '';
+          const loginData = loginContentType.includes('application/json') ? await loginRes.json() : null;
+          if (!loginRes.ok || !loginData) {
+            throw new Error(loginData?.error || loginData?.message || `Authentication failed (${loginRes.status}). Please check backend database connection.`);
           }
           authData = loginData;
         }
