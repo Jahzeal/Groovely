@@ -22,6 +22,16 @@ import { createKernelAccount, createKernelAccountClient, createZeroDevPaymasterC
 import { signerToEcdsaValidator } from '@zerodev/ecdsa-validator';
 import { KERNEL_V3_1 } from '@zerodev/sdk/constants';
 
+const customAmoy = {
+  ...polygonAmoy,
+  rpcUrls: {
+    ...polygonAmoy.rpcUrls,
+    default: {
+      http: ['https://polygon-amoy-bor-rpc.publicnode.com'],
+    },
+  },
+};
+
 export type MintStep =
   | 'idle'
   | 'checking'
@@ -108,8 +118,8 @@ export function useMint({
 
         // 2. Initialize ZeroDev smart account and client
         const publicClient = createPublicClient({
-          chain: polygonAmoy,
-          transport: http(),
+          chain: customAmoy,
+          transport: http('https://polygon-amoy-bor-rpc.publicnode.com'),
         });
 
         const entryPointAddress = '0x0000000071727De22E5E9d8BAf0edAc6f37da032';
@@ -138,12 +148,12 @@ export function useMint({
 
         const kernelClient = (createKernelAccountClient as any)({
           account,
-          chain: polygonAmoy,
+          chain: customAmoy,
           bundlerTransport: http(`https://rpc.zerodev.app/api/v2/bundler/${projectId}`),
           middleware: {
             sponsorUserOperation: async ({ userOperation }: any) => {
               const zerodevPaymaster = (createZeroDevPaymasterClient as any)({
-                chain: polygonAmoy,
+                chain: customAmoy,
                 entryPoint: {
                   address: entryPointAddress,
                   version: '0.7',
