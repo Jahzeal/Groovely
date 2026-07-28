@@ -53,7 +53,7 @@ contract GrooveliMusic1155 is ERC1155, ERC1155Supply, ERC2981, Ownable, Reentran
     IERC20 public immutable usdc;
     address public platformWallet;
     uint96  public platformFeeBps = 500; // 5%
-    uint256 public constant UPLOAD_FEE = 2_500_000; // 2.50 USDC (6 decimals)
+    uint256 public constant UPLOAD_FEE = 1_000_000; // 1.00 USDC (6 decimals)
 
     uint256 private _songCounter;
     uint256 private _editionCounter;

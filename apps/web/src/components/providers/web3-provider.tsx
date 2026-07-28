@@ -21,8 +21,8 @@ const targetChain = isMainnet ? polygon : polygonAmoy;
 const config = createConfig({
   chains: [polygon, polygonAmoy, mainnet],
   transports: {
-    [polygon.id]: http(),
-    [polygonAmoy.id]: http(),
+    [polygon.id]: http('https://polygon-bor-rpc.publicnode.com'),
+    [polygonAmoy.id]: http('https://rpc-amoy.polygon.technology'),
     [mainnet.id]: http(),
   },
   connectors: [injected()],
@@ -38,7 +38,7 @@ function SmartAccountConnectorWrapper({ children }: { children: ReactNode }) {
       try {
         const publicClient = createPublicClient({
           chain: targetChain,
-          transport: http(isMainnet ? "https://1rpc.io/matic" : "https://polygon-amoy.drpc.org"),
+          transport: http(isMainnet ? "https://polygon-bor-rpc.publicnode.com" : "https://rpc-amoy.polygon.technology"),
         });
         console.log('[ZeroDev] ✅ Public client created.');
 

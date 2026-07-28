@@ -239,10 +239,19 @@ export function useMint({
 
       } catch (err: any) {
         console.error('Smart account mint error:', err);
-        const msg =
-          err?.shortMessage ||
-          err?.message ||
-          'Something went wrong during the purchase.';
+        let msg = err?.shortMessage || err?.message || 'Something went wrong during the purchase.';
+        const lower = msg.toLowerCase();
+        if (lower.includes('user rejected') || lower.includes('userrejected')) {
+          msg = 'Transaction was cancelled in your wallet.';
+        } else if (lower.includes('insufficient funds')) {
+          msg = 'Insufficient POL funds in your wallet to cover gas fees.';
+        } else if (lower.includes('exceeds balance')) {
+          msg = 'Insufficient USDC balance in your wallet to complete the purchase.';
+        } else if (lower.includes('json is not a valid request object') || lower.includes('400')) {
+          msg = 'RPC network error. Please check your wallet connection.';
+        } else {
+          msg = msg.replace(/^ContractFunctionExecutionError:\s*/i, '').replace(/^Error:\s*/i, '');
+        }
         setErrorMessage(msg);
         setStep('error');
       }
@@ -328,10 +337,19 @@ export function useMint({
 
     } catch (err: any) {
       console.error('Mint error:', err);
-      const msg =
-        err?.shortMessage ||
-        err?.message ||
-        'Something went wrong during the purchase.';
+      let msg = err?.shortMessage || err?.message || 'Something went wrong during the purchase.';
+      const lower = msg.toLowerCase();
+      if (lower.includes('user rejected') || lower.includes('userrejected')) {
+        msg = 'Transaction was cancelled in your wallet.';
+      } else if (lower.includes('insufficient funds')) {
+        msg = 'Insufficient POL funds in your wallet to cover gas fees.';
+      } else if (lower.includes('exceeds balance')) {
+        msg = 'Insufficient USDC balance in your wallet to complete the purchase.';
+      } else if (lower.includes('json is not a valid request object') || lower.includes('400')) {
+        msg = 'RPC network error. Please check your wallet connection.';
+      } else {
+        msg = msg.replace(/^ContractFunctionExecutionError:\s*/i, '').replace(/^Error:\s*/i, '');
+      }
       setErrorMessage(msg);
       setStep('error');
     }

@@ -143,11 +143,13 @@ export default function MintPage() {
         try {
           const res = await apiFetch(`/api/songs/track/${idParam}`);
           if (res && res.ok) {
-            const songData = await res.json();
+            const json = await res.json();
+            const songData = json.data || json;
             if (songData) {
               setExistingSong(songData);
-              if (songData.contributors && Array.isArray(songData.contributors)) {
-                const collabs = songData.contributors
+              const contributors = songData.contributors || songData.song?.contributors;
+              if (contributors && Array.isArray(contributors)) {
+                const collabs = contributors
                   .filter((c: any) => c.role !== 'artist')
                   .map((c: any) => ({
                     username: c.display_name,
@@ -323,11 +325,15 @@ export default function MintPage() {
 
       setMintStepLabel('Step 2/2: Publishing track on-chain (please confirm in wallet)...');
 
-      if (existingSong) {
-        songDbId = existingSong.song.id;
-        songMetadataUri = existingSong.song.metadata_uri || `ipfs://QmSongMetadataPlaceholder`;
-        editionDbId = existingSong.editions?.[0]?.id;
-        dbContributors = existingSong.contributors;
+      if (existingSong && (existingSong.song || existingSong.id)) {
+        const actualSong = existingSong.song || existingSong;
+        const actualEditions = existingSong.editions || [];
+        const actualContributors = existingSong.contributors || [];
+
+        songDbId = actualSong.id;
+        songMetadataUri = actualSong.metadata_uri || `ipfs://QmSongMetadataPlaceholder`;
+        editionDbId = actualEditions[0]?.id;
+        dbContributors = actualContributors;
       } else {
         // 2. Create Song in database
         const songRes = await apiFetch('/api/songs', {
@@ -499,7 +505,20 @@ export default function MintPage() {
         }
       }
 
-      const msg = err?.shortMessage || err?.message || 'Minting failed. Please try again.';
+      let msg = err?.shortMessage || err?.message || 'Minting failed. Please try again.';
+      const lower = msg.toLowerCase();
+      if (lower.includes('user rejected') || lower.includes('userrejected')) {
+        msg = 'Transaction was cancelled in your wallet.';
+      } else if (lower.includes('insufficient funds')) {
+        msg = 'Insufficient POL funds in your wallet to cover gas fees.';
+      } else if (lower.includes('exceeds balance')) {
+        msg = 'Insufficient USDC balance in your wallet to complete the purchase.';
+      } else if (lower.includes('json is not a valid request object') || lower.includes('invalidinputrpcerror') || lower.includes('400')) {
+        msg = 'RPC network error. Please try again or check your wallet connection.';
+      } else {
+        msg = msg.replace(/^ContractFunctionExecutionError:\s*/i, '').replace(/^Error:\s*/i, '');
+      }
+
       toast.error(msg);
       setMintStatus('idle');
       setIsModalOpen(false);
