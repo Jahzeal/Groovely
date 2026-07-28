@@ -932,6 +932,7 @@ export default function MintPage() {
           }}
           trackData={{
             title: trackTitle,
+            coverUrl: trackCover,
             txHash: txHash || '0x8a72e8bc5d29a54460f780dba8ba36b7454f7aacaa2d0f62e841e94eb019cf92b',
             tokenId: tokenId || '#4829'
           }}

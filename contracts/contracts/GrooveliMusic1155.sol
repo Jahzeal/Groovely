@@ -105,7 +105,7 @@ contract GrooveliMusic1155 is ERC1155, ERC1155Supply, ERC2981, Ownable, Reentran
         require(bytes(title).length > 0, "Title required");
         require(creator != address(0), "Invalid creator");
 
-        // Charge $2.50 USDC upload fee
+        // Charge $1.00 USDC upload fee
         if (UPLOAD_FEE > 0) {
             require(
                 usdc.transferFrom(msg.sender, platformWallet, UPLOAD_FEE),
@@ -206,7 +206,7 @@ contract GrooveliMusic1155 is ERC1155, ERC1155Supply, ERC2981, Ownable, Reentran
 
     /**
      * @notice Unified method to register a song, configure splits, and deploy a licensing edition in a single transaction.
-     *         Requires an upfront upload fee of 2.50 USDC.
+     *         Requires an upfront upload fee of 1.00 USDC.
      */
     function publishSong(
         string calldata title,
@@ -219,7 +219,7 @@ contract GrooveliMusic1155 is ERC1155, ERC1155Supply, ERC2981, Ownable, Reentran
     ) external returns (uint256 songId, uint256 editionId) {
         require(bytes(title).length > 0, "Title required");
 
-        // 1. Charge $2.50 USDC upload fee
+        // 1. Charge $1.00 USDC upload fee
         if (UPLOAD_FEE > 0) {
             require(
                 usdc.transferFrom(msg.sender, platformWallet, UPLOAD_FEE),

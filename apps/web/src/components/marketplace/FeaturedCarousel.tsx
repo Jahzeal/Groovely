@@ -17,6 +17,7 @@ interface FeaturedTrack {
   licenseType: string;
   price: string;
   currency: string;
+  licenseTypes?: string[];
 }
 
 const ipfsToHttp = (url?: string): string => {
@@ -55,6 +56,7 @@ export const FeaturedCarousel = () => {
               licenseType: item.payment_model === 'free' ? 'Free License' : 'Exclusive License',
               price: item.license_price ? `${item.license_price} USDC` : 'Free',
               currency: item.license_price ? `$${item.license_price}` : '$0',
+              licenseTypes: item.usage_rights || [item.payment_model === 'free' ? 'Free License' : 'Exclusive License']
             })));
           }
         }
@@ -157,14 +159,18 @@ export const FeaturedCarousel = () => {
                 artist: track.creator, 
                 image: track.image,
                 audioUrl: track.audioUrl,
-                uploaderId: track.uploaderId
+                uploaderId: track.uploaderId,
+                price: track.price,
+                licenseTypes: track.licenseTypes
               }, featured.map(t => ({
                 id: t.id,
                 title: t.title,
                 artist: t.creator,
                 image: t.image,
                 audioUrl: t.audioUrl,
-                uploaderId: t.uploaderId
+                uploaderId: t.uploaderId,
+                price: t.price,
+                licenseTypes: t.licenseTypes
               })))}
               className="w-16 h-16 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_25px_rgba(139,92,246,0.5)] hover:scale-110 hover:shadow-[0_0_40px_rgba(139,92,246,0.7)] transition-all active:scale-95"
             >

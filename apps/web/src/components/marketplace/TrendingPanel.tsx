@@ -137,14 +137,18 @@ export const TrendingPanel = () => {
                           artist: track.creator,
                           image: track.image,
                           audioUrl: track.audioUrl,
-                          uploaderId: track.uploaderId
+                          uploaderId: track.uploaderId,
+                          price: track.price,
+                          licenseTypes: track.licenseTypes
                         }, trending.map(t => ({
                           id: t.id,
                           title: t.title,
                           artist: t.creator,
                           image: t.image,
                           audioUrl: t.audioUrl,
-                          uploaderId: t.uploaderId
+                          uploaderId: t.uploaderId,
+                          price: t.price,
+                          licenseTypes: t.licenseTypes
                         })));
                       }}
                       className={`w-7 h-7 bg-accent-purple rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ${hoveredId === track.id ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}

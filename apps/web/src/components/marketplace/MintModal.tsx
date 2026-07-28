@@ -108,10 +108,10 @@ export const MintModal: React.FC<MintModalProps> = ({
   };
 
   const isSoldOut = (ed: EditionInfo) =>
-    !ed.active || (ed.maxSupply !== null && ed.mintedSupply >= ed.maxSupply);
+    !ed.active || (ed.maxSupply !== null && ed.maxSupply > 0 && ed.mintedSupply >= ed.maxSupply);
 
   const remainingSupply = (ed: EditionInfo) => {
-    if (ed.maxSupply === null) return '∞';
+    if (ed.maxSupply === null || ed.maxSupply === 0) return '∞';
     return Math.max(0, ed.maxSupply - ed.mintedSupply).toLocaleString();
   };
 

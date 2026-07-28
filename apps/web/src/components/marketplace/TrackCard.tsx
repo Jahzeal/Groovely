@@ -96,7 +96,16 @@ export const TrackCard = ({ id, title, creator, image, audioUrl, licenseTypes, p
         onClick={(e) => { 
           e.preventDefault(); 
           e.stopPropagation(); 
-          playTrack({ id: id || title, title, artist: creator, image: resolveIpfsUrl(image), audioUrl: resolveIpfsUrl(audioUrl), uploaderId }, queue);
+          playTrack({ 
+            id: id || title, 
+            title, 
+            artist: creator, 
+            image: resolveIpfsUrl(image), 
+            audioUrl: resolveIpfsUrl(audioUrl), 
+            uploaderId,
+            price,
+            licenseTypes
+          }, queue);
         }}
         className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-all duration-300
           ${hovered ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}

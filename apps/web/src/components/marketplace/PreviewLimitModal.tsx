@@ -69,7 +69,7 @@ export const PreviewLimitModal: React.FC = () => {
               {currentTrack.title}
             </h2>
             <p className="text-sm font-medium text-zinc-500 mb-6">
-              by {currentTrack.artist}
+              by {currentTrack.artist} {currentTrack.price ? `• ${currentTrack.price}${typeof currentTrack.price === 'number' || !currentTrack.price.toString().includes('USDC') ? ' USDC' : ''}` : ''}
             </p>
 
             <p className="text-zinc-400 text-sm leading-relaxed mb-8 max-w-xs">
@@ -79,12 +79,15 @@ export const PreviewLimitModal: React.FC = () => {
 
             {/* Perks */}
             <div className="w-full bg-white/[0.03] border border-white/5 rounded-2xl p-4 mb-8 space-y-3">
-              {[
-                { icon: '🎵', label: 'Unlimited streaming' },
-                { icon: '📥', label: 'High-quality download' },
-                { icon: '⛓️', label: 'On-chain ownership proof' },
-                { icon: '💰', label: 'Resale & licensing rights' },
-              ].map((perk) => (
+              {((currentTrack.licenseTypes && currentTrack.licenseTypes.length > 0)
+                ? currentTrack.licenseTypes.map((right) => ({ icon: '🛡️', label: right }))
+                : [
+                    { icon: '🎵', label: 'Unlimited streaming' },
+                    { icon: '📥', label: 'High-quality download' },
+                    { icon: '⛓️', label: 'On-chain ownership proof' },
+                    { icon: '💰', label: 'Resale & licensing rights' },
+                  ]
+              ).map((perk) => (
                 <div key={perk.label} className="flex items-center gap-3 text-left">
                   <span className="text-base">{perk.icon}</span>
                   <span className="text-xs font-bold text-zinc-300">{perk.label}</span>
@@ -100,7 +103,7 @@ export const PreviewLimitModal: React.FC = () => {
                 className="w-full flex items-center justify-center gap-3 py-4 bg-accent-purple hover:bg-accent-purple/90 text-white font-black text-sm rounded-2xl transition-all shadow-[0_8px_30px_rgba(139,92,246,0.5)] hover:shadow-[0_12px_40px_rgba(139,92,246,0.6)] hover:scale-[1.02] active:scale-[0.98]"
               >
                 <ShoppingCart size={18} />
-                Purchase Track
+                Purchase Track {currentTrack.price ? `• ${currentTrack.price}${typeof currentTrack.price === 'number' || !currentTrack.price.toString().includes('USDC') ? ' USDC' : ''}` : ''}
               </Link>
 
               <button

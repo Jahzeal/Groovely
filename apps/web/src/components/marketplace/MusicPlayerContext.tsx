@@ -10,6 +10,8 @@ interface Track {
   image: string;
   audioUrl?: string;
   uploaderId?: number;
+  price?: string | number;
+  licenseTypes?: string[];
 }
 
 interface MusicPlayerContextType {

@@ -270,7 +270,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                      artist: displayTrack.creator,
                      image: displayTrack.image,
                      audioUrl: displayTrack.audio_url,
-                     uploaderId: track.user_id || creator.id
+                     uploaderId: track.user_id || creator.id,
+                     price: displayTrack.price,
+                     licenseTypes: displayTrack.licenses
                   })}
                   className="w-20 h-20 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(157,0,255,0.6)] hover:scale-105 transition-all"
                 >
