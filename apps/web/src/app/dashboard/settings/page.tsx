@@ -5,8 +5,9 @@ import { Sidebar } from '@/components/dashboard/Sidebar';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { useAccount, useBalance, useSendTransaction } from 'wagmi';
-import { parseEther, formatUnits } from 'viem';
+import { useAccount, useBalance, useSendTransaction, useWriteContract } from 'wagmi';
+import { parseEther, parseUnits, formatUnits } from 'viem';
+import { USDC_ADDRESS, ERC20_ABI } from '@/lib/contracts';
 
 import { apiFetch, API_BASE } from '@/lib/api';
 
@@ -17,13 +18,19 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('Profile');
 
   const { address: activeAddress } = useAccount();
-  const { data: balanceData, refetch: refetchBalance } = useBalance({
+  const { data: polBalanceData, refetch: refetchPolBalance } = useBalance({
     address: activeAddress,
+  });
+  const { data: usdcBalanceData, refetch: refetchUsdcBalance } = useBalance({
+    address: activeAddress,
+    token: USDC_ADDRESS,
   });
 
   const { sendTransactionAsync, isPending: isSendingTx } = useSendTransaction();
+  const { writeContractAsync, isPending: isWritingContract } = useWriteContract();
 
   // Withdraw state
+  const [withdrawToken, setWithdrawToken] = useState<'USDC' | 'POL'>('USDC');
   const [recipient, setRecipient] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
 
@@ -422,16 +429,47 @@ export default function SettingsPage() {
 
                   {/* Withdraw / Transfer Section */}
                   <div className="border-t border-white/5 pt-8 space-y-4">
-                    <h3 className="text-base font-black text-white">Withdraw / Transfer POL</h3>
+                    <h3 className="text-base font-black text-white">Withdraw / Transfer Funds</h3>
                     <p className="text-xs text-zinc-400">
-                      Send native Polygon token (POL/MATIC) from your embedded smart wallet to another address.
+                      Send USDC or native POL tokens from your wallet to another address.
                     </p>
 
                     <div className="bg-[#0F0F1A] border border-white/5 rounded-2xl p-6 space-y-4 max-w-md">
+                      {/* Token Selector */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-zinc-400">Select Token</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => { setWithdrawToken('USDC'); setWithdrawAmount(''); }}
+                            className={`py-2.5 px-4 rounded-xl text-xs font-black border transition-all ${
+                              withdrawToken === 'USDC'
+                                ? 'bg-accent-purple/20 border-accent-purple text-white shadow-[0_0_15px_rgba(139,92,246,0.3)]'
+                                : 'bg-[#050510] border-white/10 text-zinc-400 hover:text-white'
+                            }`}
+                          >
+                            USDC (USD Coin)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setWithdrawToken('POL'); setWithdrawAmount(''); }}
+                            className={`py-2.5 px-4 rounded-xl text-xs font-black border transition-all ${
+                              withdrawToken === 'POL'
+                                ? 'bg-accent-purple/20 border-accent-purple text-white shadow-[0_0_15px_rgba(139,92,246,0.3)]'
+                                : 'bg-[#050510] border-white/10 text-zinc-400 hover:text-white'
+                            }`}
+                          >
+                            POL (Polygon)
+                          </button>
+                        </div>
+                      </div>
+
                       <div className="flex justify-between items-center text-xs font-bold">
                         <span className="text-zinc-500">Available Balance</span>
                         <span className="text-accent-cyan font-mono">
-                          {balanceData ? `${parseFloat(formatUnits(balanceData.value, balanceData.decimals)).toFixed(4)} ${balanceData.symbol}` : '0.00 POL'}
+                          {withdrawToken === 'USDC'
+                            ? (usdcBalanceData ? `${parseFloat(formatUnits(usdcBalanceData.value, usdcBalanceData.decimals)).toFixed(2)} USDC` : '0.00 USDC')
+                            : (polBalanceData ? `${parseFloat(formatUnits(polBalanceData.value, polBalanceData.decimals)).toFixed(4)} POL` : '0.00 POL')}
                         </span>
                       </div>
 
@@ -447,7 +485,7 @@ export default function SettingsPage() {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-zinc-400">Amount (POL)</label>
+                        <label className="text-xs font-bold text-zinc-400">Amount ({withdrawToken})</label>
                         <div className="relative">
                           <input
                             type="number"
@@ -460,9 +498,10 @@ export default function SettingsPage() {
                           <button
                             type="button"
                             onClick={() => {
-                              if (balanceData) {
-                                // Leave a tiny bit of POL for gas, e.g. balance - 0.01
-                                const maxVal = Math.max(0, Number(formatUnits(balanceData.value, balanceData.decimals)) - 0.01);
+                              if (withdrawToken === 'USDC' && usdcBalanceData) {
+                                setWithdrawAmount(formatUnits(usdcBalanceData.value, usdcBalanceData.decimals));
+                              } else if (withdrawToken === 'POL' && polBalanceData) {
+                                const maxVal = Math.max(0, Number(formatUnits(polBalanceData.value, polBalanceData.decimals)) - 0.01);
                                 setWithdrawAmount(maxVal.toString());
                               }
                             }}
@@ -479,24 +518,43 @@ export default function SettingsPage() {
                             toast.error('Please enter a recipient address and amount');
                             return;
                           }
-                          const loadId = toast.loading('Sending transaction...');
+                          const amountNum = Number(withdrawAmount.trim());
+                          if (isNaN(amountNum) || amountNum <= 0) {
+                            toast.error('Please enter a valid amount');
+                            return;
+                          }
+
+                          const loadId = toast.loading(`Sending ${withdrawToken}...`);
                           try {
-                            await sendTransactionAsync({
-                              to: recipient.trim() as `0x${string}`,
-                              value: parseEther(withdrawAmount.trim()),
-                            });
-                            toast.success('POL transferred successfully!', { id: loadId });
+                            if (withdrawToken === 'USDC') {
+                              const amountRaw = parseUnits(withdrawAmount.trim(), usdcBalanceData?.decimals ?? 6);
+                              await writeContractAsync({
+                                address: USDC_ADDRESS,
+                                abi: ERC20_ABI,
+                                functionName: 'transfer',
+                                args: [recipient.trim() as `0x${string}`, amountRaw],
+                              });
+                              toast.success('USDC transferred successfully!', { id: loadId });
+                              refetchUsdcBalance();
+                            } else {
+                              await sendTransactionAsync({
+                                to: recipient.trim() as `0x${string}`,
+                                value: parseEther(withdrawAmount.trim()),
+                              });
+                              toast.success('POL transferred successfully!', { id: loadId });
+                              refetchPolBalance();
+                            }
                             setWithdrawAmount('');
                             setRecipient('');
-                            refetchBalance();
                           } catch (err: any) {
-                            toast.error(err.message || 'Transaction failed', { id: loadId });
+                            console.error('Withdraw transfer error:', err);
+                            toast.error(err.shortMessage || err.message || 'Transaction failed', { id: loadId });
                           }
                         }}
-                        disabled={isSendingTx}
+                        disabled={isSendingTx || isWritingContract}
                         className="w-full bg-accent-purple hover:bg-opacity-90 disabled:opacity-60 text-white text-xs font-bold py-3 rounded-xl shadow-[0_0_15px_rgba(157,0,255,0.3)] transition-all uppercase tracking-widest font-black"
                       >
-                        {isSendingTx ? 'Sending...' : 'Send POL'}
+                        {isSendingTx || isWritingContract ? 'Sending...' : `Send ${withdrawToken}`}
                       </button>
                     </div>
                   </div>

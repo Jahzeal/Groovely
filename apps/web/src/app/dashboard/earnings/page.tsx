@@ -229,9 +229,12 @@ export default function EarningsPage() {
                 </div>
              </div>
 
-             <button className="bg-accent-purple hover:bg-opacity-90 text-white font-black py-5 px-10 rounded-2xl transition-all shadow-[0_0_30px_rgba(157,0,255,0.3)] hover:scale-105 active:scale-95 text-sm uppercase tracking-widest shrink-0">
-                Withdraw Earnings
-             </button>
+              <button
+                onClick={() => router.push('/dashboard/settings')}
+                className="bg-accent-purple hover:bg-opacity-90 text-white font-black py-5 px-10 rounded-2xl transition-all shadow-[0_0_30px_rgba(157,0,255,0.3)] hover:scale-105 active:scale-95 text-sm uppercase tracking-widest shrink-0"
+              >
+                 Withdraw Earnings
+              </button>
           </div>
 
           {/* Performance Chart Section */}
