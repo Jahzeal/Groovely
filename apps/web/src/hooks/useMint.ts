@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useConfig, useAccount, useSwitchChain } from 'wagmi';
-import { polygonAmoy } from 'wagmi/chains';
+import { polygon, polygonAmoy } from 'wagmi/chains';
 import {
   approveUSDC,
   mintEdition,
@@ -22,6 +22,8 @@ import { createKernelAccount, createKernelAccountClient, createZeroDevPaymasterC
 import { signerToEcdsaValidator } from '@zerodev/ecdsa-validator';
 import { KERNEL_V3_1 } from '@zerodev/sdk/constants';
 
+const isMainnet = process.env.NEXT_PUBLIC_CHAIN_ID === '137';
+
 const customAmoy = {
   ...polygonAmoy,
   rpcUrls: {
@@ -31,6 +33,12 @@ const customAmoy = {
     },
   },
 };
+
+const targetChain = isMainnet ? polygon : customAmoy;
+const targetRpcUrl = isMainnet
+  ? 'https://polygon-bor-rpc.publicnode.com'
+  : 'https://polygon-amoy-bor-rpc.publicnode.com';
+const targetChainName = isMainnet ? 'Polygon Mainnet' : 'Polygon Amoy Testnet';
 
 export type MintStep =
   | 'idle'
@@ -97,14 +105,14 @@ export function useMint({
       setStep('checking');
       setErrorMessage(null);
 
-      // Enforce correct network (Polygon Amoy Testnet)
-      const targetChainId = polygonAmoy.id;
-      if (embeddedWallet.chainId !== `eip155:${targetChainId}`) {
+      // Enforce correct network
+      const requiredChainId = targetChain.id;
+      if (embeddedWallet.chainId !== `eip155:${requiredChainId}`) {
         try {
-          await embeddedWallet.switchChain(targetChainId);
+          await embeddedWallet.switchChain(requiredChainId);
         } catch (err: any) {
           console.error('Failed to switch chain:', err);
-          setErrorMessage('Please switch your wallet network to Polygon Amoy Testnet.');
+          setErrorMessage(`Please switch your wallet network to ${targetChainName}.`);
           setStep('error');
           return;
         }
@@ -118,8 +126,8 @@ export function useMint({
 
         // 2. Initialize ZeroDev smart account and client
         const publicClient = createPublicClient({
-          chain: customAmoy,
-          transport: http('https://polygon-amoy-bor-rpc.publicnode.com'),
+          chain: targetChain,
+          transport: http(targetRpcUrl),
         });
 
         const entryPointAddress = '0x0000000071727De22E5E9d8BAf0edAc6f37da032';
@@ -148,12 +156,12 @@ export function useMint({
 
         const kernelClient = (createKernelAccountClient as any)({
           account,
-          chain: customAmoy,
+          chain: targetChain,
           bundlerTransport: http(`https://rpc.zerodev.app/api/v2/bundler/${projectId}`),
           middleware: {
             sponsorUserOperation: async ({ userOperation }: any) => {
               const zerodevPaymaster = (createZeroDevPaymasterClient as any)({
-                chain: customAmoy,
+                chain: targetChain,
                 entryPoint: {
                   address: entryPointAddress,
                   version: '0.7',
@@ -271,14 +279,14 @@ export function useMint({
     setStep('checking');
     setErrorMessage(null);
 
-    // Enforce correct network (Polygon Amoy Testnet, chain ID 80002)
-    const targetChainId = polygonAmoy.id;
-    if (chain?.id !== targetChainId) {
+    // Enforce correct network
+    const requiredChainId = targetChain.id;
+    if (chain?.id !== requiredChainId) {
       try {
-        await switchChainAsync({ chainId: targetChainId });
+        await switchChainAsync({ chainId: requiredChainId });
       } catch (err: any) {
         console.error('Failed to switch chain:', err);
-        setErrorMessage('Please switch your wallet network to Polygon Amoy Testnet.');
+        setErrorMessage(`Please switch your wallet network to ${targetChainName}.`);
         setStep('error');
         return;
       }
