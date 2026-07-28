@@ -16,13 +16,24 @@ import { KERNEL_V3_1 } from '@zerodev/sdk/constants';
 import { USDC_ADDRESS } from '../../lib/contracts';
 
 const isMainnet = process.env.NEXT_PUBLIC_CHAIN_ID === '137';
-const targetChain = isMainnet ? polygon : polygonAmoy;
+
+const customAmoy = {
+  ...polygonAmoy,
+  rpcUrls: {
+    ...polygonAmoy.rpcUrls,
+    default: {
+      http: ['https://polygon-amoy-bor-rpc.publicnode.com'],
+    },
+  },
+};
+
+const targetChain = isMainnet ? polygon : customAmoy;
 
 const config = createConfig({
-  chains: [polygon, polygonAmoy, mainnet],
+  chains: [polygon, customAmoy, mainnet],
   transports: {
     [polygon.id]: http('https://polygon-bor-rpc.publicnode.com'),
-    [polygonAmoy.id]: http('https://polygon-amoy-bor-rpc.publicnode.com'),
+    [customAmoy.id]: http('https://polygon-amoy-bor-rpc.publicnode.com'),
     [mainnet.id]: http(),
   },
   connectors: [injected()],
