@@ -69,7 +69,7 @@ describe("GrooveliMusic1155", () => {
       expect(song.creator).to.equal(fan.address);
 
       const platformAfter = await mockUSDC.balanceOf(platform.address);
-      expect(platformAfter - platformBefore).to.equal(toUSDC(1)); // 1.00 USDC
+      expect(platformAfter - platformBefore).to.equal(toUSDC(25) / 10n); // 2.50 USDC
     });
   });
 
@@ -138,7 +138,7 @@ describe("GrooveliMusic1155", () => {
 
   // ───────────────────────────────────────────────────────────────────────────
   describe("Unified song publication", () => {
-    it("publishes song, splits, and edition in one call and charges 1.00 USDC fee", async () => {
+    it("publishes song, splits, and edition in one call and charges 2.50 USDC fee", async () => {
       const platformBefore = await mockUSDC.balanceOf(platform.address);
       const creatorBefore = await mockUSDC.balanceOf(creator.address);
 
@@ -169,10 +169,10 @@ describe("GrooveliMusic1155", () => {
       expect(ed.mintPrice).to.equal(toUSDC(5));
 
       const platformAfter = await mockUSDC.balanceOf(platform.address);
-      expect(platformAfter - platformBefore).to.equal(toUSDC(1)); // 1.00 USDC
+      expect(platformAfter - platformBefore).to.equal(toUSDC(25) / 10n); // 2.50 USDC
 
       const creatorAfter = await mockUSDC.balanceOf(creator.address);
-      expect(creatorBefore - creatorAfter).to.equal(toUSDC(1)); // 1.00 USDC
+      expect(creatorBefore - creatorAfter).to.equal(toUSDC(25) / 10n); // 2.50 USDC
     });
   });
 

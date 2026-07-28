@@ -16,7 +16,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { Twitter, Instagram } from '@/components/ui/SocialIcons';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, resolveIpfsUrl } from '@/lib/api';
 import { useMusicPlayer } from '@/components/marketplace/MusicPlayerContext';
 import { MusicPlayer } from '@/components/marketplace/MusicPlayer';
 import toast from 'react-hot-toast';
@@ -71,7 +71,7 @@ const TrackCard = ({ track, onSave }: { track: Track; onSave: (id: number, isSav
     <div className="bg-[#0F0F1A]/40 border border-white/5 rounded-2xl p-4 flex items-center gap-4 group hover:bg-[#0F0F1A]/60 transition-all duration-300 hover:border-white/10">
       <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0">
         <img 
-          src={track.cover_url || "https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=300&q=80"} 
+          src={resolveIpfsUrl(track.cover_url) || "https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=300&q=80"} 
           alt={track.title} 
           className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-500" 
         />
@@ -81,8 +81,8 @@ const TrackCard = ({ track, onSave }: { track: Track; onSave: (id: number, isSav
               id: track.id,
               title: track.title,
               artist: track.artist_name || track.artist_username || 'Unknown Artist',
-              image: track.cover_url || '',
-              audioUrl: track.audio_url,
+              image: resolveIpfsUrl(track.cover_url) || '',
+              audioUrl: resolveIpfsUrl(track.audio_url),
               uploaderId: track.uploader_id
             })}
             className="w-8 h-8 bg-accent-purple rounded-full flex items-center justify-center text-white"

@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { CartProvider, useCart } from '@/components/marketplace/CartContext';
 import { use } from 'react';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, resolveIpfsUrl } from '@/lib/api';
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -52,7 +52,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const isUploader = currentUserId !== null && (trackData?.track?.user_id === currentUserId || trackData?.creator?.id === currentUserId);
 
   React.useEffect(() => {
-    const audioUrl = trackData?.track?.audio_url;
+    const rawAudioUrl = trackData?.track?.audio_url;
+    const audioUrl = resolveIpfsUrl(rawAudioUrl);
     if (audioUrl) {
       const audio = new Audio();
       audio.crossOrigin = "anonymous";
@@ -158,7 +159,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       ...track,
       creator: creator.name || 'Unknown',
       handle: creator.username ? `@${creator.username}` : '@unknown',
-      image: track.cover_url || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+      image: resolveIpfsUrl(track.cover_url) || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+      audio_url: resolveIpfsUrl(track.audio_url),
       description: track.description || 'No description provided.',
       price: track.price || '0.00',
       priceUsd: (parseFloat(track.price || '0') * 2400).toFixed(2), // Mock conversion

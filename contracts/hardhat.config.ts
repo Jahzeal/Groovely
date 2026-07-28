@@ -6,7 +6,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 const PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY || "0x" + "0".repeat(64);
-const POLYGON_AMOY_RPC = process.env.POLYGON_AMOY_RPC || "https://rpc-amoy.polygon.technology";
+const POLYGON_AMOY_RPC = process.env.POLYGON_AMOY_RPC || "https://polygon-amoy-bor-rpc.publicnode.com";
 const POLYGON_RPC = process.env.POLYGON_RPC || "https://polygon-bor-rpc.publicnode.com";
 const POLYGONSCAN_API_KEY = process.env.POLYGONSCAN_API_KEY || "";
 

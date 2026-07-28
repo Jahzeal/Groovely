@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { TopBar } from '@/components/dashboard/TopBar';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, resolveIpfsUrl } from '@/lib/api';
 import { 
   Radio, 
   Wallet, 
@@ -303,7 +303,7 @@ export default function AnalyticsPage() {
                             <td className="py-6">
                                 <div className="flex items-center gap-4">
                                   <img 
-                                    src={track.cover_url || "https://images.unsplash.com/photo-1514525253361-bee8d48800d5?w=100&h=100&fit=crop"} 
+                                    src={resolveIpfsUrl(track.cover_url) || "https://images.unsplash.com/photo-1514525253361-bee8d48800d5?w=100&h=100&fit=crop"} 
                                     alt="" 
                                     className="w-12 h-12 rounded-xl object-cover grayscale-[0.3] group-hover:grayscale-0 transition-all border border-white/5" 
                                   />
@@ -356,7 +356,7 @@ export default function AnalyticsPage() {
                   <div key={i} className="glass-card group cursor-pointer overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(139,92,246,0.1)]">
                      <div className="relative h-48">
                         <img 
-                          src={track.cover_url || "https://images.unsplash.com/photo-1493225255756-d9584f8606e9?w=300&h=200&fit=crop"} 
+                          src={resolveIpfsUrl(track.cover_url) || "https://images.unsplash.com/photo-1493225255756-d9584f8606e9?w=300&h=200&fit=crop"} 
                           alt={track.title} 
                           className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700" 
                         />

@@ -22,7 +22,7 @@ const config = createConfig({
   chains: [polygon, polygonAmoy, mainnet],
   transports: {
     [polygon.id]: http('https://polygon-bor-rpc.publicnode.com'),
-    [polygonAmoy.id]: http('https://rpc-amoy.polygon.technology'),
+    [polygonAmoy.id]: http('https://polygon-amoy-bor-rpc.publicnode.com'),
     [mainnet.id]: http(),
   },
   connectors: [injected()],
@@ -38,7 +38,7 @@ function SmartAccountConnectorWrapper({ children }: { children: ReactNode }) {
       try {
         const publicClient = createPublicClient({
           chain: targetChain,
-          transport: http(isMainnet ? "https://polygon-bor-rpc.publicnode.com" : "https://rpc-amoy.polygon.technology"),
+          transport: http(isMainnet ? "https://polygon-bor-rpc.publicnode.com" : "https://polygon-amoy-bor-rpc.publicnode.com"),
         });
         console.log('[ZeroDev] ✅ Public client created.');
 
