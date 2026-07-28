@@ -5,6 +5,8 @@ import { Sidebar } from '@/components/dashboard/Sidebar';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { useAccount, useBalance, useSendTransaction } from 'wagmi';
+import { parseEther, formatUnits } from 'viem';
 
 import { apiFetch, API_BASE } from '@/lib/api';
 
@@ -13,6 +15,17 @@ const PRESET_CREATOR_TYPES = ['skit makers', 'podcasters', 'artists', 'producers
 export default function SettingsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('Profile');
+
+  const { address: activeAddress } = useAccount();
+  const { data: balanceData, refetch: refetchBalance } = useBalance({
+    address: activeAddress,
+  });
+
+  const { sendTransactionAsync, isPending: isSendingTx } = useSendTransaction();
+
+  // Withdraw state
+  const [recipient, setRecipient] = useState('');
+  const [withdrawAmount, setWithdrawAmount] = useState('');
 
   // Form state
   const [displayName, setDisplayName] = useState('');
@@ -406,6 +419,87 @@ export default function SettingsPage() {
                   <button onClick={handleDisconnect} className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-3 px-8 rounded-xl shadow-[0_0_15px_rgba(239,68,68,0.2)] transition-all">
                     Disconnect Wallet
                   </button>
+
+                  {/* Withdraw / Transfer Section */}
+                  <div className="border-t border-white/5 pt-8 space-y-4">
+                    <h3 className="text-base font-black text-white">Withdraw / Transfer POL</h3>
+                    <p className="text-xs text-zinc-400">
+                      Send native Polygon token (POL/MATIC) from your embedded smart wallet to another address.
+                    </p>
+
+                    <div className="bg-[#0F0F1A] border border-white/5 rounded-2xl p-6 space-y-4 max-w-md">
+                      <div className="flex justify-between items-center text-xs font-bold">
+                        <span className="text-zinc-500">Available Balance</span>
+                        <span className="text-accent-cyan font-mono">
+                          {balanceData ? `${parseFloat(formatUnits(balanceData.value, balanceData.decimals)).toFixed(4)} ${balanceData.symbol}` : '0.00 POL'}
+                        </span>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-zinc-400">Recipient Address</label>
+                        <input
+                          type="text"
+                          placeholder="0x..."
+                          value={recipient}
+                          onChange={(e) => setRecipient(e.target.value)}
+                          className="w-full bg-[#050510] border border-white/10 rounded-xl py-3 px-4 text-xs text-white focus:outline-none focus:border-accent-purple/50 transition-all placeholder-white/10 font-mono"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-zinc-400">Amount (POL)</label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            step="any"
+                            placeholder="0.0"
+                            value={withdrawAmount}
+                            onChange={(e) => setWithdrawAmount(e.target.value)}
+                            className="w-full bg-[#050510] border border-white/10 rounded-xl py-3 px-4 text-xs text-white focus:outline-none focus:border-accent-purple/50 transition-all placeholder-white/10 font-mono"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (balanceData) {
+                                // Leave a tiny bit of POL for gas, e.g. balance - 0.01
+                                const maxVal = Math.max(0, Number(formatUnits(balanceData.value, balanceData.decimals)) - 0.01);
+                                setWithdrawAmount(maxVal.toString());
+                              }
+                            }}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase text-accent-purple hover:text-white transition-colors"
+                          >
+                            Max
+                          </button>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={async () => {
+                          if (!recipient.trim() || !withdrawAmount.trim()) {
+                            toast.error('Please enter a recipient address and amount');
+                            return;
+                          }
+                          const loadId = toast.loading('Sending transaction...');
+                          try {
+                            await sendTransactionAsync({
+                              to: recipient.trim() as `0x${string}`,
+                              value: parseEther(withdrawAmount.trim()),
+                            });
+                            toast.success('POL transferred successfully!', { id: loadId });
+                            setWithdrawAmount('');
+                            setRecipient('');
+                            refetchBalance();
+                          } catch (err: any) {
+                            toast.error(err.message || 'Transaction failed', { id: loadId });
+                          }
+                        }}
+                        disabled={isSendingTx}
+                        className="w-full bg-accent-purple hover:bg-opacity-90 disabled:opacity-60 text-white text-xs font-bold py-3 rounded-xl shadow-[0_0_15px_rgba(157,0,255,0.3)] transition-all uppercase tracking-widest font-black"
+                      >
+                        {isSendingTx ? 'Sending...' : 'Send POL'}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </section>
 
