@@ -313,9 +313,9 @@ export default function MintPage() {
     setMintStatus('minting');
 
     try {
-      // 1. Approve USDC Upload Fee of 2.50 USDC
+      // 1. Approve USDC Upload Fee of 1.00 USDC
       setMintStepLabel('Step 1/2: Approving USDC transaction fee (please confirm in wallet)...');
-      const approveTx = await approveUSDC(config, parseUSDC(2.50));
+      const approveTx = await approveUSDC(config, parseUSDC(1.00));
       await waitForTx(config, approveTx);
 
       let songDbId: number;
@@ -912,13 +912,13 @@ export default function MintPage() {
           onClose={handleCloseModal}
           onConfirm={handleMintConfirmed}
           data={{
-            fee: '2.50 USDC',
+            fee: '1.00 USDC',
             from: address ? `${address.substring(0, 6)}...${address.substring(address.length - 4)}` : '0x000...0000',
             to: 'Grooveli Contract',
             network: 'POLYGON',
             gasFee: '0.02 POL',
-            totalEth: '2.50 USDC',
-            totalUsd: '2.50'
+            totalEth: '1.00 USDC',
+            totalUsd: '1.00'
           }}
         />
 
