@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { TopBar } from '@/components/dashboard/TopBar';
 import { 
@@ -195,6 +196,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 // --- Page Main Component ---
 
 export default function EarningsPage() {
+  const router = useRouter();
   const [activeChartTab, setActiveChartTab] = useState<'licenses' | 'sales'>('licenses');
 
   return (
