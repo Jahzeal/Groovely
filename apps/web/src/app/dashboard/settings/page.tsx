@@ -5,7 +5,7 @@ import { Sidebar } from '@/components/dashboard/Sidebar';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { useAccount, useBalance, useSendTransaction, useWriteContract } from 'wagmi';
+import { useAccount, useBalance, useSendTransaction, useWriteContract, useReadContract } from 'wagmi';
 import { parseEther, parseUnits, formatUnits } from 'viem';
 import { USDC_ADDRESS, ERC20_ABI } from '@/lib/contracts';
 
@@ -21,9 +21,14 @@ export default function SettingsPage() {
   const { data: polBalanceData, refetch: refetchPolBalance } = useBalance({
     address: activeAddress,
   });
-  const { data: usdcBalanceData, refetch: refetchUsdcBalance } = useBalance({
-    address: activeAddress,
-    token: USDC_ADDRESS,
+  const { data: rawUsdcBalance, refetch: refetchUsdcBalance } = useReadContract({
+    address: USDC_ADDRESS,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: activeAddress ? [activeAddress] : undefined,
+    query: {
+      enabled: !!activeAddress,
+    },
   });
 
   const { sendTransactionAsync, isPending: isSendingTx } = useSendTransaction();
@@ -468,7 +473,7 @@ export default function SettingsPage() {
                         <span className="text-zinc-500">Available Balance</span>
                         <span className="text-accent-cyan font-mono">
                           {withdrawToken === 'USDC'
-                            ? (usdcBalanceData ? `${parseFloat(formatUnits(usdcBalanceData.value, usdcBalanceData.decimals)).toFixed(2)} USDC` : '0.00 USDC')
+                            ? (rawUsdcBalance !== undefined ? `${parseFloat(formatUnits(rawUsdcBalance, 6)).toFixed(2)} USDC` : '0.00 USDC')
                             : (polBalanceData ? `${parseFloat(formatUnits(polBalanceData.value, polBalanceData.decimals)).toFixed(4)} POL` : '0.00 POL')}
                         </span>
                       </div>
@@ -498,8 +503,8 @@ export default function SettingsPage() {
                           <button
                             type="button"
                             onClick={() => {
-                              if (withdrawToken === 'USDC' && usdcBalanceData) {
-                                setWithdrawAmount(formatUnits(usdcBalanceData.value, usdcBalanceData.decimals));
+                              if (withdrawToken === 'USDC' && rawUsdcBalance !== undefined) {
+                                setWithdrawAmount(formatUnits(rawUsdcBalance, 6));
                               } else if (withdrawToken === 'POL' && polBalanceData) {
                                 const maxVal = Math.max(0, Number(formatUnits(polBalanceData.value, polBalanceData.decimals)) - 0.01);
                                 setWithdrawAmount(maxVal.toString());
@@ -527,7 +532,7 @@ export default function SettingsPage() {
                           const loadId = toast.loading(`Sending ${withdrawToken}...`);
                           try {
                             if (withdrawToken === 'USDC') {
-                              const amountRaw = parseUnits(withdrawAmount.trim(), usdcBalanceData?.decimals ?? 6);
+                              const amountRaw = parseUnits(withdrawAmount.trim(), 6);
                               await writeContractAsync({
                                 address: USDC_ADDRESS,
                                 abi: ERC20_ABI,
