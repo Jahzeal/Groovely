@@ -11,10 +11,10 @@ export class CreatorService {
         COALESCE(SUM(CASE WHEN ts.played_at >= date_trunc('month', CURRENT_DATE) THEN 1 ELSE 0 END), 0) as streams_this_month,
         COALESCE(SUM(CASE WHEN ts.played_at >= date_trunc('month', CURRENT_DATE - INTERVAL '1 month') 
           AND ts.played_at < date_trunc('month', CURRENT_DATE) THEN 1 ELSE 0 END), 0) as streams_last_month,
-        COALESCE(SUM(ts.earnings), 0) as total_earnings,
-        COALESCE(SUM(CASE WHEN ts.played_at >= date_trunc('month', CURRENT_DATE) THEN ts.earnings ELSE 0 END), 0) as earnings_this_month,
+        COALESCE(SUM(ts.earnings), 0) as total_stream_earnings,
+        COALESCE(SUM(CASE WHEN ts.played_at >= date_trunc('month', CURRENT_DATE) THEN ts.earnings ELSE 0 END), 0) as stream_earnings_this_month,
         COALESCE(SUM(CASE WHEN ts.played_at >= date_trunc('month', CURRENT_DATE - INTERVAL '1 month') 
-          AND ts.played_at < date_trunc('month', CURRENT_DATE) THEN ts.earnings ELSE 0 END), 0) as earnings_last_month,
+          AND ts.played_at < date_trunc('month', CURRENT_DATE) THEN ts.earnings ELSE 0 END), 0) as stream_earnings_last_month,
         COUNT(DISTINCT t.id) as total_uploads,
         COALESCE(SUM(CASE WHEN t.created_at >= date_trunc('month', CURRENT_DATE) THEN 1 ELSE 0 END), 0) as uploads_this_month,
         COALESCE(SUM(CASE WHEN t.created_at >= date_trunc('month', CURRENT_DATE - INTERVAL '1 month') 
@@ -27,12 +27,24 @@ export class CreatorService {
       [userId]
     );
 
+    const purchaseResult = await this.db.query(
+      `SELECT
+        COALESCE(SUM(p.amount), 0) as total_purchase_earnings,
+        COALESCE(SUM(CASE WHEN p.purchased_at >= date_trunc('month', CURRENT_DATE) THEN p.amount ELSE 0 END), 0) as purchase_earnings_this_month,
+        COALESCE(SUM(CASE WHEN p.purchased_at >= date_trunc('month', CURRENT_DATE - INTERVAL '1 month') 
+          AND p.purchased_at < date_trunc('month', CURRENT_DATE) THEN p.amount ELSE 0 END), 0) as purchase_earnings_last_month
+       FROM purchases p
+       JOIN tracks t ON (p.track_id = t.id OR p.track_id IN (SELECT s.id FROM songs s WHERE s.track_id = t.id))
+       WHERE t.user_id = $1`,
+      [userId]
+    );
+
     let stats = {
       streams_this_month: 0,
       streams_last_month: 0,
-      total_earnings: 0,
-      earnings_this_month: 0,
-      earnings_last_month: 0,
+      total_stream_earnings: 0,
+      stream_earnings_this_month: 0,
+      stream_earnings_last_month: 0,
       total_uploads: 0,
       uploads_this_month: 0,
       uploads_last_month: 0
@@ -41,6 +53,16 @@ export class CreatorService {
     if (result.rows.length > 0) {
       stats = result.rows[0];
     }
+
+    const pStats = purchaseResult.rows[0] || {
+      total_purchase_earnings: 0,
+      purchase_earnings_this_month: 0,
+      purchase_earnings_last_month: 0
+    };
+
+    const totalEarnings = parseFloat(stats.total_stream_earnings as any) + parseFloat(pStats.total_purchase_earnings as any);
+    const earningsThisMonth = parseFloat(stats.stream_earnings_this_month as any) + parseFloat(pStats.purchase_earnings_this_month as any);
+    const earningsLastMonth = parseFloat(stats.stream_earnings_last_month as any) + parseFloat(pStats.purchase_earnings_last_month as any);
 
     const calculatePercentage = (current: number, previous: number): number => {
       if (previous === 0) {
@@ -53,10 +75,7 @@ export class CreatorService {
       parseInt(stats.streams_this_month as any),
       parseInt(stats.streams_last_month as any)
     );
-    const earningsChange = calculatePercentage(
-      parseFloat(stats.earnings_this_month as any),
-      parseFloat(stats.earnings_last_month as any)
-    );
+    const earningsChange = calculatePercentage(earningsThisMonth, earningsLastMonth);
     const uploadsChange = calculatePercentage(
       parseInt(stats.uploads_this_month as any),
       parseInt(stats.uploads_last_month as any)
@@ -69,7 +88,9 @@ export class CreatorService {
         changeType: streamsChange >= 0 ? 'up' : 'down'
       },
       earnings: {
-        total: parseFloat(stats.total_earnings as any),
+        total: totalEarnings,
+        thisMonth: earningsThisMonth,
+        lastMonth: earningsLastMonth,
         change: earningsChange,
         changeType: earningsChange >= 0 ? 'up' : 'down'
       },
@@ -91,7 +112,10 @@ export class CreatorService {
         t.created_at,
         t.cover_url,
         t.audio_url,
-        COALESCE(SUM(ts.earnings), 0) as earnings,
+        (
+          COALESCE((SELECT SUM(earnings) FROM track_streams WHERE track_id = t.id), 0) +
+          COALESCE((SELECT SUM(amount) FROM purchases WHERE track_id = t.id OR track_id IN (SELECT id FROM songs WHERE track_id = t.id)), 0)
+        ) as earnings,
         COUNT(ts.id) as streams,
         u.display_name as artist_name,
         u.username as artist_username
@@ -117,5 +141,26 @@ export class CreatorService {
       artist_name: track.artist_name,
       artist_username: track.artist_username
     }));
+  }
+
+  async getTransactions(userId: number) {
+    const result = await this.db.query(
+      `SELECT 
+         p.id,
+         COALESCE(p.license_type, 'NFT Sale') as type,
+         t.title,
+         COALESCE(t.category, 'Music') as content,
+         p.amount,
+         p.purchased_at as date,
+         'Completed' as status,
+         t.cover_url as image
+       FROM purchases p
+       JOIN tracks t ON (p.track_id = t.id OR p.track_id IN (SELECT s.id FROM songs s WHERE s.track_id = t.id))
+       WHERE t.user_id = $1
+       ORDER BY p.purchased_at DESC
+       LIMIT 50`,
+      [userId]
+    );
+    return result.rows;
   }
 }

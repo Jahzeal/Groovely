@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { TopBar } from '@/components/dashboard/TopBar';
@@ -8,94 +8,37 @@ import {
   Wallet, 
   Info, 
   TrendingUp, 
+  TrendingDown,
   ChevronRight, 
   ChevronLeft,
   Music,
-  Disc,
-  Mic2,
-  AlertCircle,
-  CheckCircle2,
-  Clock,
-  XCircle
+  Loader2
 } from 'lucide-react';
-
-// --- Mock Data ---
-
-const transactions = [
-  {
-    id: 1,
-    type: 'License Purchase',
-    title: 'Slow Lights on Third Street',
-    content: 'Music',
-    amount: 994,
-    date: '15 May 2026 8:30 am',
-    status: 'Completed',
-    image: 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?w=100&h=100&fit=crop'
-  },
-  {
-    id: 2,
-    type: 'NFT Sale',
-    title: 'Midnight Bounce',
-    content: 'Beat',
-    amount: 426,
-    date: '15 May 2026 9:00 am',
-    status: 'Pending',
-    image: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=100&h=100&fit=crop'
-  },
-  {
-    id: 3,
-    type: 'Withdrawal',
-    title: '$500',
-    content: 'Podcast',
-    amount: 877,
-    date: '15 May 2026 9:30 am',
-    status: 'Completed',
-    image: 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?w=100&h=100&fit=crop'
-  },
-  {
-    id: 4,
-    type: 'NFT Sale',
-    title: 'After the Noise',
-    content: 'Music',
-    amount: 883,
-    date: '15 May 2026 8:00 am',
-    status: 'Failed',
-    image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=100&h=100&fit=crop'
-  },
-  {
-    id: 5,
-    type: 'License Purchase',
-    title: 'No Wahala, Just Vibes',
-    content: 'Skit',
-    amount: 740,
-    date: '15 May 2026 8:30 am',
-    status: 'Completed',
-    image: 'https://images.unsplash.com/photo-1526218626217-dc65a29bb444?w=100&h=100&fit=crop'
-  }
-];
+import { apiFetch, resolveIpfsUrl } from '@/lib/api';
 
 // --- Sub-components ---
 
-const PerformanceChart = () => {
+const PerformanceChart = ({ customData }: { customData?: number[] }) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   
-  // Custom mock data for the chart
-  const data = [300, 450, 420, 400, 600, 650, 850, 800, 820, 850, 950, 1200];
+  const data = customData && customData.length === 12
+    ? customData
+    : (customData && customData.length > 0
+        ? [...customData, ...Array(Math.max(0, 12 - customData.length)).fill(0)]
+        : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   
   const width = 800;
   const height = 300;
   const padding = 40;
   
-  const maxVal = Math.max(...data);
+  const maxVal = Math.max(...data, 100);
   const minVal = 0;
   
   const getX = (index: number) => (index * (width - padding * 2)) / (data.length - 1) + padding;
   const getY = (value: number) => height - padding - ((value - minVal) * (height - padding * 2)) / (maxVal - minVal);
 
-  const pathD = data.map((val, i) => `${i === 0 ? 'M' : 'L'} ${getX(i)} ${getY(val)}`).join(' ');
-  
-  // Create a smoother curve using cubic bezier approximations (simplified here)
   const curveD = data.reduce((acc, val, i, arr) => {
     if (i === 0) return `M ${getX(i)} ${getY(val)}`;
     const prevX = getX(i - 1);
@@ -187,7 +130,7 @@ const StatusBadge = ({ status }: { status: string }) => {
   };
   
   return (
-    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${styles[status]}`}>
+    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${styles[status] || styles.Completed}`}>
       {status}
     </span>
   );
@@ -198,10 +141,54 @@ const StatusBadge = ({ status }: { status: string }) => {
 export default function EarningsPage() {
   const router = useRouter();
   const [activeChartTab, setActiveChartTab] = useState<'licenses' | 'sales'>('licenses');
+  const [stats, setStats] = useState<any>(null);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<number[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      try {
+        const [statsRes, txRes, analyticsRes] = await Promise.all([
+          apiFetch('/api/creator/dashboard/stats'),
+          apiFetch('/api/creator/dashboard/transactions'),
+          apiFetch('/api/analytics/earnings'),
+        ]);
+
+        if (statsRes?.ok) {
+          const statsJson = await statsRes.json();
+          setStats(statsJson.data || statsJson);
+        }
+
+        if (txRes?.ok) {
+          const txJson = await txRes.json();
+          const txs = txJson.data?.transactions || txJson.transactions || [];
+          setTransactions(Array.isArray(txs) ? txs : []);
+        }
+
+        if (analyticsRes?.ok) {
+          const analyticsJson = await analyticsRes.json();
+          const dataPoints = analyticsJson.data?.map((d: any) => Number(d.total) || 0) || [];
+          if (dataPoints.length > 0) {
+            setChartData(dataPoints);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load earnings data:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  const totalEarnings = Number(stats?.earnings?.total || 0);
+  const earningsChange = Number(stats?.earnings?.change || 0);
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
-      <Sidebar />
+      <Sidebar activePage="earnings" />
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <TopBar />
@@ -215,19 +202,25 @@ export default function EarningsPage() {
                 </div>
                 <div className="space-y-1">
                    <h2 className="text-zinc-500 text-sm font-black uppercase tracking-[0.2em] flex items-center gap-2">
-                      Earnings
+                      Total Revenue
                       <div className="w-4 h-4 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors cursor-help">
                         <Info size={10} />
                       </div>
                    </h2>
                    <div className="flex items-baseline gap-4">
-                      <span className="text-5xl font-black tracking-tighter text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">$1,032.60</span>
-                      <div className="inline-flex items-center gap-1 bg-[#00FF85]/10 text-[#00FF85] px-3 py-1.5 rounded-xl border border-[#00FF85]/20 text-xs font-black">
-                         <TrendingUp size={14} />
-                         +10.5%
+                      <span className="text-5xl font-black tracking-tighter text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                        ${totalEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                      <div className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border text-xs font-black ${
+                        earningsChange >= 0
+                          ? 'bg-[#00FF85]/10 text-[#00FF85] border-[#00FF85]/20'
+                          : 'bg-red-500/10 text-red-400 border-red-500/20'
+                      }`}>
+                         {earningsChange >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                         {earningsChange >= 0 ? `+${earningsChange}%` : `${earningsChange}%`}
                       </div>
                    </div>
-                   <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">This Month</p>
+                   <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Lifetime Creator Sales & Streams</p>
                 </div>
              </div>
 
@@ -259,7 +252,7 @@ export default function EarningsPage() {
                 </div>
              </div>
              
-             <PerformanceChart />
+             <PerformanceChart customData={chartData} />
           </div>
 
           {/* Transactions Table Section */}
@@ -267,80 +260,65 @@ export default function EarningsPage() {
              <h3 className="text-xl font-black uppercase tracking-widest text-white px-2">Transactions</h3>
              
              <div className="glass-card overflow-hidden">
-                <table className="w-full text-left">
-                   <thead>
-                      <tr className="border-b border-white/5 text-[10px] font-black text-zinc-500 uppercase tracking-widest bg-white/[0.01]">
-                        <th className="p-6 font-black">Type</th>
-                        <th className="p-6 font-black">Content</th>
-                        <th className="p-6 font-black text-center">Amount</th>
-                        <th className="p-6 font-black text-center">Date</th>
-                        <th className="p-6 font-black text-center">Status</th>
-                      </tr>
-                   </thead>
-                   <tbody className="divide-y divide-white/5">
-                      {transactions.map((t, i) => (
-                        <tr key={t.id} className="group hover:bg-white/[0.02] transition-colors">
-                          <td className="p-6">
-                             <div className="flex items-center gap-4">
-                                <img src={t.image} alt="" className="w-12 h-12 rounded-xl object-cover grayscale-[0.3] group-hover:grayscale-0 transition-all border border-white/5" />
-                                <div className="flex flex-col">
-                                   <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1">{t.type}</span>
-                                   <span className="text-sm font-black text-white group-hover:text-accent-purple transition-colors">"{t.title}"</span>
-                                </div>
-                             </div>
-                          </td>
-                          <td className="p-6">
-                             <span className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                                {t.content}
-                             </span>
-                          </td>
-                          <td className="p-6 text-center text-sm font-black text-zinc-200">
-                             ${t.amount.toLocaleString()}
-                          </td>
-                          <td className="p-6 text-center text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-                             {t.date}
-                          </td>
-                          <td className="p-6 text-center">
-                             <StatusBadge status={t.status} />
-                          </td>
+                {loading ? (
+                  <div className="flex flex-col items-center justify-center py-20 gap-3">
+                    <Loader2 size={32} className="text-accent-purple animate-spin" />
+                    <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Loading transactions…</p>
+                  </div>
+                ) : transactions.length > 0 ? (
+                  <table className="w-full text-left">
+                     <thead>
+                        <tr className="border-b border-white/5 text-[10px] font-black text-zinc-500 uppercase tracking-widest bg-white/[0.01]">
+                          <th className="p-6 font-black">Type</th>
+                          <th className="p-6 font-black">Content</th>
+                          <th className="p-6 font-black text-center">Amount</th>
+                          <th className="p-6 font-black text-center">Date</th>
+                          <th className="p-6 font-black text-center">Status</th>
                         </tr>
-                      ))}
-                   </tbody>
-                </table>
-                
-                {/* Pagination */}
-                <div className="p-6 bg-white/[0.01] border-t border-white/5 flex items-center justify-between">
-                   <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Page 1 of 2</span>
-                   <div className="flex items-center gap-2">
-                      <button className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-zinc-600 transition-colors cursor-not-allowed">
-                         <ChevronLeft size={16} />
-                      </button>
-                      <button className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-white transition-all">
-                         <ChevronRight size={16} />
-                      </button>
-                   </div>
-                </div>
+                     </thead>
+                     <tbody className="divide-y divide-white/5">
+                        {transactions.map((t) => (
+                          <tr key={t.id} className="group hover:bg-white/[0.02] transition-colors">
+                            <td className="p-6">
+                               <div className="flex items-center gap-4">
+                                  <img 
+                                    src={resolveIpfsUrl(t.image) || "https://images.unsplash.com/photo-1514525253361-bee8d48800d5?w=100&h=100&fit=crop"} 
+                                    alt="" 
+                                    className="w-12 h-12 rounded-xl object-cover grayscale-[0.3] group-hover:grayscale-0 transition-all border border-white/5" 
+                                  />
+                                  <div className="flex flex-col">
+                                     <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1">{t.type || 'NFT Sale'}</span>
+                                     <span className="text-sm font-black text-white group-hover:text-accent-purple transition-colors">"{t.title}"</span>
+                                  </div>
+                               </div>
+                            </td>
+                            <td className="p-6">
+                               <span className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                                  {t.content || 'Music'}
+                               </span>
+                            </td>
+                            <td className="p-6 text-center text-sm font-black text-accent-cyan">
+                               ${Number(t.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC
+                            </td>
+                            <td className="p-6 text-center text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+                               {t.date ? new Date(t.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recent'}
+                            </td>
+                            <td className="p-6 text-center">
+                               <StatusBadge status={t.status || 'Completed'} />
+                            </td>
+                          </tr>
+                        ))}
+                     </tbody>
+                  </table>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
+                    <Music size={32} className="text-zinc-600" />
+                    <p className="text-sm font-bold text-zinc-400">No transactions recorded yet</p>
+                    <p className="text-xs text-zinc-600 max-w-sm">When fans purchase your track editions or license your content, your revenue will display here.</p>
+                  </div>
+                )}
              </div>
           </div>
-
-          {/* Footer */}
-          <footer className="mt-20 py-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-10 opacity-70 hover:opacity-100 transition-opacity">
-             <div className="flex flex-wrap items-center gap-x-8 gap-y-4 text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                <a href="#" className="hover:text-accent-purple transition-colors">About Grooveli</a>
-                <span className="w-1 h-1 bg-zinc-800 rounded-full" />
-                <a href="#" className="hover:text-accent-purple transition-colors">Privacy Policy</a>
-                <span className="w-1 h-1 bg-zinc-800 rounded-full" />
-                <a href="#" className="hover:text-accent-purple transition-colors">Terms of Use</a>
-                <span className="w-1 h-1 bg-zinc-800 rounded-full" />
-                <a href="#" className="hover:text-accent-purple transition-colors">Docs/Developer API</a>
-                <span className="w-1 h-1 bg-zinc-800 rounded-full" />
-                <a href="#" className="hover:text-accent-purple transition-colors text-accent-cyan">Feedback</a>
-             </div>
-
-             <div className="flex items-center gap-6">
-                <p className="text-[10px] font-black text-zinc-700 uppercase tracking-widest">© Copyright 2025</p>
-             </div>
-          </footer>
         </main>
       </div>
     </div>
