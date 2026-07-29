@@ -326,7 +326,7 @@ export class MintingService {
 
   async confirmMint(dto: ConfirmMintDto) {
     const editionResult = await this.db.query(
-      `SELECT e.*, s.user_id as creator_user_id
+      `SELECT e.*, s.user_id as creator_user_id, s.track_id
        FROM editions e
        JOIN songs s ON e.song_id = s.id
        WHERE e.id = $1`,
@@ -336,6 +336,18 @@ export class MintingService {
 
     const edition = editionResult.rows[0];
     const amount = dto.amount || 1;
+    const actualTrackId = edition.track_id || edition.song_id;
+
+    let buyerUserId = dto.buyer_user_id || null;
+    if (!buyerUserId && dto.buyer_wallet) {
+      const userRes = await this.db.query(
+        'SELECT id FROM users WHERE LOWER(wallet_address) = LOWER($1)',
+        [dto.buyer_wallet],
+      );
+      if (userRes.rows[0]) {
+        buyerUserId = userRes.rows[0].id;
+      }
+    }
 
     await this.db.query('BEGIN');
     try {
@@ -345,8 +357,8 @@ export class MintingService {
            (user_id, track_id, edition_id, amount, currency, tx_hash, token_id, license_type, buyer_wallet, purchased_at)
          VALUES ($1, $2, $3, $4, 'USDC', $5, $6, $7, $8, NOW())`,
         [
-          dto.buyer_user_id || null,
-          edition.song_id,
+          buyerUserId,
+          actualTrackId,
           dto.edition_id,
           edition.mint_price_usdc * amount,
           dto.tx_hash,
@@ -377,8 +389,12 @@ export class MintingService {
 
   async isPurchased(userId: number, trackId: number): Promise<boolean> {
     const result = await this.db.query(
-      `SELECT id FROM purchases
-       WHERE user_id = $1 AND track_id = $2
+      `SELECT p.id FROM purchases p
+       LEFT JOIN users u ON p.user_id = u.id OR (p.buyer_wallet IS NOT NULL AND LOWER(p.buyer_wallet) = LOWER(u.wallet_address))
+       LEFT JOIN editions e ON p.edition_id = e.id
+       LEFT JOIN songs s ON e.song_id = s.id
+       WHERE (p.user_id = $1 OR u.id = $1)
+         AND (p.track_id = $2 OR s.track_id = $2 OR p.track_id IN (SELECT id FROM songs WHERE track_id = $2))
        LIMIT 1`,
       [userId, trackId],
     );
@@ -391,15 +407,18 @@ export class MintingService {
          p.*,
          e.edition_type,
          e.mint_price_usdc,
+         t.id as track_id,
          t.title,
          t.cover_url,
          t.audio_url,
          u.display_name as creator_name
        FROM purchases p
        LEFT JOIN editions e ON p.edition_id = e.id
-       LEFT JOIN tracks t ON p.track_id = t.id
+       LEFT JOIN songs s ON e.song_id = s.id
+       LEFT JOIN tracks t ON (p.track_id = t.id OR s.track_id = t.id)
        LEFT JOIN users u ON t.user_id = u.id
-       WHERE p.user_id = $1
+       LEFT JOIN users buyer ON p.user_id = buyer.id OR (p.buyer_wallet IS NOT NULL AND LOWER(p.buyer_wallet) = LOWER(buyer.wallet_address))
+       WHERE p.user_id = $1 OR buyer.id = $1
        ORDER BY p.purchased_at DESC`,
       [userId],
     );
