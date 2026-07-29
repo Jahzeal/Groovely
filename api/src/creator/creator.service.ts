@@ -34,8 +34,10 @@ export class CreatorService {
         COALESCE(SUM(CASE WHEN p.purchased_at >= date_trunc('month', CURRENT_DATE - INTERVAL '1 month') 
           AND p.purchased_at < date_trunc('month', CURRENT_DATE) THEN p.amount ELSE 0 END), 0) as purchase_earnings_last_month
        FROM purchases p
-       JOIN tracks t ON (p.track_id = t.id OR p.track_id IN (SELECT s.id FROM songs s WHERE s.track_id = t.id))
-       WHERE t.user_id = $1`,
+       LEFT JOIN editions e ON p.edition_id = e.id
+       LEFT JOIN songs s ON (e.song_id = s.id OR p.track_id = s.id OR p.track_id = s.track_id)
+       LEFT JOIN tracks t ON (s.track_id = t.id OR p.track_id = t.id)
+       WHERE t.user_id = $1 OR s.user_id = $1`,
       [userId]
     );
 
@@ -148,15 +150,17 @@ export class CreatorService {
       `SELECT 
          p.id,
          COALESCE(p.license_type, 'NFT Sale') as type,
-         t.title,
+         COALESCE(t.title, s.title, 'Track Sale') as title,
          COALESCE(t.category, 'Music') as content,
          p.amount,
          p.purchased_at as date,
          'Completed' as status,
-         t.cover_url as image
+         COALESCE(t.cover_url, '') as image
        FROM purchases p
-       JOIN tracks t ON (p.track_id = t.id OR p.track_id IN (SELECT s.id FROM songs s WHERE s.track_id = t.id))
-       WHERE t.user_id = $1
+       LEFT JOIN editions e ON p.edition_id = e.id
+       LEFT JOIN songs s ON (e.song_id = s.id OR p.track_id = s.id OR p.track_id = s.track_id)
+       LEFT JOIN tracks t ON (s.track_id = t.id OR p.track_id = t.id)
+       WHERE t.user_id = $1 OR s.user_id = $1
        ORDER BY p.purchased_at DESC
        LIMIT 50`,
       [userId]
