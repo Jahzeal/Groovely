@@ -329,7 +329,7 @@ export class MintingService {
       `SELECT e.*, s.user_id as creator_user_id, s.track_id
        FROM editions e
        JOIN songs s ON e.song_id = s.id
-       WHERE e.id = $1`,
+       WHERE e.id = $1 OR e.contract_edition_id = $1`,
       [dto.edition_id],
     );
     if (!editionResult.rows[0]) throw new NotFoundException('Edition not found');
