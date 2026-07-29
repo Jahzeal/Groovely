@@ -180,12 +180,62 @@ export function useMint({
           },
         });
 
-        // 3. Check USDC balance (use smart account address)
-        const balance = await checkUSDCBalance(config, account.address);
-        if (balance < priceRaw) {
+        // 3. Check USDC balance (check both Smart Account and Privy EOA address)
+        const smartBalance = await checkUSDCBalance(config, account.address);
+        const eoaBalance = await checkUSDCBalance(config, address);
+
+        if (smartBalance < priceRaw && eoaBalance < priceRaw) {
           throw new Error(
-            `Insufficient USDC balance. You need ${mintPriceUsdc} USDC but have ${(Number(balance) / 1e6).toFixed(2)} USDC.`
+            `Insufficient USDC balance in wallet ${address.slice(0, 6)}…${address.slice(-4)}. You need ${mintPriceUsdc} USDC but have ${(Number(eoaBalance) / 1e6).toFixed(2)} USDC.`
           );
+        }
+
+        // If user deposited USDC in their primary Privy wallet address (EOA), execute directly via EOA
+        if (smartBalance < priceRaw && eoaBalance >= priceRaw) {
+          console.log(`[useMint] USDC found in primary wallet (${address}), completing purchase directly.`);
+          
+          const allowance = await checkUSDCAllowance(config, address);
+          if (allowance < priceRaw) {
+            setStep('approving');
+            const approveTx = await approveUSDC(config, priceRaw);
+            await waitForTx(config, approveTx);
+          }
+
+          setStep('approved');
+
+          setStep('minting');
+          const mintTx = await mintEdition(config, contractEditionId, 1);
+          setTxHash(mintTx);
+
+          setStep('confirming');
+          const receipt = await waitForTx(config, mintTx);
+
+          let derivedTokenId = contractEditionId;
+          try {
+            const transferLog = receipt.logs.find(
+              (log) => log.topics[0] === '0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62'
+            );
+            if (transferLog && transferLog.topics[3]) {
+              derivedTokenId = parseInt(transferLog.topics[3], 16);
+            }
+          } catch (_) {}
+
+          setTokenId(derivedTokenId);
+
+          await apiFetch('/api/mint/confirm', {
+            method: 'POST',
+            body: JSON.stringify({
+              edition_id: editionId,
+              tx_hash: mintTx,
+              token_id: derivedTokenId,
+              buyer_wallet: address,
+              license_type: 'standard',
+            }),
+          });
+
+          setStep('success');
+          onSuccess?.({ txHash: mintTx, tokenId: derivedTokenId });
+          return;
         }
 
         // 4. Batch Approve + Mint
