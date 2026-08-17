@@ -410,7 +410,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Educational / Promotional Banner Cards */}
-          <div className="space-y-4 mb-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
             {/* Card 1: Tips to Grow Your Audience */}
             <div className="relative h-44 rounded-3xl overflow-hidden group cursor-pointer border border-white/5 shadow-lg">
               <img
