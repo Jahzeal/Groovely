@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAccount, useConnect, useDisconnect, useConfig } from 'wagmi';
 import { signMessage } from '@wagmi/core';
@@ -10,7 +10,6 @@ import { WalletCard } from '@/components/onboarding/WalletCard';
 import { MetaMaskIcon, WalletConnectIcon, PhantomIcon } from '@/components/onboarding/OnboardingFlow';
 import { Google as GoogleIcon } from '@/components/ui/SocialIcons';
 import toast from 'react-hot-toast';
-import { useLogin, usePrivy } from '@privy-io/react-auth';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,110 +17,17 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Account Not Found Modal state
+  const [showNotFoundModal, setShowNotFoundModal] = useState(false);
+  const [unregisteredAddr, setUnregisteredAddr] = useState<string | null>(null);
+
   const { address, isConnected, status } = useAccount();
   const { connectAsync, connectors } = useConnect();
   const { disconnect } = useDisconnect();
   const config = useConfig();
 
-  const { ready, authenticated, user, logout } = usePrivy();
-
-  const { login } = useLogin({
-    onComplete: () => {
-      console.log('Login complete, waiting for auto-login handler...');
-    }
-  });
-
-  useEffect(() => {
-    // If the user already has a token in localStorage, redirect immediately
-    const token = localStorage.getItem('grooveli_token');
-    const role = localStorage.getItem('grooveli_role');
-    if (token) {
-      if (role === 'fan') {
-        router.push('/explore');
-      } else {
-        router.push('/dashboard');
-      }
-      return;
-    }
-
-    if (!ready || !authenticated || !user) return;
-
-    // Check if wallet exists
-    const smartWallet = user.linkedAccounts.find(
-      (account) => account.type === 'smart_wallet'
-    );
-    const walletAddr = smartWallet?.address || user.wallet?.address;
-
-    if (!walletAddr) {
-      // Privy is logged in, but no wallet exists (corrupted state).
-      // Automatically log them out so they can start fresh.
-      console.log('No wallet found for logged-in user, logging out...');
-      logout();
-      return;
-    }
-
-    const autoLoginBackend = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const connectRes = await fetch(`/api/auth/login/wallet`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ walletAddress: walletAddr }),
-        });
-
-        const contentType = connectRes.headers.get('content-type') || '';
-        let authData: any = null;
-        if (contentType.includes('application/json')) {
-          authData = await connectRes.json();
-        } else {
-          const rawText = await connectRes.text();
-          console.warn(`[Auto-login] Received non-JSON response (${connectRes.status}):`, rawText);
-          if (!connectRes.ok) {
-            console.log('User not registered in backend or server error, redirecting to onboarding...');
-            router.push('/onboarding');
-            return;
-          }
-        }
-        
-        // If they are authenticated with Privy but don't exist in our backend DB yet,
-        // redirect them to onboarding to choose a role and sign up.
-        if (!connectRes.ok || !authData?.data) {
-          console.log('User not registered in backend, redirecting to onboarding...');
-          router.push('/onboarding');
-          return;
-        }
-
-        const { token: jwtToken, user: dbUser } = authData.data;
-        localStorage.setItem('grooveli_token', jwtToken);
-        localStorage.setItem('grooveli_user_id', String(dbUser.id));
-        localStorage.setItem('grooveli_wallet', dbUser.wallet ?? walletAddr);
-        localStorage.setItem('grooveli_role', dbUser.role ?? '');
-
-        if (dbUser.role === 'fan') {
-          router.push('/explore');
-        } else {
-          router.push('/dashboard');
-        }
-      } catch (err: any) {
-        console.error('Auto-login error:', err);
-        setError(err.message || 'Auto-login failed');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    autoLoginBackend();
-  }, [ready, authenticated, user, router]);
-
   const handleConnectWallet = async () => {
     if (!wallet) return;
-    
-    if (wallet === 'walletconnect') {
-      login({ loginMethods: ['wallet'] });
-      return;
-    }
-
     setLoading(true);
     setError(null);
     try {
@@ -136,13 +42,15 @@ export default function LoginPage() {
         return cId.includes(target) || cName.includes(target);
       });
 
-      if (!connector && (target === 'metamask' || target === 'phantom')) {
+      if (!connector && target === 'metamask') {
         connector = connectors.find((c: any) => c.id === 'injected');
       }
 
-      if (!connector) {
-        throw new Error(`No compatible extension detected for ${wallet === 'metamask' ? 'MetaMask' : 'Phantom'}. Please install the extension or ensure it is enabled.`);
+      if (connectors.length === 0) {
+        throw new Error('No web3 wallets detected. Please install MetaMask or another compatible wallet.');
       }
+
+      if (!connector) connector = connectors[0];
       
       console.log('Selected connector:', connector?.id, connector?.name);
 
@@ -180,26 +88,27 @@ export default function LoginPage() {
         body: JSON.stringify({ walletAddress: walletAddr }),
       });
 
-      const contentType = connectRes.headers.get('content-type') || '';
-      let authData: any = null;
-      if (contentType.includes('application/json')) {
-        authData = await connectRes.json();
-      } else {
-        const rawText = await connectRes.text();
-        throw new Error(`Server error (${connectRes.status}). Please check backend database connection.`);
-      }
-
-      if (!connectRes.ok || !authData?.data) {
-        throw new Error(authData?.error || authData?.message || 'Authentication failed');
+      const authData = await connectRes.json();
+      
+      if (!connectRes.ok) {
+        const errStr = (authData.error || authData.message || '').toLowerCase();
+        const isNotFound = connectRes.status === 401 || errStr.includes('no account found') || errStr.includes('not found') || errStr.includes('sign up first');
+        
+        if (isNotFound) {
+          setUnregisteredAddr(walletAddr);
+          setShowNotFoundModal(true);
+          return;
+        }
+        throw new Error(authData.error || authData.message || 'Authentication failed');
       }
 
       // 4. Store JWT
       const { token, user } = authData.data;
       console.log('Login successful, storing credentials');
-      localStorage.setItem('grooveli_token', token);
-      localStorage.setItem('grooveli_user_id', String(user.id));
-      localStorage.setItem('grooveli_wallet', user.wallet ?? walletAddr);
-      localStorage.setItem('grooveli_role', user.role ?? '');
+      localStorage.setItem('groovely_token', token);
+      localStorage.setItem('groovely_user_id', String(user.id));
+      localStorage.setItem('groovely_wallet', user.wallet ?? walletAddr);
+      localStorage.setItem('groovely_role', user.role ?? '');
 
       // Redirect based on user role
       if (user.role === 'fan') {
@@ -218,8 +127,13 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    login({ loginMethods: ['google'] });
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    window.location.href = `${backendUrl}/api/auth/google`;
   };
+
+  const formattedAddr = unregisteredAddr 
+    ? `${unregisteredAddr.substring(0, 6)}...${unregisteredAddr.substring(unregisteredAddr.length - 4)}` 
+    : '';
 
   return (
     <div className="min-h-screen bg-[#050510] relative flex flex-col overflow-hidden">
@@ -320,6 +234,63 @@ export default function LoginPage() {
           </div>
         </div>
       </main>
+
+      {/* Account Not Found Modal */}
+      {showNotFoundModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-300">
+          <div className="w-full max-w-[460px] p-8 sm:p-10 bg-[#0B0B19]/90 border border-white/10 rounded-[36px] shadow-2xl relative overflow-hidden flex flex-col items-center text-center">
+            {/* Background Glow Effect */}
+            <div className="absolute -top-20 -right-20 w-48 h-48 bg-accent-purple/20 blur-[60px] rounded-full pointer-events-none" />
+            <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-accent-cyan/15 blur-[60px] rounded-full pointer-events-none" />
+
+            {/* Icon Badge */}
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-accent-purple/20 to-accent-cyan/10 border border-accent-purple/30 flex items-center justify-center mb-6 shadow-[0_0_25px_rgba(139,92,246,0.25)]">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-purple">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <line x1="19" y1="8" x2="19" y2="14" />
+                <line x1="22" y1="11" x2="16" y2="11" />
+              </svg>
+            </div>
+
+            {/* Title & Description */}
+            <h2 className="text-2xl font-black text-white tracking-tight uppercase mb-3">
+              Account Not Found
+            </h2>
+            <p className="text-zinc-400 text-sm font-medium leading-relaxed mb-6">
+              We couldn't find a Groovely account associated with this wallet{' '}
+              {formattedAddr && <span className="text-accent-purple font-mono font-bold bg-accent-purple/10 px-2 py-0.5 rounded-md border border-accent-purple/20">{formattedAddr}</span>}.
+            </p>
+
+            <div className="p-4 bg-white/5 border border-white/10 rounded-2xl mb-8 w-full">
+              <p className="text-xs text-zinc-300 font-medium">
+                New to Groovely? Create an account in under a minute to start creating and listening to music.
+              </p>
+            </div>
+
+            {/* Buttons */}
+            <div className="w-full space-y-3">
+              <Button
+                fullWidth
+                onClick={() => router.push('/onboarding')}
+                className="shadow-[0_0_20px_rgba(139,92,246,0.4)]"
+              >
+                Please Create an Account
+              </Button>
+              <button
+                onClick={() => {
+                  setShowNotFoundModal(false);
+                  setUnregisteredAddr(null);
+                }}
+                className="w-full py-3.5 rounded-full text-zinc-400 hover:text-white font-bold text-xs uppercase tracking-widest transition-colors hover:bg-white/5 border border-transparent hover:border-white/10"
+              >
+                Try Another Wallet
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
