@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      '@netlify/plugin-nextjs':
+        specifier: ^5.9.4
+        version: 5.15.13
       turbo:
         specifier: ^2.8.20
         version: 2.8.20
@@ -53,6 +56,9 @@ importers:
       express-session:
         specifier: ^1.19.0
         version: 1.19.0
+      jsonwebtoken:
+        specifier: ^9.0.3
+        version: 9.0.3
       passport:
         specifier: ^0.7.0
         version: 0.7.0
@@ -96,6 +102,9 @@ importers:
       '@types/express-session':
         specifier: ^1.19.0
         version: 1.19.0
+      '@types/jsonwebtoken':
+        specifier: ^9.0.10
+        version: 9.0.10
       '@types/multer':
         specifier: ^2.1.0
         version: 2.2.0
@@ -1154,6 +1163,10 @@ packages:
         optional: true
       '@nestjs/platform-express':
         optional: true
+
+  '@netlify/plugin-nextjs@5.15.13':
+    resolution: {integrity: sha512-gBmWtgG13ZW4ytNMCvacfwZemtdtV/Ekc+6RBYvI5fndjmDvKxgFHylsw7oli+PHMGAtNqaJrN8QccGnDReu6A==}
+    engines: {node: '>=18.0.0'}
 
   '@next/env@16.2.0':
     resolution: {integrity: sha512-OZIbODWWAi0epQRCRjNe1VO45LOFBzgiyqmTLzIqWq6u1wrxKnAyz1HH6tgY/Mc81YzIjRPoYsPAEr4QV4l9TA==}
@@ -8078,6 +8091,8 @@ snapshots:
       tslib: 2.8.1
     optionalDependencies:
       '@nestjs/platform-express': 10.4.22(@nestjs/common@10.4.22(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@10.4.22)
+
+  '@netlify/plugin-nextjs@5.15.13': {}
 
   '@next/env@16.2.0': {}
 

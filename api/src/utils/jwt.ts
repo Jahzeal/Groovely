@@ -5,6 +5,7 @@ export interface CustomJwtPayload extends jwt.JwtPayload {
   wallet: string | null;
   email: string | null;
   role: string;
+  exp?: number;
 }
 
 const getJwtSecret = () => process.env.JWT_SECRET || 'session_secret';
