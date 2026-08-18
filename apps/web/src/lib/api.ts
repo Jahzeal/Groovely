@@ -3,7 +3,9 @@ import toast from 'react-hot-toast';
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
 export async function apiFetch(endpoint: string, options: RequestInit & { skipAuthRedirect?: boolean } = {}) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('grooveli_token') : null;
+  const token = typeof window !== 'undefined'
+    ? (localStorage.getItem('groovely_token') || localStorage.getItem('grooveli_token'))
+    : null;
   
   const isFormData = options.body instanceof FormData;
   
@@ -33,6 +35,10 @@ export async function apiFetch(endpoint: string, options: RequestInit & { skipAu
 
 export function handleLogout() {
   if (typeof window !== 'undefined') {
+    localStorage.removeItem('groovely_token');
+    localStorage.removeItem('groovely_user_id');
+    localStorage.removeItem('groovely_wallet');
+    localStorage.removeItem('groovely_role');
     localStorage.removeItem('grooveli_token');
     localStorage.removeItem('grooveli_user_id');
     localStorage.removeItem('grooveli_wallet');

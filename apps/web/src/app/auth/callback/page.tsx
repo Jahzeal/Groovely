@@ -14,15 +14,20 @@ function CallbackHandler() {
     const isNewUser = searchParams.get('isNewUser') === 'true';
 
     if (status === 'AUTHENTICATED' && token) {
-      // 1. Store auth data
+      // 1. Store auth data under both naming conventions for compatibility
+      localStorage.setItem('groovely_token', token);
       localStorage.setItem('grooveli_token', token);
-      if (userId) localStorage.setItem('grooveli_user_id', userId);
+      if (userId) {
+        localStorage.setItem('groovely_user_id', userId);
+        localStorage.setItem('grooveli_user_id', userId);
+      }
       
       // Decode and store role from token
       let role = '';
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         role = payload.role ?? '';
+        localStorage.setItem('groovely_role', role);
         localStorage.setItem('grooveli_role', role);
       } catch (e) {
         console.error(e);

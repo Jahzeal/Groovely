@@ -150,16 +150,17 @@ export class AuthController {
       const token = generateToken(user.id, role, user.wallet, user.email);
       const isNewUser = !user.wallet;
 
-      const frontendUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+      const rawClientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+      const frontendUrl = rawClientUrl.split(',')[0].trim();
       res.redirect(
         `${frontendUrl}/auth/callback?status=AUTHENTICATED&token=${token}&userId=${user.id}&isNewUser=${isNewUser}`,
       );
     } catch (error) {
       console.error('Google OAuth callback error:', error);
+      const rawClientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+      const frontendUrl = rawClientUrl.split(',')[0].trim();
       res.redirect(
-        `${
-          process.env.CLIENT_URL || 'http://localhost:3000'
-        }/auth?error=google_auth_failed`,
+        `${frontendUrl}/auth?error=google_auth_failed`,
       );
     }
   }
