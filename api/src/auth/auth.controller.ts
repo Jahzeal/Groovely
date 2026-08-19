@@ -164,7 +164,7 @@ export class AuthController {
 
     try {
       const user = req.user;
-      const role = req.session?.googleRole || 'fan';
+      const role = req.session?.googleRole || user.role || 'fan';
 
       const token = generateToken(user.id, role, user.wallet, user.email);
       const isNewUser = user.isNewUser === true;

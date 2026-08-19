@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Content-Security-Policy",
-            value: "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://auth.privy.io; frame-src 'self' https://auth.privy.io;",
+            value: "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://auth.privy.io; frame-src 'self' https://auth.privy.io; connect-src 'self' https://auth.privy.io https://*.privy.io https://groovely-ttyi.onrender.com;",
           },
         ],
       },
