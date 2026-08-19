@@ -136,13 +136,32 @@ export class AuthController {
 
   @Get('google')
   @UseGuards(GoogleAuthGuard)
-  async googleAuth() {
-    // Initiates Google OAuth redirect flow, handled by GoogleAuthGuard
+  async googleAuth(@Req() req: any) {
+    const referer = req.headers.referer || req.headers.origin;
+    if (referer && req.session) {
+      try {
+        const url = new URL(referer);
+        req.session.googleOrigin = url.origin;
+      } catch (e) {}
+    }
   }
 
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
   async googleAuthCallback(@Req() req: any, @Res() res: any) {
+    const getTargetFrontendUrl = (): string => {
+      const rawClientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+      const allowedOrigins = rawClientUrl.split(',').map((u: string) => u.trim());
+      const sessionOrigin = req.session?.googleOrigin;
+      if (
+        sessionOrigin &&
+        (allowedOrigins.includes(sessionOrigin) || sessionOrigin.startsWith('http://localhost:'))
+      ) {
+        return sessionOrigin;
+      }
+      return allowedOrigins[0];
+    };
+
     try {
       const user = req.user;
       const role = req.session?.googleRole || 'fan';
@@ -150,15 +169,13 @@ export class AuthController {
       const token = generateToken(user.id, role, user.wallet, user.email);
       const isNewUser = user.isNewUser === true;
 
-      const rawClientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-      const frontendUrl = rawClientUrl.split(',')[0].trim();
+      const frontendUrl = getTargetFrontendUrl();
       res.redirect(
         `${frontendUrl}/auth/callback?status=AUTHENTICATED&token=${token}&userId=${user.id}&isNewUser=${isNewUser}`,
       );
     } catch (error) {
       console.error('Google OAuth callback error:', error);
-      const rawClientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-      const frontendUrl = rawClientUrl.split(',')[0].trim();
+      const frontendUrl = getTargetFrontendUrl();
       res.redirect(
         `${frontendUrl}/auth?error=google_auth_failed`,
       );
