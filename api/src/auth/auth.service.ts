@@ -68,11 +68,8 @@ export class AuthService {
     let isNewUser = false;
 
     if (!user) {
-      user = await this.createUserWithGoogle(email, role || 'creator');
+      user = await this.createUserWithGoogle(email, role || 'fan');
       isNewUser = true;
-    } else if (email === 'jahzealibeh529@gmail.com' && user.role !== 'creator') {
-      await this.db.query("UPDATE users SET role = 'creator' WHERE id = $1", [user.id]);
-      user.role = 'creator';
     }
 
     const token = generateToken(user.id, user.role, user.wallet, user.email);
