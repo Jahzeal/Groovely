@@ -27,12 +27,14 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       }
 
       let user = await this.authService.findUserByEmail(email);
+      let isNewUser = false;
       
       if (!user) {
         user = await this.authService.createUserWithGoogle(email, 'fan');
+        isNewUser = true;
       }
 
-      return done(null, user);
+      return done(null, { ...user, isNewUser });
     } catch (error) {
       return done(error, undefined);
     }

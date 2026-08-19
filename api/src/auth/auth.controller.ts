@@ -148,7 +148,7 @@ export class AuthController {
       const role = req.session?.googleRole || 'fan';
 
       const token = generateToken(user.id, role, user.wallet, user.email);
-      const isNewUser = !user.wallet;
+      const isNewUser = user.isNewUser === true;
 
       const rawClientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
       const frontendUrl = rawClientUrl.split(',')[0].trim();
