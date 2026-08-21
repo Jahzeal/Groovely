@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAccount, useConnect, useDisconnect, useConfig } from 'wagmi';
 import { signMessage } from '@wagmi/core';
+import Link from 'next/link';
 import { Logo } from '@/components/ui/Logo';
 import { Button } from '@/components/ui/Button';
 import { WalletCard } from '@/components/onboarding/WalletCard';
@@ -146,7 +147,9 @@ export default function LoginPage() {
 
       {/* Navigation */}
       <nav className="relative z-20 flex w-full items-center justify-between px-12 py-8">
-        <Logo />
+        <Link href="/">
+          <Logo />
+        </Link>
         <button
           onClick={() => router.push('/')}
           className="text-zinc-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-[0.2em]"

@@ -134,7 +134,9 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
   return (
     <aside className="w-64 h-screen sticky top-0 bg-[#0F0F1A] border-r border-white/5 flex flex-col py-8 shrink-0">
       <div className="px-8 mb-10">
-        <Logo />
+        <Link href="/">
+          <Logo />
+        </Link>
       </div>
 
       <div className="px-4 mb-8">

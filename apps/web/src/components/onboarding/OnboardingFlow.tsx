@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAccount, useConnect, useDisconnect, useSignMessage } from 'wagmi';
+import Link from 'next/link';
 import { Logo } from '../ui/Logo';
 import { Button } from '../ui/Button';
 import { ProgressBar } from '../ui/ProgressBar';
@@ -419,7 +420,9 @@ export const OnboardingFlow = () => {
 
       {/* Navigation */}
       <nav className="relative z-20 flex w-full items-center justify-between px-12 py-6">
-        <Logo />
+        <Link href="/">
+          <Logo />
+        </Link>
         <div className="flex items-center gap-6">
           <span className="text-zinc-400 text-sm font-medium hidden sm:inline">Already have an account?</span>
           <button 

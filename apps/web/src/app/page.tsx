@@ -22,7 +22,9 @@ export default function Home() {
       {/* Clean Mobile & Desktop Responsive Navigation */}
       <nav className="fixed top-0 z-50 w-full px-4 sm:px-8 lg:px-12 py-4 sm:py-5 backdrop-blur-xl bg-[#050510]/80 border-b border-white/5 transition-all">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Logo />
+          <Link href="/">
+            <Logo />
+          </Link>
           
           {/* Desktop Navigation Links */}
           <div className="hidden md:flex items-center gap-6">
@@ -184,7 +186,9 @@ export default function Home() {
       {/* Footer */}
       <footer className="py-16 sm:py-24 px-6 lg:px-12 border-t border-white/5 relative z-10 bg-[#050510]/90">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 md:gap-12">
-          <Logo />
+          <Link href="/">
+            <Logo />
+          </Link>
           <div className="flex flex-wrap justify-center gap-6 sm:gap-8 font-bold tracking-widest text-zinc-500 uppercase text-[10px]">
             <a href="#" className="hover:text-white transition-colors">About</a>
             <a href="#" className="hover:text-white transition-colors">Terms</a>

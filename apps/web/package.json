@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@coinbase/wallet-sdk": "^4.3.7",
+    "@farcaster/mini-app-solana": "^2.0.0",
     "@metamask/connect-evm": "^1.0.0",
     "@privy-io/react-auth": "^3.34.0",
     "@privy-io/wagmi": "^4.0.14",
