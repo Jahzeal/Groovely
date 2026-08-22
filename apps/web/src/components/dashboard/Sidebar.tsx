@@ -78,12 +78,19 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
 
   React.useEffect(() => {
     setMounted(true);
-    setToken(localStorage.getItem('grooveli_token'));
+    const activeToken = localStorage.getItem('grooveli_token') || localStorage.getItem('groovely_token');
+    setToken(activeToken);
 
     if (initialRole) {
       setRole(initialRole);
     } else {
-      const storedRole = localStorage.getItem('grooveli_role');
+      let storedRole = localStorage.getItem('grooveli_role') || localStorage.getItem('groovely_role');
+      if (!storedRole && activeToken) {
+        try {
+          const payload = JSON.parse(atob(activeToken.split('.')[1]));
+          storedRole = payload.role;
+        } catch {}
+      }
       if (storedRole === 'fan' || storedRole === 'creator') {
         setRole(storedRole);
       }

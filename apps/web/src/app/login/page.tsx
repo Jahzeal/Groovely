@@ -107,9 +107,13 @@ export default function LoginPage() {
       const { token, user } = authData.data;
       console.log('Login successful, storing credentials');
       localStorage.setItem('groovely_token', token);
+      localStorage.setItem('grooveli_token', token);
       localStorage.setItem('groovely_user_id', String(user.id));
+      localStorage.setItem('grooveli_user_id', String(user.id));
       localStorage.setItem('groovely_wallet', user.wallet ?? walletAddr);
+      localStorage.setItem('grooveli_wallet', user.wallet ?? walletAddr);
       localStorage.setItem('groovely_role', user.role ?? '');
+      localStorage.setItem('grooveli_role', user.role ?? '');
 
       // Redirect based on user role
       if (user.role === 'fan') {
