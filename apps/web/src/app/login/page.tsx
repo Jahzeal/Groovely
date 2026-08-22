@@ -160,7 +160,7 @@ export default function LoginPage() {
 
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center px-4 py-12 relative z-10 w-full">
-        <div className="w-full max-w-[500px] p-8 sm:p-12 bg-black/40 backdrop-blur-3xl rounded-[40px] border border-white/5 shadow-2xl relative overflow-hidden group">
+        <div className="w-full max-w-[500px] p-4 sm:p-12 bg-transparent sm:bg-black/40 backdrop-blur-none sm:backdrop-blur-3xl rounded-[40px] border-0 sm:border sm:border-white/5 shadow-none sm:shadow-2xl relative overflow-hidden group">
           {/* Subtle Background Inner Glow */}
           <div className="absolute -top-24 -right-24 w-64 h-64 bg-accent-purple/10 blur-[80px] rounded-full pointer-events-none transition-all group-hover:bg-accent-purple/20" />
 
