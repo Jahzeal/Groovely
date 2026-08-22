@@ -179,52 +179,78 @@ export const OnboardingFlow = () => {
       setError(null);
       try {
         const payloadRole = role === 'creator' ? 'creator' : 'fan';
-        const signupRes = await fetch('/api/auth/signup/wallet', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ walletAddress: walletAddr, role: payloadRole }),
-        });
+        const userEmail = user.google?.email || user.email?.address || '';
 
-        const signupContentType = signupRes.headers.get('content-type') || '';
-        let authData = signupContentType.includes('application/json') ? await signupRes.json() : null;
-        
-        if (!signupRes.ok || !authData) {
-          // If conflict/error, let's login instead
-          const loginRes = await fetch('/api/auth/login/wallet', {
+        let authData: any = null;
+
+        if (userEmail) {
+          // 1. Try Google signup with wallet attached
+          const signupRes = await fetch('/api/auth/signup/google', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ walletAddress: walletAddr }),
+            body: JSON.stringify({ email: userEmail, role: payloadRole, walletAddress: walletAddr }),
           });
-          const loginContentType = loginRes.headers.get('content-type') || '';
-          const loginData = loginContentType.includes('application/json') ? await loginRes.json() : null;
-          if (!loginRes.ok || !loginData) {
-            throw new Error(loginData?.error || loginData?.message || `Authentication failed (${loginRes.status}). Please check backend database connection.`);
+
+          if (signupRes.ok) {
+            authData = await signupRes.json();
+          } else {
+            // 2. If already exists, login with Google + wallet
+            const loginRes = await fetch('/api/auth/login/google', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: userEmail, walletAddress: walletAddr }),
+            });
+            if (loginRes.ok) {
+              authData = await loginRes.json();
+            }
           }
-          authData = loginData;
         }
 
-        // Store JWT
+        if (!authData && walletAddr) {
+          // Fallback to wallet signup/login
+          const signupRes = await fetch('/api/auth/signup/wallet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ walletAddress: walletAddr, role: payloadRole }),
+          });
+
+          if (signupRes.ok) {
+            authData = await signupRes.json();
+          } else {
+            const loginRes = await fetch('/api/auth/login/wallet', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ walletAddress: walletAddr }),
+            });
+            if (loginRes.ok) {
+              authData = await loginRes.json();
+            }
+          }
+        }
+
+        if (!authData) {
+          throw new Error('Could not authenticate account with backend');
+        }
+
+        // Store JWT & synchronized keys
         const actualToken = authData.token || authData.data?.token;
         const actualUserId = authData.userId || String(authData.data?.user?.id);
         const actualWallet = walletAddr || authData.user?.wallet || authData.data?.user?.wallet;
         const actualRole = payloadRole || authData.user?.role || authData.data?.user?.role;
 
         localStorage.setItem('grooveli_token', actualToken);
+        localStorage.setItem('groovely_token', actualToken);
         localStorage.setItem('grooveli_user_id', actualUserId);
+        localStorage.setItem('groovely_user_id', actualUserId);
         localStorage.setItem('grooveli_wallet', actualWallet || '');
+        localStorage.setItem('groovely_wallet', actualWallet || '');
         localStorage.setItem('grooveli_role', actualRole);
+        localStorage.setItem('groovely_role', actualRole);
 
-        // Decode email to state
-        try {
-          const payload = JSON.parse(atob(actualToken.split('.')[1]));
-          if (payload.email) {
-            setUserEmail(payload.email);
-          }
-        } catch (e) {
-          console.error('Error parsing token:', e);
+        if (userEmail) {
+          setUserEmail(userEmail);
         }
 
-        // Set Step 3
         setStep(3);
         toast.success('Successfully connected!');
       } catch (err: any) {
@@ -357,9 +383,7 @@ export const OnboardingFlow = () => {
       }
       return;
     }
-    const targetRole = role === 'creator' ? 'creator' : 'fan';
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-    window.location.href = `${backendUrl}/api/auth/google?role=${targetRole}`;
+    login({ loginMethods: ['google'] });
   };
 
   const handleSaveProfile = async () => {

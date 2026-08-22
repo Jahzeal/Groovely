@@ -23,6 +23,10 @@ export class GoogleSignupDto {
   @IsNotEmpty({ message: 'Please select either Creator or Fan as your role.' })
   @IsEnum(['creator', 'fan'], { message: 'Please select either Creator or Fan as your role.' })
   role: 'creator' | 'fan';
+
+  @IsString()
+  @IsOptional()
+  walletAddress?: string;
 }
 
 export class WalletLoginDto {
@@ -40,5 +44,9 @@ export class GoogleLoginDto {
   @IsNotEmpty({ message: 'Email address is required to sign up with Google.' })
   @IsEmail({}, { message: 'Please provide a valid email address.' })
   email: string;
+
+  @IsString()
+  @IsOptional()
+  walletAddress?: string;
 }
 

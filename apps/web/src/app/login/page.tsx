@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAccount, useConnect, useDisconnect, useConfig } from 'wagmi';
+import { usePrivy, useLogin } from '@privy-io/react-auth';
 import { signMessage } from '@wagmi/core';
 import Link from 'next/link';
 import { Logo } from '@/components/ui/Logo';
@@ -26,6 +27,75 @@ export default function LoginPage() {
   const { connectAsync, connectors } = useConnect();
   const { disconnect } = useDisconnect();
   const config = useConfig();
+
+  const { ready, authenticated, user } = usePrivy();
+  const { login } = useLogin();
+
+  useEffect(() => {
+    if (!ready || !authenticated || !user) return;
+
+    const userEmail = user.google?.email || user.email?.address || '';
+    const smartWallet = user.linkedAccounts.find(
+      (account) => account.type === 'smart_wallet'
+    );
+    const walletAddr = smartWallet?.address || user.wallet?.address || '';
+
+    const authenticateWithBackend = async () => {
+      try {
+        setLoading(true);
+        let authData: any = null;
+
+        if (userEmail) {
+          const loginRes = await fetch('/api/auth/login/google', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: userEmail, walletAddress: walletAddr || undefined }),
+          });
+          if (loginRes.ok) {
+            authData = await loginRes.json();
+          }
+        }
+
+        if (!authData && walletAddr) {
+          const loginRes = await fetch('/api/auth/login/wallet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ walletAddress: walletAddr }),
+          });
+          if (loginRes.ok) {
+            authData = await loginRes.json();
+          }
+        }
+
+        if (!authData) {
+          router.push('/onboarding');
+          return;
+        }
+
+        const { token, user: backendUser } = authData.data || authData;
+        localStorage.setItem('groovely_token', token);
+        localStorage.setItem('grooveli_token', token);
+        localStorage.setItem('groovely_user_id', String(backendUser.id));
+        localStorage.setItem('grooveli_user_id', String(backendUser.id));
+        localStorage.setItem('groovely_wallet', backendUser.wallet ?? walletAddr);
+        localStorage.setItem('grooveli_wallet', backendUser.wallet ?? walletAddr);
+        localStorage.setItem('groovely_role', backendUser.role ?? '');
+        localStorage.setItem('grooveli_role', backendUser.role ?? '');
+
+        if (backendUser.role === 'fan') {
+          router.push('/explore');
+        } else {
+          router.push('/dashboard');
+        }
+      } catch (err) {
+        console.error('Login error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    authenticateWithBackend();
+  }, [ready, authenticated, user]);
 
   const handleConnectWallet = async () => {
     if (!wallet) return;
@@ -132,8 +202,7 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-    window.location.href = `${backendUrl}/api/auth/google`;
+    login({ loginMethods: ['google'] });
   };
 
   const formattedAddr = unregisteredAddr 

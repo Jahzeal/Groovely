@@ -33,10 +33,10 @@ export class AuthService {
     return result.rows[0];
   }
 
-  async createUserWithGoogle(email: string, role: string) {
+  async createUserWithGoogle(email: string, role: string, wallet?: string) {
     const result = await this.db.query(
-      'INSERT INTO users (email, role) VALUES ($1, $2) RETURNING id, wallet, email, role, created_at as "createdAt"',
-      [email, role],
+      'INSERT INTO users (email, role, wallet) VALUES ($1, $2, $3) RETURNING id, wallet, email, role, created_at as "createdAt"',
+      [email, role, wallet || null],
     );
     return result.rows[0];
   }
@@ -45,6 +45,14 @@ export class AuthService {
     const result = await this.db.query(
       'UPDATE users SET role = $1 WHERE id = $2 RETURNING id, wallet, email, role, created_at as "createdAt"',
       [role, id],
+    );
+    return result.rows[0];
+  }
+
+  async updateUserWallet(id: number, wallet: string) {
+    const result = await this.db.query(
+      'UPDATE users SET wallet = $1 WHERE id = $2 RETURNING id, wallet, email, role, created_at as "createdAt"',
+      [wallet, id],
     );
     return result.rows[0];
   }
@@ -71,13 +79,15 @@ export class AuthService {
     return { token, user: userResponse, isNewUser };
   }
 
-  async googleAuth(email: string, role?: string) {
+  async googleAuth(email: string, role?: string, wallet?: string) {
     let user = await this.findUserByEmail(email);
     let isNewUser = false;
 
     if (!user) {
-      user = await this.createUserWithGoogle(email, role || 'fan');
+      user = await this.createUserWithGoogle(email, role || 'creator', wallet);
       isNewUser = true;
+    } else if (wallet && !user.wallet) {
+      user = await this.updateUserWallet(user.id, wallet);
     }
 
     const token = generateToken(user.id, user.role, user.wallet, user.email);

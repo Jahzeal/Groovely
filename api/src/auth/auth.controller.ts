@@ -65,14 +65,14 @@ export class AuthController {
   @Post('signup/google')
   @ResponseMessage('Account created successfully')
   async googleSignup(@Body() body: GoogleSignupDto) {
-    const { email, role } = body;
+    const { email, role, walletAddress } = body;
     const existingUser = await this.authService.findUserByEmail(email);
     if (existingUser) {
       throw new ConflictException(
         'An account with this email already exists. Please login instead.',
       );
     }
-    const result = await this.authService.googleAuth(email, role);
+    const result = await this.authService.googleAuth(email, role, walletAddress);
     return {
       success: true,
       token: result.token,
@@ -113,14 +113,14 @@ export class AuthController {
   @Post('login/google')
   @ResponseMessage(SuccessMessages.USER_LOGGED_IN)
   async googleLogin(@Body() body: GoogleLoginDto) {
-    const { email } = body;
+    const { email, walletAddress } = body;
     const existingUser = await this.authService.findUserByEmail(email);
     if (!existingUser) {
       throw new UnauthorizedException(
         'No account found with this email. Please sign up first.',
       );
     }
-    const result = await this.authService.googleAuth(email, existingUser.role);
+    const result = await this.authService.googleAuth(email, existingUser.role, walletAddress);
     return {
       success: true,
       token: result.token,
