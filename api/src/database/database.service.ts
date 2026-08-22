@@ -10,8 +10,8 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     try {
-      await this.pool.query("DELETE FROM users WHERE email = 'jahzealibeh529@gmail.com'");
-      console.log('✅ Deleted account jahzealibeh529@gmail.com from PostgreSQL for fresh signup testing');
+      await this.pool.query('SELECT NOW()');
+      console.log('✅ PostgreSQL database connected successfully.');
     } catch (error) {
       console.error('Database initialization query error:', error);
     }
