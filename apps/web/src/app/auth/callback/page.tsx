@@ -14,6 +14,9 @@ function CallbackHandler() {
     const isNewUser = searchParams.get('isNewUser') === 'true';
 
     if (status === 'AUTHENTICATED' && token) {
+      console.log('[ROLE_DEBUG] Auth callback triggered with status AUTHENTICATED.');
+      console.log('[ROLE_DEBUG] Received Token in URL:', token.substring(0, 20) + '...');
+      
       // 1. Store auth data under both naming conventions for compatibility
       localStorage.setItem('groovely_token', token);
       localStorage.setItem('grooveli_token', token);
@@ -26,23 +29,19 @@ function CallbackHandler() {
       let role = '';
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
+        console.log('[ROLE_DEBUG] Auth Callback Decoded Payload:', payload);
         role = payload.role ?? '';
         localStorage.setItem('groovely_role', role);
         localStorage.setItem('grooveli_role', role);
       } catch (e) {
-        console.error(e);
+        console.error('[ROLE_DEBUG] Auth Callback Token Parse Error:', e);
       }
       
       // 2. Redirect based on new user status
-      if (isNewUser) {
-        router.push('/onboarding');
-      } else {
-        if (role === 'fan') {
-          router.push('/explore');
-        } else {
-          router.push('/dashboard');
-        }
-      }
+      const targetRoute = isNewUser ? '/onboarding' : (role === 'fan' ? '/explore' : '/dashboard');
+      console.log(`[ROLE_DEBUG] Auth Callback Redirecting to: "${targetRoute}" (isNewUser: ${isNewUser}, role: "${role}")`);
+      
+      router.push(targetRoute);
     } else if (status === 'WALLET_REQUIRED') {
       // This is for future use if we want to prompt for wallet linking
       // For now, let's redirect back to onboarding with the googleToken

@@ -48,24 +48,32 @@ export default function DashboardPage() {
     // Decode role directly from active JWT token first
     let role = '';
     const token = localStorage.getItem('groovely_token') || localStorage.getItem('grooveli_token');
+    console.log('[ROLE_DEBUG] Dashboard page check triggered.');
+    console.log('[ROLE_DEBUG] Active Token in localStorage:', token ? `${token.substring(0, 20)}...` : 'NONE');
+
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
+        console.log('[ROLE_DEBUG] Decoded Token Payload:', payload);
         role = payload.role ?? '';
         if (role) {
           localStorage.setItem('groovely_role', role);
           localStorage.setItem('grooveli_role', role);
         }
       } catch (e) {
-        console.error('Token parse error:', e);
+        console.error('[ROLE_DEBUG] Token parse error:', e);
       }
     }
 
     if (!role) {
       role = localStorage.getItem('groovely_role') || localStorage.getItem('grooveli_role') || '';
+      console.log('[ROLE_DEBUG] Fallback Role from localStorage:', role);
     }
     
+    console.log(`[ROLE_DEBUG] Final Resolved Role: "${role}". Will redirect to /explore? ${role === 'fan'}`);
+
     if (role === 'fan') {
+      console.warn('[ROLE_DEBUG] Redirecting user from /dashboard to /explore because role is "fan".');
       router.push('/explore');
       return;
     }
