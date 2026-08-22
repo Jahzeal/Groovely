@@ -45,21 +45,24 @@ export default function DashboardPage() {
   const [displayName, setDisplayName] = useState<string>('Creator');
 
   useEffect(() => {
-    // Check role and redirect fans
-    let role = localStorage.getItem('groovely_role') || localStorage.getItem('grooveli_role');
-    if (!role || role === 'fan') {
-      const token = localStorage.getItem('groovely_token') || localStorage.getItem('grooveli_token');
-      if (token) {
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          const userRole = payload.role ?? '';
-          if (userRole) {
-            localStorage.setItem('groovely_role', userRole);
-            localStorage.setItem('grooveli_role', userRole);
-            role = userRole;
-          }
-        } catch {}
+    // Decode role directly from active JWT token first
+    let role = '';
+    const token = localStorage.getItem('groovely_token') || localStorage.getItem('grooveli_token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        role = payload.role ?? '';
+        if (role) {
+          localStorage.setItem('groovely_role', role);
+          localStorage.setItem('grooveli_role', role);
+        }
+      } catch (e) {
+        console.error('Token parse error:', e);
       }
+    }
+
+    if (!role) {
+      role = localStorage.getItem('groovely_role') || localStorage.getItem('grooveli_role') || '';
     }
     
     if (role === 'fan') {
