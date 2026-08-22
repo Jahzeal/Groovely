@@ -241,16 +241,23 @@ export class ProfileController {
       );
     }
 
-    if (roleChanged) {
-      const newToken = generateToken(userId, role, wallet, email);
-      return {
-        ...profileResult,
-        token: newToken,
-        role,
-      };
+    const targetRole = bodyRole || role;
+    if (targetRole === 'creator' || targetRole === 'fan') {
+      await this.profileService.updateUserRole(userId, targetRole);
+      role = targetRole;
     }
 
-    return profileResult;
+    const newToken = generateToken(userId, role, wallet, email);
+    return {
+      ...profileResult,
+      token: newToken,
+      role,
+      data: {
+        token: newToken,
+        role,
+        ...profileResult,
+      },
+    };
   }
 
   // ==========================================

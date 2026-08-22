@@ -137,12 +137,17 @@ export class AuthController {
   @Get('google')
   @UseGuards(GoogleAuthGuard)
   async googleAuth(@Req() req: any) {
-    const referer = req.headers.referer || req.headers.origin;
-    if (referer && req.session) {
-      try {
-        const url = new URL(referer);
-        req.session.googleOrigin = url.origin;
-      } catch (e) {}
+    if (req.session) {
+      if (req.query?.role) {
+        req.session.googleRole = req.query.role;
+      }
+      const referer = req.headers.referer || req.headers.origin;
+      if (referer) {
+        try {
+          const url = new URL(referer);
+          req.session.googleOrigin = url.origin;
+        } catch (e) {}
+      }
     }
   }
 

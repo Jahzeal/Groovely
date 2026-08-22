@@ -12,6 +12,7 @@ import { WalletCard } from './WalletCard';
 import { Twitter as XIcon, Instagram as InstagramIcon, SoundCloud as SoundCloudIcon, Google as GoogleIcon } from '../ui/SocialIcons';
 import toast from 'react-hot-toast';
 import { useLogin, usePrivy, useLogout } from '@privy-io/react-auth';
+import { apiFetch } from '@/lib/api';
 
 export const MetaMaskIcon = () => (
   <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="MetaMask" className="w-16 h-16" />
@@ -340,42 +341,44 @@ export const OnboardingFlow = () => {
 
   const handleGoogleLogin = () => {
     if (authenticated) {
-      // User is already logged in with Privy (e.g. from a previous session).
-      // The useEffect watcher will detect the wallet and register them automatically.
-      // If no wallet yet, show a message and wait.
       if (!user?.wallet?.address) {
         toast.loading('Setting up your wallet... please wait a moment.', { duration: 4000 });
       }
       return;
     }
-    login({ loginMethods: ['google'] });
+    const targetRole = role === 'creator' ? 'creator' : 'fan';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    window.location.href = `${backendUrl}/api/auth/google?role=${targetRole}`;
   };
 
   const handleSaveProfile = async () => {
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem('grooveli_token');
-      const res = await fetch(`/api/users/me`, {
+      const token = localStorage.getItem('grooveli_token') || localStorage.getItem('groovely_token');
+      if (!token) {
+        throw new Error('Authentication session expired. Please sign in again.');
+      }
+      const targetRole = role === 'creator' ? 'creator' : 'fan';
+      const res = await apiFetch(`/api/users/me`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
         body: JSON.stringify({
           displayName,
           username,
           bio,
           creatorType: role === 'creator' ? creatorType : 'FAN',
-          role: role === 'creator' ? 'creator' : 'fan'
+          role: targetRole
         }),
+        skipAuthRedirect: true
       });
 
-      if (!res.ok) {
+      if (!res || !res.ok) {
         let errorMsg = 'Failed to update profile';
         try {
-          const data = await res.json();
-          errorMsg = data.error || data.message || errorMsg;
+          if (res) {
+            const data = await res.json();
+            errorMsg = data.error || data.message || errorMsg;
+          }
         } catch (e) {}
         throw new Error(errorMsg);
       }
@@ -383,13 +386,16 @@ export const OnboardingFlow = () => {
       try {
         const json = await res.json();
         const data = json.data ?? json;
-        if (data.token) {
-          localStorage.setItem('grooveli_token', data.token);
-        }
-        if (data.role) {
-          localStorage.setItem('grooveli_role', data.role);
-        } else {
-          localStorage.setItem('grooveli_role', role === 'creator' ? 'creator' : 'fan');
+        const finalRole = data.role || targetRole;
+        const finalToken = data.token || token;
+        
+        localStorage.setItem('grooveli_token', finalToken);
+        localStorage.setItem('groovely_token', finalToken);
+        localStorage.setItem('grooveli_role', finalRole);
+        localStorage.setItem('groovely_role', finalRole);
+
+        if (finalRole === 'creator') {
+          setRole('creator');
         }
       } catch (e) {
         console.error('Error saving updated token:', e);
@@ -523,7 +529,7 @@ export const OnboardingFlow = () => {
               </div>
 
               {/* Wallet Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+              <div className="grid grid-cols-3 gap-3 sm:gap-6 mb-8 sm:mb-12">
                 <WalletCard
                   name="MetaMask"
                   icon={<MetaMaskIcon />}
@@ -557,14 +563,14 @@ export const OnboardingFlow = () => {
                   <div className="flex-grow h-[1px] bg-white/5" />
                 </div>
 
-                {/* Google Button or Skip button if already on Google */}
-                {(mounted && localStorage.getItem('grooveli_token')) ? (
+                {/* Navigation button if already authenticated */}
+                {(mounted && (localStorage.getItem('grooveli_token') || localStorage.getItem('groovely_token') || authenticated)) ? (
                   <Button 
                     fullWidth 
                     variant="secondary"
                     onClick={() => setStep(3)}
                   >
-                    {address ? 'Continue to Profile' : 'Continue without Wallet'}
+                    Continue to Profile
                   </Button>
                 ) : authenticated ? (
                   // Already logged in with Privy — wallet generating, failed or timed out
