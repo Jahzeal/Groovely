@@ -11,10 +11,12 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'dummy_secret',
       callbackURL: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:5000/api/auth/google/callback',
       scope: ['email', 'profile'],
+      passReqToCallback: true,
     });
   }
 
   async validate(
+    req: any,
     accessToken: string,
     refreshToken: string,
     profile: any,
@@ -26,12 +28,16 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         return done(new Error('No email found from Google'), undefined);
       }
 
+      const targetRole = req.session?.googleRole || 'creator';
+
       let user = await this.authService.findUserByEmail(email);
       let isNewUser = false;
       
       if (!user) {
-        user = await this.authService.createUserWithGoogle(email, 'fan');
+        user = await this.authService.createUserWithGoogle(email, targetRole);
         isNewUser = true;
+      } else if (req.session?.googleRole && user.role !== req.session.googleRole) {
+        user = await this.authService.updateUserRole(user.id, req.session.googleRole);
       }
 
       return done(null, { ...user, isNewUser });

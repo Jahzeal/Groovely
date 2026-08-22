@@ -41,6 +41,14 @@ export class AuthService {
     return result.rows[0];
   }
 
+  async updateUserRole(id: number, role: string) {
+    const result = await this.db.query(
+      'UPDATE users SET role = $1 WHERE id = $2 RETURNING id, wallet, email, role, created_at as "createdAt"',
+      [role, id],
+    );
+    return result.rows[0];
+  }
+
   async walletAuth(walletAddress: string, role: string) {
     let user = await this.findUserByWallet(walletAddress);
     let isNewUser = false;
