@@ -14,7 +14,7 @@ export class AuthService {
   }
 
   async findUserByEmail(email: string) {
-    const result = await this.db.query('SELECT * FROM users WHERE email = $1', [
+    const result = await this.db.query('SELECT * FROM users WHERE LOWER(email) = LOWER($1)', [
       email,
     ]);
     return result.rows[0];
