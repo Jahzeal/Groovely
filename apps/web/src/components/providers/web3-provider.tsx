@@ -341,8 +341,9 @@ export function Web3Provider({ children }: { children: ReactNode }) {
           accentColor: '#8B5CF6', // Accent purple matching Grooveli theme
         },
         embeddedWallets: {
-          createOnLogin: 'users-without-wallets',
-          requireUserPasswordOnCreate: false,
+          ethereum: {
+            createOnLogin: 'users-without-wallets',
+          },
         },
       }}
     >
