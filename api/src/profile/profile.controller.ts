@@ -189,8 +189,20 @@ export class ProfileController {
   }
 
   // ==========================================
-  // User Self Profile Update (Compatibility for onboarding)
+  // User Self Profile Update & Retrieval
   // ==========================================
+
+  @Get('users/me')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('User profile retrieved successfully')
+  async getMe(@Req() req: any) {
+    const userId = req.userId;
+    const user = await this.profileService.getUserById(userId);
+    return {
+      ...user,
+      data: user,
+    };
+  }
 
   @Put('users/me')
   @Patch('users/me')
@@ -202,10 +214,15 @@ export class ProfileController {
   ) {
     const userId = req.userId;
     let role = req.userRole;
-    const wallet = req.userWallet;
+    let wallet = req.userWallet;
     const email = req.userEmail;
     
-    const { displayName, username, bio, creatorType, role: bodyRole } = body;
+    const { displayName, username, bio, creatorType, role: bodyRole, wallet: bodyWallet } = body;
+
+    if (bodyWallet && bodyWallet !== wallet) {
+      await this.profileService.updateUserWallet(userId, bodyWallet);
+      wallet = bodyWallet;
+    }
 
     let roleChanged = false;
     if (bodyRole === 'creator' && role !== 'creator') {

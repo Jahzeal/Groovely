@@ -331,10 +331,29 @@ export class ProfileService {
     return profile;
   }
 
+  async getUserById(userId: number) {
+    const result = await this.db.query(
+      `SELECT id, email, wallet, role, display_name as "displayName", username, bio, creator_type as "creatorType", twitter, instagram, soundcloud, avatar_url as "avatarUrl", created_at as "createdAt" FROM users WHERE id = $1`,
+      [userId]
+    );
+    const user = result.rows[0];
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
+
   async updateUserRole(userId: number, role: string) {
     await this.db.query(
       'UPDATE users SET role = $1 WHERE id = $2',
       [role, userId]
+    );
+  }
+
+  async updateUserWallet(userId: number, wallet: string) {
+    await this.db.query(
+      'UPDATE users SET wallet = $1 WHERE id = $2',
+      [wallet, userId]
     );
   }
 }

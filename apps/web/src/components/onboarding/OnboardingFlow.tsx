@@ -149,17 +149,28 @@ export const OnboardingFlow = () => {
   useEffect(() => {
     if (!ready || !authenticated || !user) return;
     
-    // Check if we already have a backend token
-    const token = localStorage.getItem('grooveli_token');
-    if (token) return; // Already registered/logged in on backend
-    
     const smartWallet = user.linkedAccounts.find(
       (account) => account.type === 'smart_wallet'
     );
     const walletAddr = smartWallet?.address || user.wallet?.address;
     
     if (!walletAddr) {
-      // Wallet is still being created/loaded by Privy, wait for next change
+      return;
+    }
+
+    // If user already has a token, sync their newly initialized Privy wallet to backend
+    const token = localStorage.getItem('grooveli_token') || localStorage.getItem('groovely_token');
+    if (token) {
+      const storedWallet = localStorage.getItem('grooveli_wallet') || localStorage.getItem('groovely_wallet');
+      if (!storedWallet || storedWallet !== walletAddr) {
+        localStorage.setItem('grooveli_wallet', walletAddr);
+        localStorage.setItem('groovely_wallet', walletAddr);
+        apiFetch('/api/users/me', {
+          method: 'PUT',
+          body: JSON.stringify({ wallet: walletAddr }),
+          skipAuthRedirect: true
+        }).catch(() => {});
+      }
       return;
     }
     
@@ -360,6 +371,11 @@ export const OnboardingFlow = () => {
         throw new Error('Authentication session expired. Please sign in again.');
       }
       const targetRole = role === 'creator' ? 'creator' : 'fan';
+      const smartWallet = user?.linkedAccounts?.find(
+        (account) => account.type === 'smart_wallet'
+      );
+      const activeWallet = smartWallet?.address || user?.wallet?.address || address || localStorage.getItem('grooveli_wallet') || localStorage.getItem('groovely_wallet') || undefined;
+
       const res = await apiFetch(`/api/users/me`, {
         method: 'PUT',
         body: JSON.stringify({
@@ -367,7 +383,8 @@ export const OnboardingFlow = () => {
           username,
           bio,
           creatorType: role === 'creator' ? creatorType : 'FAN',
-          role: targetRole
+          role: targetRole,
+          wallet: activeWallet
         }),
         skipAuthRedirect: true
       });
@@ -393,6 +410,11 @@ export const OnboardingFlow = () => {
         localStorage.setItem('groovely_token', finalToken);
         localStorage.setItem('grooveli_role', finalRole);
         localStorage.setItem('groovely_role', finalRole);
+
+        if (activeWallet) {
+          localStorage.setItem('grooveli_wallet', activeWallet);
+          localStorage.setItem('groovely_wallet', activeWallet);
+        }
 
         if (finalRole === 'creator') {
           setRole('creator');

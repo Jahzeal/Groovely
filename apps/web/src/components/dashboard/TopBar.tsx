@@ -47,6 +47,20 @@ export const TopBar = () => {
             localStorage.setItem('grooveli_wallet', payload.wallet);
           }
         }
+
+        if (token && !storedWallet && !user?.wallet?.address) {
+          apiFetch('/api/users/me', { skipAuthRedirect: true })
+            .then(res => res && res.ok ? res.json() : null)
+            .then(data => {
+              const fetchedUser = data?.data ?? data;
+              if (fetchedUser?.wallet) {
+                setWalletAddress(fetchedUser.wallet);
+                localStorage.setItem('groovely_wallet', fetchedUser.wallet);
+                localStorage.setItem('grooveli_wallet', fetchedUser.wallet);
+              }
+            })
+            .catch(() => {});
+        }
       } catch { }
     }
   }, [user]);
