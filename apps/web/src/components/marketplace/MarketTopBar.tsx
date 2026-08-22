@@ -27,17 +27,24 @@ export const MarketTopBar = () => {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setWalletAddress(localStorage.getItem('grooveli_wallet'));
-      const token = localStorage.getItem('grooveli_token');
+      const storedWallet = localStorage.getItem('groovely_wallet') || localStorage.getItem('grooveli_wallet');
+      if (storedWallet) setWalletAddress(storedWallet);
+      
+      const token = localStorage.getItem('groovely_token') || localStorage.getItem('grooveli_token');
       if (token) {
         setIsAuthenticated(true);
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
           setRole(payload.role ?? null);
+          if (payload.wallet && !storedWallet) {
+            setWalletAddress(payload.wallet);
+          }
         } catch {}
+      } else if (user?.wallet?.address) {
+        setWalletAddress(user.wallet.address);
       }
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {

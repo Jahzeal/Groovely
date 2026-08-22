@@ -26,20 +26,26 @@ export const TopBar = () => {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedWallet = localStorage.getItem('grooveli_wallet');
+      const storedWallet = localStorage.getItem('groovely_wallet') || localStorage.getItem('grooveli_wallet');
       if (storedWallet) {
         setWalletAddress(storedWallet);
       } else if (user?.wallet?.address) {
         setWalletAddress(user.wallet.address);
+        localStorage.setItem('groovely_wallet', user.wallet.address);
         localStorage.setItem('grooveli_wallet', user.wallet.address);
       }
 
-      // Decode role from JWT token
+      // Decode role and wallet from JWT token
       try {
-        const token = localStorage.getItem('grooveli_token');
+        const token = localStorage.getItem('groovely_token') || localStorage.getItem('grooveli_token');
         if (token) {
           const payload = JSON.parse(atob(token.split('.')[1]));
           setRole(payload.role ?? null);
+          if (payload.wallet && !storedWallet) {
+            setWalletAddress(payload.wallet);
+            localStorage.setItem('groovely_wallet', payload.wallet);
+            localStorage.setItem('grooveli_wallet', payload.wallet);
+          }
         }
       } catch { }
     }
