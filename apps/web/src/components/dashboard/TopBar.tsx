@@ -7,7 +7,7 @@ import {
   ChevronLeft, Search, ShoppingCart, ChevronDown,
   Copy, LogOut, User, Settings, CheckCheck, ExternalLink
 } from 'lucide-react';
-import { handleLogout } from '@/lib/api';
+import { handleLogout, apiFetch } from '@/lib/api';
 import { usePrivy, useLogout } from '@privy-io/react-auth';
 import { useAccount, useBalance, useReadContract } from 'wagmi';
 import { USDC_ADDRESS } from '@/lib/contracts';
