@@ -313,9 +313,22 @@ export default function LoginPage() {
                 <GoogleIcon size={18} />
                 <span className="text-white font-bold text-sm tracking-wide">Continue with Google</span>
               </button>
+
+              {/* Don't have an account? Sign Up */}
+              <div className="flex items-center justify-center gap-2 pt-4">
+                <span className="font-['Space_Grotesk',sans-serif] font-normal text-[15px] text-zinc-400">
+                  Don't have an account?
+                </span>
+                <Link
+                  href="/onboarding"
+                  className="font-['Space_Grotesk',sans-serif] font-bold text-[15px] text-[#8A2BE2] hover:underline cursor-pointer"
+                >
+                  Sign Up
+                </Link>
+              </div>
             </div>
 
-            <p className="mt-10 text-center text-zinc-600 text-[10px] font-bold uppercase tracking-widest leading-loose">
+            <p className="mt-8 text-center text-zinc-600 text-[10px] font-bold uppercase tracking-widest leading-loose">
               By connecting, you agree to our<br />
               <span className="text-zinc-400 cursor-pointer hover:text-white transition-colors">Terms of Service</span> & <span className="text-zinc-400 cursor-pointer hover:text-white transition-colors">Privacy Policy</span>
             </p>

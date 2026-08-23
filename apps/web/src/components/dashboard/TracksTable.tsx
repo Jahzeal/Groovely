@@ -36,11 +36,11 @@ const StatusBadge = ({ status }: { status: string }) => {
   const s = status?.toLowerCase();
   const normalizedStatus = s === 'active' || s === 'live' ? 'Live' : s === 'minting' ? 'Minting' : s === 'failed' ? 'Failed' : s === 'pending_approval' ? 'Pending splits' : 'Draft';
   const styles: Record<string, string> = {
-    Live: "bg-[#00FF85]/10 text-[#00FF85] border-[#00FF85]/20",
-    Draft: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
-    Failed: "bg-red-500/10 text-red-500 border-red-500/20",
-    Minting: "bg-accent-purple/10 text-accent-purple border-accent-purple/20",
-    "Pending splits": "bg-amber-500/10 text-amber-500 border-amber-500/20"
+    Live: "bg-[rgba(0,255,136,0.1)] text-[#00FF88] border border-[rgba(0,255,136,0.2)]",
+    Draft: "bg-[rgba(255,230,0,0.1)] text-[#FFE600] border border-[rgba(255,230,0,0.2)]",
+    Failed: "bg-[rgba(255,0,68,0.1)] text-[#FF0044] border border-[rgba(255,0,68,0.2)]",
+    Minting: "bg-[#697184] text-[#0F172A] font-bold",
+    "Pending splits": "bg-amber-500/10 text-amber-500 border border-amber-500/20"
   };
 
   const tooltips: Record<string, string> = {
@@ -54,7 +54,7 @@ const StatusBadge = ({ status }: { status: string }) => {
   return (
     <span 
       title={tooltips[normalizedStatus]}
-      className={`cursor-help px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${styles[normalizedStatus] || styles.Draft}`}
+      className={`cursor-help px-3 py-0.5 rounded-full text-[11px] font-['Space_Grotesk',sans-serif] font-bold uppercase tracking-wider ${styles[normalizedStatus] || styles.Draft}`}
     >
       {normalizedStatus}
     </span>
@@ -68,30 +68,25 @@ export const TracksTable = () => {
 
   const handleActionClick = (track: TrackRow) => {
     const s = track.status?.toLowerCase() || 'draft';
-    if (s === 'active' || s === 'live') {
-      router.push(`/marketplace/${(track as any).id}`);
-    } else {
-      router.push(`/dashboard/upload/mint?id=${(track as any).id}`);
+    if (s === 'draft' || s === 'failed') {
+      router.push('/dashboard/upload');
     }
   };
 
   useEffect(() => {
     async function fetchTracks() {
       try {
-        const res = await apiFetch('/api/creator/dashboard/tracks');
+        const res = await apiFetch('/api/creator/tracks');
         if (res && res.ok) {
           const json = await res.json();
           let parsedTracks: TrackRow[] = [];
-          
           if (Array.isArray(json)) {
             parsedTracks = json;
-          } else if (json && json.success && json.data) {
+          } else if (json && json.data) {
             if (Array.isArray(json.data)) {
               parsedTracks = json.data;
             } else if (json.data.tracks && Array.isArray(json.data.tracks)) {
               parsedTracks = json.data.tracks;
-            } else if (json.data.data && Array.isArray(json.data.data)) {
-              parsedTracks = json.data.data;
             }
           } else if (json && json.tracks && Array.isArray(json.tracks)) {
             parsedTracks = json.tracks;
@@ -108,32 +103,34 @@ export const TracksTable = () => {
   }, []);
 
   return (
-    <div className="glass-card p-5 sm:p-8 lg:col-span-2 overflow-hidden">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
-        <h2 className="text-lg sm:text-xl font-black text-white tracking-tight uppercase">Tracks Summary</h2>
-        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+    <div className="bg-[#0F172A] border border-[#232B3E] rounded-[12px] p-4 sm:p-6 lg:col-span-2 overflow-hidden">
+      <div className="flex flex-row items-center justify-between gap-4 mb-4 sm:mb-6">
+        <h2 className="font-['Clash_Display',sans-serif] font-bold text-[18px] sm:text-[20px] text-white tracking-tight leading-none">
+          Tracks Summary
+        </h2>
+        <div className="flex items-center gap-3 sm:gap-4">
           <button 
             onClick={() => router.push('/library')}
-            className="text-accent-purple text-xs font-bold uppercase tracking-widest hover:underline transition-all"
+            className="font-['Space_Grotesk',sans-serif] font-bold text-[14px] sm:text-[16px] text-[#8A2BE2] hover:underline cursor-pointer"
           >
-             View All Tracks
+             View All
           </button>
           <button 
             onClick={() => router.push('/dashboard/upload')}
-            className="bg-accent-purple hover:bg-opacity-90 text-white text-xs font-bold py-2 sm:py-2.5 px-4 sm:px-6 rounded-xl flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(157,0,255,0.2)] cursor-pointer"
+            className="bg-[#8A2BE2] hover:bg-opacity-90 text-white font-['Space_Grotesk',sans-serif] font-bold text-xs sm:text-sm py-2 px-3.5 sm:px-5 rounded-[8px] flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(138,43,226,0.3)] cursor-pointer"
           >
             <Upload size={14} />
-            <span>Upload & Mint</span>
+            <span className="hidden sm:inline">Upload &amp; Mint</span>
           </button>
         </div>
       </div>
 
       {isLoading ? (
         <div className="flex justify-center items-center py-12 w-full">
-          <Loader2 className="w-8 h-8 text-accent-purple animate-spin" />
+          <Loader2 className="w-8 h-8 text-[#8A2BE2] animate-spin" />
         </div>
       ) : !Array.isArray(tracks) || tracks.length === 0 ? (
-        <div className="text-center py-12 text-zinc-500 w-full">
+        <div className="text-center py-12 text-zinc-500 w-full font-['Space_Grotesk',sans-serif]">
           <p>No tracks found.</p>
         </div>
       ) : (
