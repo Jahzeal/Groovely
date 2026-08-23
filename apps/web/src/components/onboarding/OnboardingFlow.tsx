@@ -251,8 +251,17 @@ export const OnboardingFlow = () => {
           setUserEmail(userEmail);
         }
 
-        setStep(3);
-        toast.success('Successfully connected!');
+        if (authData.isNewUser) {
+          setStep(3);
+          toast.success('Successfully connected!');
+        } else {
+          toast.success('Welcome back!');
+          if (actualRole === 'fan') {
+            router.push('/explore');
+          } else {
+            router.push('/dashboard');
+          }
+        }
       } catch (err: any) {
         console.error('Google backend link error:', err);
         setError(err.message || 'Backend registration failed');

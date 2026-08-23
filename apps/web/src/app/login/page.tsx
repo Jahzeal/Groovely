@@ -68,6 +68,11 @@ export default function LoginPage() {
         }
 
         if (!authData) {
+          // Purge any stale tokens to avoid session contamination
+          localStorage.removeItem('groovely_token');
+          localStorage.removeItem('grooveli_token');
+          localStorage.removeItem('groovely_role');
+          localStorage.removeItem('grooveli_role');
           router.push('/onboarding');
           return;
         }
@@ -87,8 +92,15 @@ export default function LoginPage() {
         } else {
           router.push('/dashboard');
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Login error:', err);
+        localStorage.removeItem('groovely_token');
+        localStorage.removeItem('grooveli_token');
+        localStorage.removeItem('groovely_role');
+        localStorage.removeItem('grooveli_role');
+        const errorMessage = err.message || 'Something went wrong during login';
+        setError(errorMessage);
+        toast.error(errorMessage);
       } finally {
         setLoading(false);
       }

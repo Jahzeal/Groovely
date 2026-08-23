@@ -45,24 +45,28 @@ export default function DashboardPage() {
   const [displayName, setDisplayName] = useState<string>('Creator');
 
   useEffect(() => {
-    // Decode role directly from active JWT token first
-    let role = '';
     const token = localStorage.getItem('groovely_token') || localStorage.getItem('grooveli_token');
     console.log('[ROLE_DEBUG] Dashboard page check triggered.');
     console.log('[ROLE_DEBUG] Active Token in localStorage:', token ? `${token.substring(0, 20)}...` : 'NONE');
 
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        console.log('[ROLE_DEBUG] Decoded Token Payload:', payload);
-        role = payload.role ?? '';
-        if (role) {
-          localStorage.setItem('groovely_role', role);
-          localStorage.setItem('grooveli_role', role);
-        }
-      } catch (e) {
-        console.error('[ROLE_DEBUG] Token parse error:', e);
+    if (!token) {
+      console.warn('[ROLE_DEBUG] No active authentication token found. Redirecting to /login.');
+      router.push('/login');
+      return;
+    }
+
+    // Decode role directly from active JWT token first
+    let role = '';
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      console.log('[ROLE_DEBUG] Decoded Token Payload:', payload);
+      role = payload.role ?? '';
+      if (role) {
+        localStorage.setItem('groovely_role', role);
+        localStorage.setItem('grooveli_role', role);
       }
+    } catch (e) {
+      console.error('[ROLE_DEBUG] Token parse error:', e);
     }
 
     if (!role) {
