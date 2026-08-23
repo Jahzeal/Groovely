@@ -581,12 +581,29 @@ export const OnboardingFlow = () => {
           {step === 2 && (
             <>
               {/* Header */}
-              <div className="flex flex-col items-center mb-10">
-                <ProgressBar currentStep={2} totalSteps={3} />
-                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mt-8 mb-4 text-center">
+              <div className="flex flex-col items-center mb-8">
+                {/* Progress Bar */}
+                <div className="relative w-[200px] h-6 flex items-center justify-between mb-6">
+                  {/* Background track */}
+                  <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-[#D9D9D9] rounded-full" />
+                  {/* Active fill */}
+                  <div className="absolute left-0 w-1/2 top-1/2 -translate-y-1/2 h-1 bg-[#8A2BE2] rounded-full" />
+                  {/* Step circles */}
+                  <div className="relative z-10 w-6 h-6 rounded-full bg-[#8A2BE2] flex items-center justify-center text-[10px] font-bold text-white shadow-[0_0_10px_rgba(138,43,226,0.5)]">
+                    1
+                  </div>
+                  <div className="relative z-10 w-6 h-6 rounded-full bg-[#8A2BE2] flex items-center justify-center text-[10px] font-bold text-white shadow-[0_0_10px_rgba(138,43,226,0.5)]">
+                    2
+                  </div>
+                  <div className="relative z-10 w-6 h-6 rounded-full bg-[#CACACA] flex items-center justify-center text-[10px] font-bold text-zinc-800">
+                    3
+                  </div>
+                </div>
+
+                <h1 className="font-['Clash_Display',sans-serif] font-bold text-[28px] leading-[42px] text-white text-center mb-2">
                   Connect your wallet to Groovely
                 </h1>
-                <p className="text-zinc-400 text-lg font-medium text-center">
+                <p className="font-['Space_Grotesk',sans-serif] font-bold text-[16px] leading-[24px] text-[#CACACA] text-center">
                   Choose a wallet to connect to Groovely
                 </p>
                 {error && (
@@ -596,52 +613,89 @@ export const OnboardingFlow = () => {
                 )}
               </div>
 
-              {/* Wallet Cards */}
-              <div className="grid grid-cols-3 gap-3 sm:gap-6 mb-8 sm:mb-12">
-                <WalletCard
-                  name="MetaMask"
-                  icon={<MetaMaskIcon />}
-                  isSelected={wallet === 'metamask'}
-                  onSelect={() => setWallet('metamask')}
-                />
-                <WalletCard
-                  name="WalletConnect"
-                  icon={<WalletConnectIcon />}
-                  isSelected={wallet === 'walletconnect'}
-                  onSelect={() => setWallet('walletconnect')}
-                />
-                <WalletCard
-                  name="Phantom"
-                  icon={<PhantomIcon />}
-                  isSelected={wallet === 'phantom'}
-                  onSelect={() => setWallet('phantom')}
-                />
-              </div>
-
-              {/* Connect Button */}
-              <div className="space-y-6">
-                <Button fullWidth onClick={handleConnectWallet} disabled={!wallet || loading}>
-                  {loading ? 'Connecting...' : 'Connect'}
-                </Button>
-
-                {/* OR Separator */}
-                <div className="relative flex items-center gap-4 py-2">
-                  <div className="flex-grow h-[1px] bg-white/5" />
-                  <span className="text-zinc-600 text-[10px] font-bold uppercase tracking-[0.2em] px-2">Or</span>
-                  <div className="flex-grow h-[1px] bg-white/5" />
+              {/* Wallet Stack (Figma Frame 5: 3 stacked rows, height 98px each) */}
+              <div className="flex flex-col gap-6 mb-6">
+                {/* MetaMask */}
+                <div
+                  onClick={() => setWallet('metamask')}
+                  className={`w-full h-[98px] p-6 rounded-[12px] border-2 cursor-pointer flex items-center gap-6 transition-all duration-300 ${
+                    wallet === 'metamask'
+                      ? 'border-[#8A2BE2] bg-[#8A2BE2]/10 shadow-[0_0_20px_rgba(138,43,226,0.25)]'
+                      : 'border-[#232B3E] bg-[#0F172A]/80 hover:border-[#8A2BE2]/50'
+                  }`}
+                >
+                  <div className="w-[52px] h-[50px] flex items-center justify-center shrink-0">
+                    <MetaMaskIcon />
+                  </div>
+                  <span className="font-['Space_Grotesk',sans-serif] font-bold text-[16px] leading-[24px] text-white">
+                    MetaMask
+                  </span>
                 </div>
 
-                {/* Navigation button if already authenticated */}
+                {/* WalletConnect */}
+                <div
+                  onClick={() => setWallet('walletconnect')}
+                  className={`w-full h-[98px] p-6 rounded-[12px] border-2 cursor-pointer flex items-center gap-6 transition-all duration-300 ${
+                    wallet === 'walletconnect'
+                      ? 'border-[#8A2BE2] bg-[#8A2BE2]/10 shadow-[0_0_20px_rgba(138,43,226,0.25)]'
+                      : 'border-[#232B3E] bg-[#0F172A]/80 hover:border-[#8A2BE2]/50'
+                  }`}
+                >
+                  <div className="w-[50px] h-[50px] rounded-full overflow-hidden flex items-center justify-center shrink-0">
+                    <WalletConnectIcon />
+                  </div>
+                  <span className="font-['Space_Grotesk',sans-serif] font-bold text-[16px] leading-[24px] text-white">
+                    WalletConnect
+                  </span>
+                </div>
+
+                {/* Phantom */}
+                <div
+                  onClick={() => setWallet('phantom')}
+                  className={`w-full h-[98px] p-6 rounded-[12px] border-2 cursor-pointer flex items-center gap-6 transition-all duration-300 ${
+                    wallet === 'phantom'
+                      ? 'border-[#8A2BE2] bg-[#8A2BE2]/10 shadow-[0_0_20px_rgba(138,43,226,0.25)]'
+                      : 'border-[#232B3E] bg-[#0F172A]/80 hover:border-[#8A2BE2]/50'
+                  }`}
+                >
+                  <div className="w-[58px] h-[50px] flex items-center justify-center shrink-0">
+                    <PhantomIcon />
+                  </div>
+                  <span className="font-['Space_Grotesk',sans-serif] font-bold text-[16px] leading-[24px] text-white">
+                    Phantom
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons & Google Social */}
+              <div className="space-y-4">
+                {/* Connect Action Button (Figma: height 56px, bg #8A2BE2, border-radius 8px, font Space Grotesk 700 16px) */}
+                <button
+                  onClick={handleConnectWallet}
+                  disabled={!wallet || loading}
+                  className="w-full h-[56px] bg-[#8A2BE2] hover:bg-opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-['Space_Grotesk',sans-serif] font-bold text-[16px] leading-[24px] rounded-[8px] flex items-center justify-center transition-all cursor-pointer shadow-[0_0_20px_rgba(138,43,226,0.3)] active:scale-[0.99]"
+                >
+                  {loading ? 'Connecting...' : 'Connect'}
+                </button>
+
+                {/* Other sign up options / Divider (Figma: border 1px solid #959595, "Or" font Urbanist 400 16px #959595) */}
+                <div className="flex items-center gap-4 py-2">
+                  <div className="flex-1 h-0 border-t border-[#959595]" />
+                  <span className="font-['Urbanist',sans-serif] font-normal text-[16px] leading-[24px] text-[#959595]">
+                    Or
+                  </span>
+                  <div className="flex-1 h-0 border-t border-[#959595]" />
+                </div>
+
+                {/* Google Button (Figma: height 56px, bg #192134, border-radius 999px, font Urbanist 600 16px #FFFFFF) */}
                 {(mounted && (localStorage.getItem('grooveli_token') || localStorage.getItem('groovely_token') || authenticated)) ? (
-                  <Button 
-                    fullWidth 
-                    variant="secondary"
+                  <button 
                     onClick={() => setStep(3)}
+                    className="w-full h-[56px] bg-[#192134] hover:bg-[#232B3E] text-white font-['Urbanist',sans-serif] font-semibold text-[16px] rounded-full flex items-center justify-center gap-3 transition-all cursor-pointer border border-[#232B3E]"
                   >
-                    Continue to Profile
-                  </Button>
+                    <span>Continue to Profile</span>
+                  </button>
                 ) : authenticated ? (
-                  // Already logged in with Privy — wallet generating, failed or timed out
                   (walletTimedOut || error) ? (
                     <div className="w-full flex flex-col items-center gap-3">
                       <p className="text-red-400 text-xs text-center font-bold uppercase tracking-wider">
@@ -649,27 +703,27 @@ export const OnboardingFlow = () => {
                       </p>
                       <button
                         onClick={async () => { setWalletTimedOut(false); setError(null); await logout(); }}
-                        className="w-full flex items-center justify-center gap-3 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 transition-all rounded-full py-4 cursor-pointer"
+                        className="w-full h-[56px] bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-400 font-bold text-[14px] rounded-full flex items-center justify-center transition-all cursor-pointer"
                       >
-                        <span className="text-red-400 font-bold text-sm tracking-wide">Retry — Sign in with Google</span>
+                        <span>Retry — Sign in with Google</span>
                       </button>
                     </div>
                   ) : (
-                    <div className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-center space-y-4">
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="w-8 h-8 border-2 border-accent-purple border-t-transparent rounded-full animate-spin" />
-                        <h3 className="font-bold text-white text-sm">Creating Your Smart Wallet</h3>
+                    <div className="w-full bg-[#192134] border border-[#232B3E] rounded-2xl p-5 text-center space-y-3">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-7 h-7 border-2 border-[#8A2BE2] border-t-transparent rounded-full animate-spin" />
+                        <h3 className="font-bold text-white text-sm font-['Space_Grotesk',sans-serif]">Creating Your Smart Wallet</h3>
                         <p className="text-xs text-zinc-400 max-w-xs mx-auto">Please wait while we initialize your Web3 smart account on the blockchain.</p>
                       </div>
                       {user?.email?.address && (
-                        <div className="bg-black/40 rounded-xl px-4 py-2 border border-white/5 inline-block mx-auto">
-                          <span className="text-[9px] text-zinc-500 uppercase tracking-widest block mb-0.5 font-bold">Logged In Account</span>
+                        <div className="bg-black/40 rounded-xl px-3 py-1.5 border border-white/5 inline-block mx-auto">
+                          <span className="text-[9px] text-zinc-500 uppercase tracking-widest block font-bold">Logged In</span>
                           <span className="text-xs font-bold text-white font-mono">{user.email.address}</span>
                         </div>
                       )}
                       <button
                         onClick={async () => { setWalletTimedOut(false); await logout(); }}
-                        className="text-xs text-red-400 hover:text-red-300 underline font-semibold transition-colors mt-2 block mx-auto cursor-pointer"
+                        className="text-xs text-red-400 hover:text-red-300 underline font-semibold transition-colors block mx-auto cursor-pointer"
                       >
                         Stuck? Click here to sign out and retry
                       </button>
@@ -678,22 +732,31 @@ export const OnboardingFlow = () => {
                 ) : (
                   <button 
                     onClick={handleGoogleLogin}
-                    className="w-full flex items-center justify-center gap-3 bg-white/5 border border-white/10 hover:bg-white/10 transition-all rounded-full py-4 group active:scale-[0.98] cursor-pointer"
+                    className="w-full h-[56px] bg-[#192134] hover:bg-[#232B3E] text-white font-['Urbanist',sans-serif] font-semibold text-[16px] rounded-full flex items-center justify-center gap-3 transition-all cursor-pointer border border-[#232B3E] active:scale-[0.99]"
                   >
-                    <GoogleIcon size={18} />
-                    <span className="text-white font-bold text-sm tracking-wide">Continue with Google</span>
+                    <GoogleIcon size={20} />
+                    <span>Google</span>
                   </button>
                 )}
 
-                <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest text-center mt-2">
-                  Your privacy matters. We won't post anything.
-                </p>
-              </div>
+                {/* Already have an account? Log In (Figma: Space Grotesk 400 16px #FFFFFF + Space Grotesk 700 16px #8A2BE2) */}
+                <div className="flex items-center justify-center gap-2 pt-2">
+                  <span className="font-['Space_Grotesk',sans-serif] font-normal text-[16px] text-white">
+                    Already have an account?
+                  </span>
+                  <button
+                    onClick={() => router.push('/login')}
+                    className="font-['Space_Grotesk',sans-serif] font-bold text-[16px] text-[#8A2BE2] hover:underline cursor-pointer"
+                  >
+                    Log In
+                  </button>
+                </div>
 
-              {/* Footer Terms */}
-              <div className="flex justify-between mt-12 text-[#80808a] text-xs px-2">
-                <span className="cursor-pointer hover:text-white transition-colors">Terms & Conditions</span>
-                <span className="cursor-pointer hover:text-white transition-colors">Privacy Policy</span>
+                {/* Terms & Privacy Policy (Figma: Space Grotesk 400 14px #CACACA) */}
+                <div className="flex justify-between items-center pt-4 text-[#CACACA] font-['Space_Grotesk',sans-serif] text-[14px] px-1">
+                  <span className="cursor-pointer hover:text-white transition-colors">Terms &amp; Conditions</span>
+                  <span className="cursor-pointer hover:text-white transition-colors">Privacy Policy</span>
+                </div>
               </div>
             </>
           )}

@@ -83,7 +83,7 @@ export const TopBar = () => {
     address: activeAddress as `0x${string}`,
   });
 
-  const { data: usdcBalanceRaw } = useReadContract({
+  const { data: usdcBalance } = useReadContract({
     address: USDC_ADDRESS as `0x${string}`,
     abi: [
       {
