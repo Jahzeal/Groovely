@@ -108,14 +108,20 @@ export const TracksTable = () => {
   }, []);
 
   return (
-    <div className="glass-card p-8 lg:col-span-2">
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="text-xl font-black text-white tracking-tight uppercase">Tracks Summary</h2>
-        <div className="flex items-center gap-4">
-          <button className="text-accent-purple text-xs font-bold uppercase tracking-widest hover:underline transition-all">
+    <div className="glass-card p-5 sm:p-8 lg:col-span-2 overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+        <h2 className="text-lg sm:text-xl font-black text-white tracking-tight uppercase">Tracks Summary</h2>
+        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+          <button 
+            onClick={() => router.push('/library')}
+            className="text-accent-purple text-xs font-bold uppercase tracking-widest hover:underline transition-all"
+          >
              View All Tracks
           </button>
-          <button className="bg-accent-purple hover:bg-opacity-90 text-white text-xs font-bold py-2.5 px-6 rounded-xl flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(157,0,255,0.2)]">
+          <button 
+            onClick={() => router.push('/dashboard/upload')}
+            className="bg-accent-purple hover:bg-opacity-90 text-white text-xs font-bold py-2 sm:py-2.5 px-4 sm:px-6 rounded-xl flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(157,0,255,0.2)] cursor-pointer"
+          >
             <Upload size={14} />
             <span>Upload & Mint</span>
           </button>

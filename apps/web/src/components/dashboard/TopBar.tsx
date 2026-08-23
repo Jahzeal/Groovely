@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ChevronLeft, Search, ShoppingCart, ChevronDown,
-  Copy, LogOut, User, Settings, CheckCheck, ExternalLink
+  Copy, LogOut, User, Settings, CheckCheck, ExternalLink, Menu
 } from 'lucide-react';
 import { handleLogout, apiFetch } from '@/lib/api';
 import { usePrivy, useLogout } from '@privy-io/react-auth';
@@ -83,15 +83,15 @@ export const TopBar = () => {
     address: activeAddress as `0x${string}`,
   });
 
-  const { data: usdcBalance } = useReadContract({
+  const { data: usdcBalanceRaw } = useReadContract({
     address: USDC_ADDRESS as `0x${string}`,
     abi: [
       {
         name: 'balanceOf',
         type: 'function',
         stateMutability: 'view',
-        inputs: [{ name: 'owner', type: 'address' }],
-        outputs: [{ name: 'balance', type: 'uint256' }],
+        inputs: [{ name: 'account', type: 'address' }],
+        outputs: [{ name: '', type: 'uint256' }],
       },
     ] as const,
     functionName: 'balanceOf',
@@ -125,38 +125,50 @@ export const TopBar = () => {
   };
 
   return (
-    <header className="flex items-center justify-between px-10 py-6 bg-[#050510] border-b border-white/5">
-      <div className="flex items-center gap-8 flex-1">
-        <button className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest">
-          <ChevronLeft size={18} strokeWidth={3} />
-          <span>Back</span>
+    <header className="flex items-center justify-between px-4 sm:px-6 md:px-10 py-3.5 sm:py-6 bg-[#050510] border-b border-white/5 gap-3 sm:gap-6">
+      <div className="flex items-center gap-3 sm:gap-6 flex-1 min-w-0">
+        {/* Mobile Sidebar Hamburger Toggle */}
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('toggle_mobile_sidebar'))}
+          className="lg:hidden p-2.5 text-zinc-400 hover:text-white rounded-xl bg-[#0F0F1A] border border-white/10 shrink-0"
+          aria-label="Open Navigation Menu"
+        >
+          <Menu size={20} />
         </button>
 
-        <div className="relative w-full max-w-md group">
-          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-600 group-focus-within:text-white transition-colors">
-            <Search size={18} />
+        <button 
+          onClick={() => router.back()}
+          className="hidden sm:flex items-center gap-2 text-zinc-500 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest shrink-0"
+        >
+          <ChevronLeft size={18} strokeWidth={3} />
+          <span className="hidden md:inline">Back</span>
+        </button>
+
+        <div className="relative w-full max-w-xs md:max-w-md group min-w-0">
+          <div className="absolute inset-y-0 left-3 sm:left-4 flex items-center pointer-events-none text-zinc-600 group-focus-within:text-white transition-colors">
+            <Search size={16} />
           </div>
           <input
             type="text"
-            placeholder="Search"
+            placeholder="Search tracks, creators..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleSearch}
-            className="w-full bg-[#0F0F1A] border border-white/5 rounded-xl py-3 pl-12 pr-4 text-sm font-medium focus:outline-none focus:border-accent-purple/50 transition-all placeholder-zinc-600"
+            className="w-full bg-[#0F0F1A] border border-white/5 rounded-xl py-2.5 sm:py-3 pl-9 sm:pl-12 pr-4 text-xs sm:text-sm font-medium focus:outline-none focus:border-accent-purple/50 transition-all placeholder-zinc-600 truncate"
           />
         </div>
 
-        <nav className="hidden md:flex items-center gap-6 ml-4">
-          <Link href="/dashboard/rooms" className="text-sm font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition-colors">
+        <nav className="hidden xl:flex items-center gap-6 ml-2">
+          <Link href="/dashboard/rooms" className="text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition-colors">
             Listening Room
           </Link>
         </nav>
       </div>
 
-      <div className="flex items-center gap-6">
-        <button className="text-zinc-500 hover:text-white transition-colors relative">
-          <ShoppingCart size={22} strokeWidth={2.5} />
-          <div className="absolute -top-1 -right-1 w-2 h-2 bg-accent-purple rounded-full shadow-[0_0_8px_rgba(157,0,255,0.6)]" />
+      <div className="flex items-center gap-2 sm:gap-6 shrink-0">
+        <button className="text-zinc-500 hover:text-white transition-colors relative p-2">
+          <ShoppingCart size={20} strokeWidth={2.5} />
+          <div className="absolute top-1 right-1 w-2 h-2 bg-accent-purple rounded-full shadow-[0_0_8px_rgba(157,0,255,0.6)]" />
         </button>
 
         {/* Wallet Dropdown */}

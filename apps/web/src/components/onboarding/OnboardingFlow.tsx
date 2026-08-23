@@ -178,7 +178,11 @@ export const OnboardingFlow = () => {
       setLoading(true);
       setError(null);
       try {
-        const payloadRole = role === 'creator' ? 'creator' : 'fan';
+        const storedRole = localStorage.getItem('groovely_role') || localStorage.getItem('grooveli_role');
+        const activeRole = role === 'creator' || storedRole === 'creator' ? 'creator' : 'fan';
+        const payloadRole = activeRole;
+        setRole(activeRole === 'creator' ? 'creator' : 'listener');
+
         const userEmail = user.google?.email || user.email?.address || '';
 
         let authData: any = null;
@@ -403,7 +407,8 @@ export const OnboardingFlow = () => {
       if (!token) {
         throw new Error('Authentication session expired. Please sign in again.');
       }
-      const targetRole = role === 'creator' ? 'creator' : 'fan';
+      const storedRole = localStorage.getItem('groovely_role') || localStorage.getItem('grooveli_role');
+      const targetRole = role === 'creator' || storedRole === 'creator' ? 'creator' : 'fan';
       const smartWallet = user?.linkedAccounts?.find(
         (account) => account.type === 'smart_wallet'
       );
@@ -543,13 +548,21 @@ export const OnboardingFlow = () => {
                   title="I'm a Creator"
                   imageSrc="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
                   isSelected={role === 'creator'}
-                  onSelect={() => setRole('creator')}
+                  onSelect={() => {
+                    setRole('creator');
+                    localStorage.setItem('grooveli_role', 'creator');
+                    localStorage.setItem('groovely_role', 'creator');
+                  }}
                 />
                 <SelectionCard
                   title="I'm a Listener/Fan"
                   imageSrc="https://images.unsplash.com/photo-1493225255756-d9584f8606e9?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
                   isSelected={role === 'listener'}
-                  onSelect={() => setRole('listener')}
+                  onSelect={() => {
+                    setRole('listener');
+                    localStorage.setItem('grooveli_role', 'fan');
+                    localStorage.setItem('groovely_role', 'fan');
+                  }}
                 />
               </div>
 

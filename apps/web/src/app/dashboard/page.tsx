@@ -123,18 +123,18 @@ export default function DashboardPage() {
       <Sidebar />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         <TopBar />
 
-        <main className="flex-1 p-10 overflow-y-auto">
+        <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto custom-scrollbar">
           {/* Welcome Message */}
-          <div className="mb-12 translate-y-0 opacity-100 transition-all duration-500">
-            <h1 className="text-4xl font-black tracking-tight text-white mb-2">Hello, {displayName}! 👋</h1>
-            <p className="text-zinc-500 font-medium">Welcome back to your creator command center.</p>
+          <div className="mb-6 sm:mb-10 translate-y-0 opacity-100 transition-all duration-500">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white mb-1.5 sm:mb-2">Hello, {displayName}! 👋</h1>
+            <p className="text-xs sm:text-sm md:text-base text-zinc-500 font-medium">Welcome back to your creator command center.</p>
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8 mb-8 sm:mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {isLoadingStats ? (
               <div className="col-span-full flex items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 text-accent-purple animate-spin" />
@@ -173,7 +173,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Tracks and Active Room Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 mb-8 sm:mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
             <TracksTable />
             <div className="lg:col-span-1 border-white/5">
               <ActiveRoomCard />
@@ -184,8 +184,8 @@ export default function DashboardPage() {
           <PromoCards />
 
           {/* Footer */}
-          <footer className="mt-20 py-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-10 opacity-70 hover:opacity-100 transition-opacity">
-            <div className="flex flex-wrap items-center gap-x-8 gap-y-4 text-[10px] font-black uppercase tracking-widest text-zinc-500">
+          <footer className="mt-12 sm:mt-20 py-8 sm:py-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 sm:gap-10 opacity-70 hover:opacity-100 transition-opacity">
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-6 sm:gap-x-8 gap-y-3 text-[10px] font-black uppercase tracking-widest text-zinc-500 text-center md:text-left">
               <a href="#" className="hover:text-accent-purple transition-colors">About Groovely</a>
               <span className="w-1 h-1 bg-zinc-800 rounded-full" />
               <a href="#" className="hover:text-accent-purple transition-colors">Privacy Policy</a>
@@ -197,7 +197,7 @@ export default function DashboardPage() {
               <a href="#" className="hover:text-accent-purple transition-colors text-accent-cyan">Feedback</a>
             </div>
 
-            <div className="flex items-center gap-8 text-zinc-500">
+            <div className="flex items-center gap-6 sm:gap-8 text-zinc-500">
               <a href="#" className="hover:text-white transition-all transform hover:scale-110 active:scale-90"><Twitter size={18} /></a>
               <a href="#" className="hover:text-white transition-all transform hover:scale-110 active:scale-90"><Disc size={18} /></a>
               <a href="#" className="hover:text-white transition-all transform hover:scale-110 active:scale-90"><Send size={18} /></a>
