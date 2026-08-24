@@ -900,15 +900,14 @@ export default function MintPage() {
         isOpen={isModalOpen && mintStatus === 'confirming'}
         onClose={() => { setIsModalOpen(false); setMintStatus('idle'); }}
         onConfirm={handleMintConfirmed}
-        songDetails={{
-          title: trackTitle,
-          coverImage: trackCover,
-          price: licensePrice,
-          royalty: royaltyPercentage,
-          paymentModel: paymentModel,
-          genre: trackGenre,
-          tags: trackTags,
-          rights: trackRights,
+        data={{
+          fee: '1.00',
+          from: address ? `${address.slice(0, 6)}...${address.slice(-4)}` : '0x...',
+          to: 'Groovely Contract',
+          network: network === 'polygon' ? 'Polygon (Amoy)' : network.toUpperCase(),
+          gasFee: '0.005',
+          totalEth: '1.00',
+          totalUsd: '1.00'
         }}
       />
 
@@ -916,15 +915,12 @@ export default function MintPage() {
       <MintSuccessModal
         isOpen={mintStatus === 'success'}
         onClose={() => { setMintStatus('idle'); router.push('/dashboard'); }}
-        txHash={txHash}
-        tokenId={tokenId}
-        songDetails={{
+        onGoToLibrary={() => { setMintStatus('idle'); router.push('/library'); }}
+        trackData={{
           title: trackTitle,
-          coverImage: trackCover,
-          price: licensePrice,
-          royalty: royaltyPercentage,
-          paymentModel: paymentModel,
-          genre: trackGenre,
+          coverUrl: trackCover,
+          txHash: txHash,
+          tokenId: tokenId ? `#${tokenId}` : '#1',
         }}
       />
 
