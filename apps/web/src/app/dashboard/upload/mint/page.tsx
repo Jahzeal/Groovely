@@ -329,9 +329,13 @@ export default function MintPage() {
       }
 
       // Publish on Chain
-      const contributorsParam = dbContributors.map((c: any) => ({
-        wallet: (c.wallet_address || activeAddress) as `0x${string}`,
-        basisPoints: BigInt(c.basis_points),
+      const contributorsParam: { wallet: `0x${string}`; basisPoints: bigint }[] = (
+        dbContributors && dbContributors.length > 0
+          ? dbContributors
+          : [{ wallet_address: address, basis_points: 10000 }]
+      ).map((c: any) => ({
+        wallet: (c.wallet_address || address || '0x0000000000000000000000000000000000000000') as `0x${string}`,
+        basisPoints: BigInt(c.basis_points ?? 10000),
       }));
 
       const parsedPriceVal = Number(licensePrice);
@@ -339,11 +343,11 @@ export default function MintPage() {
 
       const mintTx = await publishSongOnChain(
         config,
-        trackSummary.title || 'Untitled Track',
+        trackTitle || 'Untitled Track',
         songMetadataUri,
         contributorsParam,
-        contractStandard === 'erc1155' ? 'OPEN' : 'LIMITED',
-        contractStandard === 'erc1155' ? 0 : 1, // 0 = unlimited for ERC-1155
+        contractType === 'erc1155' ? 'OPEN' : 'LIMITED',
+        contractType === 'erc1155' ? 0 : 1, // 0 = unlimited for ERC-1155
         safePriceVal,
         songMetadataUri
       );
