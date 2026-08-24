@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import session from 'express-session';
-import * as passport from 'passport';
+import passport from 'passport';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -52,8 +52,13 @@ async function bootstrap() {
   }
 
   // Passport middlewares
-  app.use(passport.initialize());
-  app.use(passport.session());
+  const passportInstance: any = (passport as any)?.default || passport;
+  if (typeof passportInstance?.initialize === 'function') {
+    app.use(passportInstance.initialize());
+  }
+  if (typeof passportInstance?.session === 'function') {
+    app.use(passportInstance.session());
+  }
 
   // Global filters, interceptors, and pipes
   app.useGlobalFilters(new HttpExceptionFilter());
