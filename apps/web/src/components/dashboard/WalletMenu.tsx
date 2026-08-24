@@ -110,7 +110,7 @@ export const WalletMenu: React.FC<WalletMenuProps> = ({ className = '', compact 
   };
 
   return (
-    <div className={`relative ${className}`} ref={dropdownRef}>
+    <div className={`relative z-40 ${className}`} ref={dropdownRef}>
       {/* Trigger Button */}
       <button
         type="button"
@@ -137,7 +137,7 @@ export const WalletMenu: React.FC<WalletMenuProps> = ({ className = '', compact 
 
       {/* Dropdown Panel */}
       {dropdownOpen && (
-        <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-[#0F172A] border border-[#232B3E] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-[#0F172A] border border-[#232B3E] rounded-2xl shadow-[0_25px_70px_rgba(0,0,0,0.95)] overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-150">
           <div className="px-5 py-4 border-b border-[#232B3E] bg-[#192134]/40">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 bg-[#1A1A2E] flex items-center justify-center">

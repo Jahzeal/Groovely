@@ -19,6 +19,7 @@ import {
   Music
 } from 'lucide-react';
 import { Twitter, Instagram } from '@/components/ui/SocialIcons';
+import { WalletMenu } from '@/components/dashboard/WalletMenu';
 import { apiFetch, resolveIpfsUrl } from '@/lib/api';
 import { useMusicPlayer } from '@/components/marketplace/MusicPlayerContext';
 import { MusicPlayer } from '@/components/marketplace/MusicPlayer';
@@ -186,7 +187,7 @@ export default function AnalyticsPage() {
         {/* ========================================================================= */}
         {/* MOBILE TOP BAR (Figma Frame 315) - Visible on < md                         */}
         {/* ========================================================================= */}
-        <div className="md:hidden flex flex-col bg-white/[0.01] border-b border-[#2D3548] backdrop-blur-[50px] sticky top-0 z-30 px-4 py-3">
+        <div className="md:hidden flex flex-col bg-white/[0.01] border-b border-[#2D3548] backdrop-blur-[50px] sticky top-0 z-40 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             {/* Left (Frame 304): Hamburger + "Analytics" Title */}
             <div className="flex items-center gap-2">
@@ -217,16 +218,7 @@ export default function AnalyticsPage() {
                 <span className="absolute top-0 right-0 w-2 h-2 bg-[#8A2BE2] rounded-full shadow-[0_0_6px_rgba(138,43,226,0.8)]" />
               </button>
 
-              <div className="flex items-center gap-1 bg-[#0F172A] border border-[#2D3548] rounded-full px-2 py-1">
-                <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-[#FF5C16]/10 p-0.5">
-                  <img
-                    src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg"
-                    alt="Wallet"
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-                <ChevronDown size={14} className="text-white/70" />
-              </div>
+              <WalletMenu compact />
             </div>
           </div>
 
@@ -250,7 +242,7 @@ export default function AnalyticsPage() {
         {/* ========================================================================= */}
         {/* DESKTOP TOP BAR (Figma Frame 25) - Visible on md+                         */}
         {/* ========================================================================= */}
-        <header className="hidden md:flex items-center justify-between px-8 py-4 h-20 bg-[#0F172A]/10 border-b border-[#232B3E] backdrop-blur-[25px] sticky top-0 z-30">
+        <header className="hidden md:flex items-center justify-between px-8 py-4 h-20 bg-[#0F172A]/10 border-b border-[#232B3E] backdrop-blur-[25px] sticky top-0 z-40">
           <div className="flex items-center gap-6 flex-1">
             <h1 className="text-2xl font-bold font-['Clash_Display',sans-serif] text-white tracking-tight shrink-0">
               Analytics
@@ -278,18 +270,7 @@ export default function AnalyticsPage() {
 
             <div className="w-px h-8 bg-[#232B3E] mx-1" />
 
-            <div className="flex items-center gap-2 bg-transparent px-2 py-1 rounded-lg">
-              <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 flex items-center justify-center bg-[#FF5C16]/10 p-0.5">
-                <img
-                  src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg"
-                  alt="Wallet"
-                  className="w-full h-full object-contain"
-                />
-              </div>
-              <span className="text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
-                {abbrev}
-              </span>
-            </div>
+            <WalletMenu />
           </div>
         </header>
 

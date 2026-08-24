@@ -161,7 +161,7 @@ export default function EarningsPage() {
         {/* ========================================================================= */}
         {/* MOBILE TOP BAR (Figma Frame 315) - Visible on < md                         */}
         {/* ========================================================================= */}
-        <div className="md:hidden flex flex-col bg-white/[0.01] border-b border-[#2D3548] backdrop-blur-[50px] sticky top-0 z-30 px-4 py-3">
+        <div className="md:hidden flex flex-col bg-white/[0.01] border-b border-[#2D3548] backdrop-blur-[50px] sticky top-0 z-40 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             {/* Left (Frame 304): Hamburger + "Earnings" Title */}
             <div className="flex items-center gap-2">
@@ -216,7 +216,7 @@ export default function EarningsPage() {
         {/* ========================================================================= */}
         {/* DESKTOP TOP BAR (Figma Frame 25) - Visible on md+                         */}
         {/* ========================================================================= */}
-        <header className="hidden md:flex items-center justify-between px-8 py-4 h-20 bg-[#0F172A]/10 border-b border-[#232B3E] backdrop-blur-[25px] sticky top-0 z-30">
+        <header className="hidden md:flex items-center justify-between px-8 py-4 h-20 bg-[#0F172A]/10 border-b border-[#232B3E] backdrop-blur-[25px] sticky top-0 z-40">
           <div className="flex items-center gap-6 flex-1">
             <h1 className="text-2xl font-bold font-['Clash_Display',sans-serif] text-white tracking-tight shrink-0">
               Earnings

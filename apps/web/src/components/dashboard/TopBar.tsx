@@ -125,7 +125,7 @@ export const TopBar = ({ displayName = 'Creator' }: { displayName?: string }) =>
   };
 
   return (
-    <header className="bg-[#192134] border-b border-[#2D3548] transition-all">
+    <header className="bg-[#192134] border-b border-[#2D3548] transition-all relative z-40">
       {/* Mobile Header: 2-Tier Figma Layout (Frame 25 / Frame 305 & Frame 76) */}
       <div className="lg:hidden flex flex-col p-4 gap-3 bg-[rgba(15,23,42,0.6)] backdrop-blur-md">
         {/* Row 1: Menu + Greeting on Left, Notification + Divider + Wallet on Right */}
@@ -154,7 +154,7 @@ export const TopBar = ({ displayName = 'Creator' }: { displayName?: string }) =>
             <div className="w-[1px] h-6 bg-[#232B3E]" />
 
             {/* Mobile Wallet Trigger */}
-            <div className="relative" ref={dropdownRef}>
+            <div className="relative z-40" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen((o: boolean) => !o)}
                 className="flex items-center gap-2 cursor-pointer"
@@ -169,7 +169,7 @@ export const TopBar = ({ displayName = 'Creator' }: { displayName?: string }) =>
 
               {/* Mobile Wallet Dropdown Panel */}
               {dropdownOpen && (
-                <div className="absolute right-0 mt-3 w-72 bg-[#0F172A] border border-[#232B3E] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="absolute right-0 mt-3 w-72 bg-[#0F172A] border border-[#232B3E] rounded-2xl shadow-[0_25px_70px_rgba(0,0,0,0.95)] overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-150">
                   <div className="px-5 py-4 border-b border-[#232B3E] bg-[#192134]/50">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl overflow-hidden border border-white/10 bg-[#1A1A2E] flex items-center justify-center">
@@ -284,7 +284,7 @@ export const TopBar = ({ displayName = 'Creator' }: { displayName?: string }) =>
           </button>
 
           {/* Desktop Wallet Dropdown */}
-          <div className="relative" ref={dropdownRef}>
+          <div className="relative z-40" ref={dropdownRef}>
             <button
               onClick={() => setDropdownOpen((o) => !o)}
               className="flex items-center gap-3 bg-[#0F172A] border border-[#232B3E] rounded-xl px-4 py-2 hover:bg-white/5 cursor-pointer transition-all"
@@ -306,7 +306,7 @@ export const TopBar = ({ displayName = 'Creator' }: { displayName?: string }) =>
 
             {/* Desktop Dropdown Panel */}
             {dropdownOpen && (
-              <div className="absolute right-0 mt-3 w-72 bg-[#0F172A] border border-[#232B3E] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="absolute right-0 mt-3 w-72 bg-[#0F172A] border border-[#232B3E] rounded-2xl shadow-[0_25px_70px_rgba(0,0,0,0.95)] overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-150">
                 <div className="px-5 py-4 border-b border-[#232B3E] bg-[#192134]/40">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 bg-[#1A1A2E]">

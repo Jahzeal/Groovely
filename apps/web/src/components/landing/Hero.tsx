@@ -41,28 +41,6 @@ export const Hero = () => {
             The first audio platform where listening pays off and creators keep 100% of their revenue. No crypto wallet needed to start.
           </p>
           
-          {/* Mobile-First Touch CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4 w-full">
-            <Link 
-              href="/onboarding"
-              className="w-full sm:w-auto rounded-xl bg-[#4E0AA6] hover:bg-[#5b0cc4] px-8 py-4 text-white font-bold text-sm tracking-wider uppercase transition-all shadow-[0_0_25px_rgba(78,10,166,0.5)] active:scale-[0.98] text-center"
-            >
-              Sign Up Free
-            </Link>
-            <Link 
-              href="/login"
-              className="w-full sm:w-auto rounded-xl bg-[#192134] hover:bg-white/10 border border-white/10 px-8 py-4 text-white font-bold text-sm tracking-wider uppercase transition-all active:scale-[0.98] text-center"
-            >
-              Log In
-            </Link>
-            <Link 
-              href="/marketplace"
-              className="w-full sm:w-auto rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 px-8 py-4 text-zinc-300 hover:text-white font-bold text-sm tracking-wider uppercase transition-all active:scale-[0.98] text-center"
-            >
-              Explore
-            </Link>
-          </div>
-          
           <div className="mt-8 text-zinc-500 text-xs flex items-center justify-center lg:justify-start gap-2 font-medium">
             <span className="text-[#00FFC6] font-bold">✓</span> Free to join. Instant wallet setup.
           </div>
