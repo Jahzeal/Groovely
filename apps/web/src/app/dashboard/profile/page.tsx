@@ -293,9 +293,9 @@ export default function ProfilePage() {
             {/* PROFILE HEADER (Desktop: Avatar + Info + Edit Button)                 */}
             {/* ===================================================================== */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-start sm:items-center gap-4 sm:gap-6">
+              <div className="flex items-center gap-4 sm:gap-6">
                 {/* Ellipse 9: 100x100 Avatar */}
-                <div className="w-24 h-24 sm:w-[100px] sm:h-[100px] rounded-full overflow-hidden shrink-0 border-2 border-[#2D3548] shadow-lg bg-[#0F172A]">
+                <div className="w-[100px] h-[100px] rounded-full overflow-hidden shrink-0 border-2 border-[#2D3548] shadow-lg bg-[#0F172A]">
                   <img
                     src={avatarUrl}
                     alt={displayName}
@@ -303,7 +303,7 @@ export default function ProfilePage() {
                   />
                 </div>
 
-                {/* Frame 205: Info */}
+                {/* Frame 205: Info (left: 132px on mobile, left: 403px on desktop) */}
                 <div className="space-y-1.5 sm:space-y-2">
                   <div className="flex flex-wrap items-baseline gap-2">
                     <h2 className="text-2xl sm:text-3xl font-bold font-['Clash_Display',sans-serif] text-white">
@@ -321,16 +321,16 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Frame 18: Edit Profile CTA */}
+              {/* Frame 18: Edit Profile CTA (Visible on Desktop / can be toggled on mobile) */}
               <Link
                 href="/dashboard/settings"
-                className="w-full sm:w-auto inline-flex items-center justify-center bg-[#8A2BE2] hover:bg-[#7823c9] text-white px-8 py-3.5 sm:py-4 rounded-lg text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] shadow-[0_0_20px_rgba(138,43,226,0.3)] transition-all cursor-pointer shrink-0"
+                className="hidden sm:inline-flex items-center justify-center bg-[#8A2BE2] hover:bg-[#7823c9] text-white px-8 py-3.5 sm:py-4 rounded-lg text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] shadow-[0_0_20px_rgba(138,43,226,0.3)] transition-all cursor-pointer shrink-0"
               >
                 Edit Profile
               </Link>
             </div>
 
-            {/* Line 13 Divider */}
+            {/* Line 13 Divider (Mobile top: 258px / Desktop top: 228px) */}
             <hr className="border-t border-[#2D3548] my-4 sm:my-6" />
 
             {/* ===================================================================== */}
@@ -340,16 +340,16 @@ export default function ProfilePage() {
               <h3 className="text-lg sm:text-xl font-bold font-['Clash_Display',sans-serif] text-white">
                 About
               </h3>
-              <p className="text-sm sm:text-base font-normal font-['Space_Grotesk',sans-serif] text-white/90 leading-relaxed max-w-4xl">
+              <p className="text-sm sm:text-base font-normal font-['Space_Grotesk',sans-serif] text-white leading-relaxed max-w-4xl">
                 {bio}
               </p>
             </div>
 
-            {/* Line 14 Divider */}
+            {/* Line 14 Divider (Mobile top: 452px / Desktop top: 359px) */}
             <hr className="border-t border-[#2D3548] my-4 sm:my-6" />
 
             {/* ===================================================================== */}
-            {/* SOCIALS SECTION (Figma Frame 17 / Frame 7)                            */}
+            {/* SOCIALS SECTION (Figma Frame 17 / Frame 7 / Frame 333)                */}
             {/* ===================================================================== */}
             <div className="space-y-3">
               <h3 className="text-lg sm:text-xl font-bold font-['Clash_Display',sans-serif] text-white">
@@ -401,7 +401,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Line 15 Divider */}
+            {/* Line 15 Divider (Mobile top: 654px / Desktop top: 485px) */}
             <hr className="border-t border-[#2D3548] my-4 sm:my-6" />
 
             {/* ===================================================================== */}
@@ -409,7 +409,7 @@ export default function ProfilePage() {
             {/* ===================================================================== */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               
-              {/* Metric 1: All-Time Plays (387x196px) */}
+              {/* Metric 1: All-Time Plays (Mobile 408x172px / Desktop 387x196px) */}
               <div className="bg-[#0F172A] rounded-xl p-4 sm:p-6 flex flex-col justify-between min-h-[172px] sm:h-[196px] border border-[#232B3E]/40 hover:border-[#8A2BE2]/40 transition-colors">
                 <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#192134] flex items-center justify-center text-[#697184]">
                   <Radio size={28} className="sm:w-8 sm:h-8" />
@@ -424,7 +424,7 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Metric 2: Followers (387x196px) */}
+              {/* Metric 2: Followers (Mobile 408x172px / Desktop 387x196px) */}
               <div className="bg-[#0F172A] rounded-xl p-4 sm:p-6 flex flex-col justify-between min-h-[172px] sm:h-[196px] border border-[#232B3E]/40 hover:border-[#8A2BE2]/40 transition-colors">
                 <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#192134] flex items-center justify-center text-[#697184]">
                   <Users size={28} className="sm:w-8 sm:h-8" />
@@ -439,7 +439,7 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Metric 3: Monthly Listeners (387x196px) */}
+              {/* Metric 3: Monthly Listeners (Mobile 408x172px / Desktop 387x196px) */}
               <div className="bg-[#0F172A] rounded-xl p-4 sm:p-6 flex flex-col justify-between min-h-[172px] sm:h-[196px] border border-[#232B3E]/40 hover:border-[#8A2BE2]/40 transition-colors">
                 <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#192134] flex items-center justify-center text-[#697184]">
                   <Headphones size={28} className="sm:w-8 sm:h-8" />
@@ -456,7 +456,7 @@ export default function ProfilePage() {
 
             </div>
 
-            {/* Line 16 Divider */}
+            {/* Line 16 Divider (Mobile top: 1234px / Desktop top: 713px) */}
             <hr className="border-t border-[#2D3548] my-4 sm:my-6" />
 
             {/* ===================================================================== */}
