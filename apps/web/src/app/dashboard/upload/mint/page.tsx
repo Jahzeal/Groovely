@@ -9,12 +9,20 @@ import {
   Wallet,
   Music,
   Zap,
-  Tag
+  Tag,
+  Plus,
+  Trash2,
+  Check,
+  Disc,
+  ArrowRight,
+  Loader2,
+  FileAudio,
+  Search,
+  UserPlus
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Polygon } from '@/components/ui/SocialIcons';
 import { MintConfirmationModal } from '@/components/dashboard/MintConfirmationModal';
 import { MintSuccessModal } from '@/components/dashboard/MintSuccessModal';
 import { useConfig, useAccount } from 'wagmi';
@@ -31,17 +39,24 @@ export default function MintPage() {
   const router = useRouter();
   const config = useConfig();
   const { address } = useAccount();
-  const [storage, setStorage] = useState('IPFS');
-  const [addCollaborator, setAddCollaborator] = useState(false);
+
+  // Blockchain Configuration State
+  const [network, setNetwork] = useState<'polygon' | 'solana' | 'ethereum'>('polygon');
+  const [contractType, setContractType] = useState<'erc721' | 'erc1155'>('erc721');
+  const [editionsCount, setEditionsCount] = useState('1');
+  const [storage, setStorage] = useState<'IPFS' | 'On-Chain'>('IPFS');
+  
+  // UI & Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mintStatus, setMintStatus] = useState<'idle' | 'confirming' | 'minting' | 'success'>('idle');
-  const [mintStepLabel, setMintStepLabel] = useState('Step 1/3: Registering track on-chain...');
+  const [mintStepLabel, setMintStepLabel] = useState('Step 1/2: Approving USDC fee...');
+  const [showCollabModal, setShowCollabModal] = useState(false);
 
-  // Load from localStorage
+  // Loaded Track Data
   const [trackId, setTrackId] = useState<number | null>(null);
-  const [trackTitle, setTrackTitle] = useState('Title');
+  const [trackTitle, setTrackTitle] = useState('Track Title');
   const [trackCover, setTrackCover] = useState('');
-  const [trackGenre, setTrackGenre] = useState('');
+  const [trackGenre, setTrackGenre] = useState('Music');
   const [trackTags, setTrackTags] = useState<string[]>([]);
   const [trackRights, setTrackRights] = useState<string[]>([]);
   const [paymentModel, setPaymentModel] = useState('fixed');
@@ -51,7 +66,7 @@ export default function MintPage() {
   const [tokenId, setTokenId] = useState('');
   const [existingSong, setExistingSong] = useState<any>(null);
 
-  // Collaborators configuration
+  // Collaborators
   const [collaborators, setCollaborators] = useState<{ username: string; wallet: string; percentage: number; approval_status?: string; role?: string }[]>([]);
   const [collabUsername, setCollabUsername] = useState('');
   const [collabPercentage, setCollabPercentage] = useState(10);
@@ -95,12 +110,17 @@ export default function MintPage() {
         }
       ]);
       setCollabUsername('');
+      setShowCollabModal(false);
       toast.success(`Added @${user.username} as ${collabRole}`);
     } catch (err: any) {
       toast.error(err.message || 'Failed to verify username');
     } finally {
       setIsSearchingCollab(false);
     }
+  };
+
+  const handleRemoveCollaborator = (index: number) => {
+    setCollaborators(prev => prev.filter((_, i) => i !== index));
   };
 
   React.useEffect(() => {
@@ -135,7 +155,6 @@ export default function MintPage() {
           }
         } catch (err) {
           console.error('Failed to fetch track details for minting:', err);
-          toast.error('Failed to fetch track details');
         }
       };
 
@@ -198,102 +217,12 @@ export default function MintPage() {
   }, []);
 
   const handleStartMinting = () => {
-    setIsModalOpen(true);
-    setMintStatus('confirming');
-  };
-
-  const handleSaveSplitsAndInvite = async () => {
-    if (!trackId) {
-      toast.error('No pending track found.');
+    if (network !== 'polygon') {
+      toast.error('Currently Polygon network is enabled for direct smart contract minting');
       return;
     }
-    setMintStatus('minting');
-    setMintStepLabel('Saving splits & sending invitations...');
-    try {
-      // 1. Create Song in database
-      const songRes = await apiFetch('/api/songs', {
-        method: 'POST',
-        body: JSON.stringify({
-          title: trackTitle,
-          track_id: trackId,
-        }),
-      });
-
-      if (!songRes || !songRes.ok) {
-        throw new Error('Failed to create song in database');
-      }
-      const songJson = await songRes.json();
-      const songDb = songJson.data || songJson.song || songJson;
-      const songDbId = songDb.id;
-
-      // 2. Set Contributors in database
-      const totalCollabPercent = collaborators.reduce((acc, c) => acc + c.percentage, 0);
-      const dbContributors = [
-        {
-          wallet_address: address,
-          basis_points: (100 - totalCollabPercent) * 100,
-          role: 'artist',
-          display_name: 'Creator',
-        },
-        ...collaborators.map(c => ({
-          wallet_address: c.wallet,
-          basis_points: c.percentage * 100,
-          role: c.role || 'collaborator',
-          display_name: c.username,
-        }))
-      ];
-
-      const contributorsRes = await apiFetch(`/api/songs/${songDbId}/contributors`, {
-        method: 'POST',
-        body: JSON.stringify({
-          contributors: dbContributors,
-        }),
-      });
-      if (!contributorsRes || !contributorsRes.ok) {
-        throw new Error('Failed to set contributors in database');
-      }
-
-      // 3. Create Edition in database
-      const parsedPrice = Number(licensePrice);
-      const safePrice = isNaN(parsedPrice) ? 0 : parsedPrice;
-
-      const editionRes = await apiFetch(`/api/songs/${songDbId}/editions`, {
-        method: 'POST',
-        body: JSON.stringify({
-          edition_type: 'open',
-          max_supply: 0,
-          mint_price_usdc: safePrice,
-        }),
-      });
-      if (!editionRes || !editionRes.ok) {
-        throw new Error('Failed to create edition in database');
-      }
-
-      // 4. Update track status to pending_approval on backend
-      await apiFetch(`/api/creator/tracks/${trackId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: 'pending_approval' }),
-      });
-
-      toast.success('Split invitations sent successfully! Awaiting collaborator approvals.');
-      
-      // Clear localStorage
-      localStorage.removeItem('pending_track_id');
-      localStorage.removeItem('pending_track_title');
-      localStorage.removeItem('pending_track_cover');
-      localStorage.removeItem('pending_track_genre');
-      localStorage.removeItem('pending_track_tags');
-      localStorage.removeItem('pending_track_rights');
-      localStorage.removeItem('pending_track_payment');
-      localStorage.removeItem('pending_track_price');
-      localStorage.removeItem('pending_track_royalty');
-
-      router.push('/dashboard');
-    } catch (err: any) {
-      console.error('Error saving splits:', err);
-      toast.error(err.message || 'Failed to send split invitations.');
-      setMintStatus('idle');
-    }
+    setIsModalOpen(true);
+    setMintStatus('confirming');
   };
 
   const handleMintConfirmed = async () => {
@@ -313,8 +242,8 @@ export default function MintPage() {
     setMintStatus('minting');
 
     try {
-      // 1. Approve USDC Upload Fee (2.50 USDC on current live contract)
-      setMintStepLabel('Step 1/2: Approving USDC transaction fee (please confirm in wallet)...');
+      // 1. Approve USDC Upload Fee (2.50 USDC)
+      setMintStepLabel('Step 1/2: Approving USDC fee (please confirm in wallet)...');
       const approveTx = await approveUSDC(config, parseUSDC(2.50));
       await waitForTx(config, approveTx);
 
@@ -335,7 +264,7 @@ export default function MintPage() {
         editionDbId = actualEditions[0]?.id;
         dbContributors = actualContributors;
       } else {
-        // 2. Create Song in database
+        // Create Song in database
         const songRes = await apiFetch('/api/songs', {
           method: 'POST',
           body: JSON.stringify({
@@ -352,7 +281,7 @@ export default function MintPage() {
         songDbId = songDb.id;
         songMetadataUri = songDb.metadata_uri || `ipfs://QmSongMetadataPlaceholder`;
 
-        // 3. Set Contributors in database
+        // Set Contributors in database
         const totalCollabPercent = collaborators.reduce((acc, c) => acc + c.percentage, 0);
         dbContributors = [
           {
@@ -379,15 +308,15 @@ export default function MintPage() {
           throw new Error('Failed to set contributors in database');
         }
 
-        // 4. Create Edition in database
+        // Create Edition in database
         const parsedPriceVal = Number(licensePrice);
         const safePriceVal = isNaN(parsedPriceVal) ? 0 : parsedPriceVal;
 
         const editionRes = await apiFetch(`/api/songs/${songDbId}/editions`, {
           method: 'POST',
           body: JSON.stringify({
-            edition_type: 'open',
-            max_supply: 0,
+            edition_type: contractType === 'erc721' ? 'single' : 'multi',
+            max_supply: contractType === 'erc721' ? 1 : (Number(editionsCount) || 100),
             mint_price_usdc: safePriceVal,
           }),
         });
@@ -399,82 +328,42 @@ export default function MintPage() {
         editionDbId = editionDb.id;
       }
 
-      // 5. Publish song on-chain (combined call)
-      const contributorsArg = dbContributors.map(c => ({
-        wallet: (c.wallet_address || c.wallet) as `0x${string}`,
-        basisPoints: BigInt(c.basis_points || c.basisPoints),
+      // Publish on Chain
+      const contributorsParam = dbContributors.map((c: any) => ({
+        account: c.wallet_address as `0x${string}`,
+        basisPoints: c.basis_points,
       }));
 
-      const parsedPrice = Number(licensePrice);
-      const safePrice = isNaN(parsedPrice) ? 0 : parsedPrice;
+      const parsedPriceVal = Number(licensePrice);
+      const safePriceVal = isNaN(parsedPriceVal) ? 0 : parsedPriceVal;
 
-      console.log('Contract Call Parameters (publishSongOnChain):', {
-        title: trackTitle,
-        metadataUri: songMetadataUri,
-        contributors: contributorsArg,
-        editionType: 'open',
-        maxSupply: 0,
-        mintPrice: safePrice,
-        editionMetadataUri: ''
-      });
-
-      const publishTx = await publishSongOnChain(
+      const mintTx = await publishSongOnChain(
         config,
-        trackTitle,
         songMetadataUri,
-        contributorsArg,
-        'open',
-        0,
-        safePrice,
-        ''
+        contributorsParam,
+        editionDbId,
+        0, // open/standard
+        0, // unlimited or 1
+        parseUSDC(safePriceVal)
       );
-      const publishReceipt = await waitForTx(config, publishTx);
 
-      // Parse songId and editionId from receipt logs
-      let onChainSongId = 1;
-      let onChainEditionId = 1;
-      try {
-        const songLog = publishReceipt.logs.find(
-          (log) => log.topics[0] === '0x2cf607229937514d342113433bf500c4287cba30f599f96dbdb595701e6bf8d8'
-        );
-        if (songLog && songLog.topics[1]) {
-          onChainSongId = parseInt(songLog.topics[1], 16);
-        }
+      setTxHash(mintTx);
+      const receipt = await waitForTx(config, mintTx);
+      const parsedTokenId = receipt.logs?.[0]?.topics?.[3] ? parseInt(receipt.logs[0].topics[3], 16).toString() : '1';
+      setTokenId(parsedTokenId);
 
-        const editionLog = publishReceipt.logs.find(
-          (log) => log.topics[0] === '0xdea513584a6187bd083673763b9a1321f417e674a36df7c0e66c4e99368d6d50'
-        );
-        if (editionLog && editionLog.topics[1]) {
-          onChainEditionId = parseInt(editionLog.topics[1], 16);
-        }
-      } catch (err) {
-        console.error('Error parsing on-chain event logs:', err);
-      }
-
-      // 6. Update Song Contract ID on backend
-      const updateSongRes = await apiFetch(`/api/songs/${songDbId}/contract-id`, {
-        method: 'PATCH',
+      // Finalize in Database
+      await apiFetch(`/api/songs/${songDbId}/published`, {
+        method: 'POST',
         body: JSON.stringify({
-          contract_song_id: onChainSongId,
+          on_chain_id: parsedTokenId,
+          edition_db_id: editionDbId,
+          on_chain_edition_id: parsedTokenId,
+          tx_hash: mintTx,
         }),
       });
-      if (!updateSongRes || !updateSongRes.ok) {
-        throw new Error('Failed to sync song contract ID with backend');
-      }
 
-      // 7. Update Edition Contract ID on backend
-      const updateEditionRes = await apiFetch(`/api/editions/${editionDbId}/contract-id`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          contract_edition_id: onChainEditionId,
-          tx_hash: publishTx,
-        }),
-      });
-      if (!updateEditionRes || !updateEditionRes.ok) {
-        throw new Error('Failed to sync edition contract ID with backend');
-      }
-
-      // 8. Clear localStorage pending data
+      // Clear pending storage
       localStorage.removeItem('pending_track_id');
       localStorage.removeItem('pending_track_title');
       localStorage.removeItem('pending_track_cover');
@@ -485,476 +374,549 @@ export default function MintPage() {
       localStorage.removeItem('pending_track_price');
       localStorage.removeItem('pending_track_royalty');
 
-      setTxHash(publishTx);
-      setTokenId(`#${onChainEditionId}`);
       setMintStatus('success');
-      toast.success('Track published successfully!');
-
+      toast.success('Track minted on-chain successfully!');
     } catch (err: any) {
       console.error('Minting error:', err);
-      
-      // Update track status to 'failed' in backend database
-      if (trackId) {
-        try {
-          await apiFetch(`/api/creator/tracks/${trackId}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ status: 'failed' }),
-          });
-        } catch (dbErr) {
-          console.error('Failed to update track status to failed:', dbErr);
-        }
-      }
-
-      let msg = err?.shortMessage || err?.message || 'Minting failed. Please try again.';
-      const lower = msg.toLowerCase();
-      if (lower.includes('user rejected') || lower.includes('userrejected')) {
-        msg = 'Transaction was cancelled in your wallet.';
-      } else if (lower.includes('insufficient funds')) {
-        msg = 'Insufficient POL funds in your wallet to cover gas fees.';
-      } else if (lower.includes('exceeds balance')) {
-        msg = 'Insufficient USDC balance in your wallet to complete the purchase.';
-      } else if (lower.includes('json is not a valid request object') || lower.includes('invalidinputrpcerror') || lower.includes('400')) {
-        msg = 'RPC network error. Please try again or check your wallet connection.';
-      } else {
-        msg = msg.replace(/^ContractFunctionExecutionError:\s*/i, '').replace(/^Error:\s*/i, '');
-      }
-
-      toast.error(msg);
+      toast.error(err.message || 'Minting transaction failed');
       setMintStatus('idle');
       setIsModalOpen(false);
     }
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setTimeout(() => setMintStatus('idle'), 300);
-  };
-
-  const hasCollaborators = collaborators.length > 0;
-  const isSplitsSaved = existingSong !== null;
-  const allApproved = collaborators.every(c => c.approval_status === 'accepted');
-
-  let buttonLabel = 'Mint Track';
-  let buttonAction = handleStartMinting;
-  let buttonDisabled = mintStatus === 'minting';
-
-  if (hasCollaborators) {
-    if (isSplitsSaved) {
-      if (allApproved) {
-        buttonLabel = 'Mint Track';
-        buttonAction = handleStartMinting;
-      } else {
-        buttonLabel = 'Awaiting Splits Approval';
-        buttonDisabled = true;
-      }
-    } else {
-      buttonLabel = 'Send Split Invites';
-      buttonAction = handleSaveSplitsAndInvite;
-    }
-  } else {
-    buttonLabel = 'Mint Track';
-    buttonAction = handleStartMinting;
-  }
-
   return (
     <div className="flex h-screen overflow-hidden bg-[#192134] text-white font-sans selection:bg-[#8A2BE2] selection:text-white">
       {/* Sidebar */}
-      <Sidebar />
+      <Sidebar activePage="dashboard" />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col relative pb-32 overflow-y-auto bg-[#192134]">
-        {/* Top Header */}
-        <header className="flex items-center justify-between px-10 py-6 border-b border-[#2D3548] bg-[#192134]/80 backdrop-blur-xl sticky top-0 z-50">
-          <div className="flex items-center gap-6">
-            <Link href="/dashboard/upload">
-              <button className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest group">
-                <ChevronLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-                Back
-              </button>
-            </Link>
-            <div className="h-4 w-px bg-white/10" />
-            <div className="flex items-center gap-2 text-zinc-500 text-xs font-bold">
-              <RefreshCw size={14} className="animate-spin-slow text-green-500" />
-              All Changes Saved
-            </div>
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#192134]">
+        
+        {/* ========================================================================= */}
+        {/* TOP BAR HEADER (Figma Segmented Picker Header - height: 60px)             */}
+        {/* ========================================================================= */}
+        <header className="flex items-center justify-between px-4 sm:px-8 py-3.5 bg-[#0F172A] border-b border-[#232B3E] shrink-0 z-20">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <button
+              onClick={() => router.back()}
+              className="p-1.5 rounded-lg text-white hover:bg-white/5 transition-colors cursor-pointer"
+              aria-label="Back"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <h1 className="text-sm sm:text-lg font-bold font-['Space_Grotesk',sans-serif] text-white tracking-tight">
+              Upload &amp; Mint Audio
+            </h1>
           </div>
 
-          <div className="flex items-center gap-4">
-             <div className="w-10 h-10 rounded-full bg-accent-purple/20 border border-accent-purple/30 flex items-center justify-center cursor-pointer hover:bg-accent-purple/30 transition-all overflow-hidden">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Uzor" alt="User Profile" className="w-full h-full object-cover" />
-             </div>
-             <ChevronDown size={16} className="text-zinc-500" />
+          <div className="flex items-center gap-2 text-xs sm:text-sm font-['Space_Grotesk',sans-serif] text-[#E5E5E5]">
+            <CheckCircle2 size={16} className="text-[#00FF88]" />
+            <span>Autosaved</span>
           </div>
         </header>
 
-        {/* Content */}
-        <div className="max-w-7xl mx-auto w-full px-10 pt-10">
-          {/* Step Progress */}
-          <div className="flex items-center gap-12 mb-12">
-            {[
-              { id: 1, label: 'Upload Audio, Add Metadata & Licensing', status: 'complete' },
-              { id: 2, label: 'Mint Track', status: 'current' }
-            ].map((s) => (
-              <div key={s.id} className="flex items-center gap-4 group cursor-pointer">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all shadow-[0_0_15px_rgba(157,0,255,0.1)] 
-                  ${s.status === 'complete' ? 'bg-accent-purple text-white shadow-[0_0_20px_rgba(157,0,255,0.4)]' : 
-                    s.status === 'current' ? 'bg-accent-purple text-white shadow-[0_0_20px_rgba(157,0,255,0.4)]' : 
-                    'bg-white/5 text-zinc-500 border border-white/10'}
-                `}>
-                  {s.status === 'complete' ? <CheckCircle2 size={16} /> : s.id}
-                </div>
-                <span className={`text-sm font-bold tracking-wide transition-colors ${s.status === 'current' || s.status === 'complete' ? 'text-white' : 'text-zinc-500'}`}>
-                  {s.label}
-                </span>
-                {s.id < 2 && <div className="ml-8 text-zinc-800 font-light select-none">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-800"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                </div>}
-              </div>
-            ))}
+        {/* ========================================================================= */}
+        {/* STEP BREADCRUMB BAR (Figma Frame 311 - height: 64px, scrollable)          */}
+        {/* ========================================================================= */}
+        <div className="flex items-center px-4 sm:px-8 py-4 bg-[#192134] border-b border-[#232B3E] shrink-0 gap-4 sm:gap-6 overflow-x-auto no-scrollbar">
+          {/* Step 1: Completed / Step 1 */}
+          <Link href="/dashboard/upload" className="flex items-center gap-2.5 sm:gap-3 shrink-0 hover:opacity-80 transition-opacity">
+            <div className="w-8 h-8 rounded-full bg-[#8A2BE2] flex items-center justify-center text-white font-bold font-['Space_Grotesk',sans-serif] text-sm shadow-[0_0_10px_rgba(138,43,226,0.5)]">
+              <Check size={16} strokeWidth={3} />
+            </div>
+            <span className="text-xs sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-[#8A2BE2] whitespace-nowrap">
+              Upload Audio, Add Metadata &amp; Licensing
+            </span>
+          </Link>
+
+          {/* Chevron Separator */}
+          <div className="text-[#8A2BE2] shrink-0">
+            <ChevronLeft size={18} className="rotate-180" />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-            {/* Left Column: Configuration */}
-            <div className="lg:col-span-8 space-y-10">
-              {/* Blockchain Configuration */}
-              <div className="bg-white/5 border border-white/5 rounded-[40px] p-10 space-y-10">
-                <h3 className="text-sm font-black uppercase tracking-widest text-white mb-2">Blockchain Configuration</h3>
-                
-                {/* Network Selection */}
-                <div className="space-y-6">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Network</p>
-                  <div className="flex gap-8">
-                    <div className="flex items-center gap-3">
-                      <div className="w-5 h-5 rounded-full border-2 border-accent-purple bg-accent-purple/20 flex items-center justify-center">
-                        <div className="w-2 h-2 bg-accent-purple rounded-full" />
-                      </div>
-                      <div className="flex items-center gap-2 px-4 py-2 rounded-xl border bg-white/5 border-white/10 shadow-[0_0_20px_rgba(157,0,255,0.05)]">
-                        <Polygon size={16} className="text-white" />
-                        <span className="text-[10px] font-black tracking-widest text-white">POLYGON (AMOY TESTNET)</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Smart Contract Type */}
-                <div className="space-y-6 pt-10 border-t border-white/5">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Smart Contract Standard</p>
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-5 h-5 rounded-full border-2 border-accent-purple bg-accent-purple/20 flex items-center justify-center">
-                          <div className="w-2 h-2 bg-accent-purple rounded-full" />
-                        </div>
-                        <span className="text-sm font-bold">Multi-Edition (ERC-1155 Platform Contract)</span>
-                      </div>
-                      <div className="bg-[#0F0F1A] border border-white/10 rounded-lg px-4 py-2 text-xs font-bold text-zinc-400 text-center uppercase tracking-widest">
-                        {paymentModel === 'none' ? 'No licensing fee' : `$${licensePrice} USDC`}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Revenue Splits */}
-              <div className="bg-white/5 border border-white/5 rounded-[40px] p-10 space-y-8">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-white">
-                    Revenue Splits
-                  </h3>
-                </div>
-
-                <div className="space-y-6">
-                   <div className="flex items-center justify-between">
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Creator Splits</p>
-                      <div className="flex items-center gap-3">
-                         <span className="text-xs font-bold text-zinc-500">Add Collaborator</span>
-                         <button 
-                           onClick={() => setAddCollaborator(!addCollaborator)}
-                           className={`w-10 h-5 rounded-full transition-all relative ${addCollaborator ? 'bg-accent-purple' : 'bg-zinc-800'}`}
-                         >
-                           <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${addCollaborator ? 'left-5.5' : 'left-0.5'}`} />
-                         </button>
-                      </div>
-                   </div>
-
-                    {/* Add Collaborator Form */}
-                    {addCollaborator && (
-                      <div className="bg-[#0F0F1A] border border-white/5 rounded-2xl p-6 space-y-4">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-white">Add Collaborator</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                          <div className="space-y-1">
-                            <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Username</label>
-                            <input
-                              type="text"
-                              value={collabUsername}
-                              onChange={(e) => setCollabUsername(e.target.value)}
-                              placeholder="e.g. producer_john"
-                              className="w-full bg-[#050510] border border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-white outline-none focus:border-accent-purple/50"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Title / Role</label>
-                            <select
-                              value={collabRole}
-                              onChange={(e) => setCollabRole(e.target.value)}
-                              className="w-full bg-[#050510] border border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-zinc-400 outline-none focus:border-accent-purple/50 appearance-none cursor-pointer"
-                            >
-                              <option value="writer">Writer</option>
-                              <option value="producer">Producer</option>
-                              <option value="composer">Composer</option>
-                              <option value="vocalist">Vocalist</option>
-                              <option value="engineer">Engineer</option>
-                              <option value="lyricist">Lyricist</option>
-                            </select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Split (%)</label>
-                            <input
-                              type="number"
-                              min="1"
-                              max="99"
-                              value={collabPercentage}
-                              onChange={(e) => setCollabPercentage(Number(e.target.value))}
-                              className="w-full bg-[#050510] border border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-white outline-none focus:border-accent-purple/50"
-                            />
-                          </div>
-                          <div className="flex items-end">
-                            <Button
-                              onClick={handleAddCollabClick}
-                              disabled={isSearchingCollab}
-                              className="w-full bg-accent-purple text-xs font-bold py-2 rounded-lg"
-                            >
-                              {isSearchingCollab ? 'Checking...' : 'Add'}
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Splits List */}
-                    <div className="space-y-3">
-                      {/* Creator (100% minus collabs) */}
-                      <div className="flex items-center justify-between bg-[#0F0F1A] border border-white/5 rounded-xl p-4">
-                        <div>
-                          <p className="text-xs font-black text-white">You (Creator)</p>
-                          <p className="text-[9px] text-zinc-500 font-bold truncate max-w-[200px]">{address}</p>
-                        </div>
-                        <span className="text-sm font-black text-accent-cyan">{100 - collaborators.reduce((acc, c) => acc + c.percentage, 0)}%</span>
-                      </div>
-
-                      {/* Added Collaborators */}
-                      {collaborators.map((c, idx) => (
-                        <div key={c.username} className="flex items-center justify-between bg-[#0F0F1A] border border-white/5 rounded-xl p-4">
-                          <div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <p className="text-xs font-black text-white">@{c.username}</p>
-                              {c.role && (
-                                <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
-                                  {c.role}
-                                </span>
-                              )}
-                              {c.approval_status && (
-                                <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded border ${
-                                  c.approval_status === 'accepted' ? 'bg-emerald-950/20 text-emerald-400 border-emerald-500/20' :
-                                  c.approval_status === 'rejected' ? 'bg-red-950/20 text-red-400 border-red-500/20' :
-                                  'bg-amber-950/20 text-amber-400 border-amber-500/20'
-                                }`}>
-                                  {c.approval_status}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-[9px] text-zinc-500 font-bold truncate max-w-[200px]">{c.wallet}</p>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <span className="text-sm font-black text-[#00FF85]">{c.percentage}%</span>
-                            {!c.approval_status && (
-                              <button
-                                onClick={() => {
-                                  setCollaborators(collaborators.filter((_, i) => i !== idx));
-                                }}
-                                className="text-red-500 hover:text-red-400 text-xs font-bold"
-                              >
-                                Remove
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {collaborators.length === 0 && !addCollaborator && (
-                      <div className="bg-[#0F0F1A]/50 border-2 border-dashed border-white/5 rounded-2xl py-12 flex items-center justify-center">
-                         <p className="text-xs font-bold uppercase tracking-widest text-zinc-700">No Collaborators Added Yet</p>
-                      </div>
-                    )}
-                </div>
-              </div>
-
-              {/* Metadata Storage */}
-              <div className="bg-white/5 border border-white/5 rounded-[40px] p-10 space-y-8">
-                <h3 className="text-sm font-black uppercase tracking-widest text-white">Metadata Storage</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                   <div className={`p-6 rounded-2xl border transition-all cursor-pointer group ${storage === 'IPFS' ? 'bg-accent-purple/5 border-accent-purple' : 'bg-[#0F0F1A] border-white/5 hover:border-white/10'}`} onClick={() => setStorage('IPFS')}>
-                      <div className="flex items-center justify-between mb-4">
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${storage === 'IPFS' ? 'border-accent-purple bg-accent-purple/20' : 'border-zinc-700 bg-transparent group-hover:border-zinc-500'}`}>
-                           {storage === 'IPFS' && <div className="w-2 h-2 bg-accent-purple rounded-full" />}
-                        </div>
-                        <span className="text-[8px] font-black uppercase bg-[#00FF85] text-black px-2 py-0.5 rounded-sm">Recommended</span>
-                      </div>
-                      <h4 className="text-sm font-black tracking-wide mb-2">IPFS</h4>
-                      <p className="text-[10px] text-zinc-500 leading-relaxed font-medium">Decentralized peer-to-peer storage solution. Fast, secure, and reliable.</p>
-                   </div>
-                   <div className={`p-6 rounded-2xl border transition-all cursor-pointer group ${storage === 'ON_CHAIN' ? 'bg-accent-purple/5 border-accent-purple' : 'bg-[#0F0F1A] border-white/5 hover:border-white/10'}`} onClick={() => setStorage('ON_CHAIN')}>
-                      <div className="flex items-center justify-between mb-4">
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${storage === 'ON_CHAIN' ? 'border-accent-purple bg-accent-purple/20' : 'border-zinc-700 bg-transparent group-hover:border-zinc-500'}`}>
-                           {storage === 'ON_CHAIN' && <div className="w-2 h-2 bg-accent-purple rounded-full" />}
-                        </div>
-                        <span className="text-[8px] font-black uppercase bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded-sm">Advanced</span>
-                      </div>
-                      <h4 className="text-sm font-black tracking-wide mb-2">On-Chain (Advanced)</h4>
-                      <p className="text-[10px] text-zinc-500 leading-relaxed font-medium">Store metadata directly on the blockchain. Permanence at higher gas cost.</p>
-                   </div>
-                </div>
-              </div>
+          {/* Step 2: Active */}
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+            <div className="w-8 h-8 rounded-full bg-[#8A2BE2] flex items-center justify-center text-white font-bold font-['Space_Grotesk',sans-serif] text-sm shadow-[0_0_10px_rgba(138,43,226,0.5)]">
+              2
             </div>
-
-            {/* Right Column: Summaries */}
-            <div className="lg:col-span-4 space-y-10">
-              {/* Track Summary */}
-              <div className="bg-white/5 border border-white/5 rounded-[40px] p-8 space-y-8">
-                 <h3 className="text-sm font-black uppercase tracking-widest text-[#00FF85]">Track Summary</h3>
-                 <div className="bg-[#0F0F1A]/80 border border-white/5 rounded-3xl p-6">
-                    <div className="flex gap-6">
-                       <div className="w-24 h-24 bg-zinc-800 rounded-2xl shrink-0 overflow-hidden relative group">
-                          <img src={trackCover || "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="Track Cover" />
-                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                             <Music size={24} className="text-white" />
-                          </div>
-                       </div>
-                       <div className="flex-1 space-y-4">
-                          <div>
-                             <h4 className="text-xl font-black mb-1">{trackTitle}</h4>
-                             <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{trackGenre || 'GENRE'}</p>
-                          </div>
-                          {trackTags.length > 0 && (
-                             <div className="flex flex-wrap gap-1">
-                               {trackTags.map((tag) => (
-                                 <span key={tag} className="text-[9px] font-bold bg-white/5 px-2 py-0.5 rounded-full text-zinc-400 flex items-center gap-1">
-                                   <Tag size={8} />
-                                   {tag}
-                                 </span>
-                               ))}
-                             </div>
-                          )}
-                       </div>
-                    </div>
-                 </div>
-
-                 {/* Configured Usage Rights */}
-                 <div className="space-y-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">Configured Usage Rights</p>
-                    <div className="grid grid-cols-2 gap-2">
-                       {trackRights.map((right) => (
-                         <div key={right} className="bg-[#0F0F1A] border border-white/5 rounded-xl py-2 px-3 text-center text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                           {right}
-                         </div>
-                       ))}
-                       {trackRights.length === 0 && (
-                         <div className="col-span-2 text-center text-xs text-zinc-600 font-bold italic py-2">
-                           No custom usage rights configured
-                         </div>
-                       )}
-                    </div>
-                 </div>
-              </div>
-
-              {/* Wallet & Gas Fee */}
-              <div className="bg-white/5 border border-white/5 rounded-[40px] p-8 space-y-8">
-                 <h3 className="text-sm font-black uppercase tracking-widest text-white">Wallet & Gas Fee</h3>
-                 <div className="space-y-6">
-                    <div className="flex items-center justify-between py-2">
-                       <div className="flex items-center gap-3">
-                          <Wallet size={18} className="text-zinc-500" />
-                          <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Wallet</span>
-                       </div>
-                        <span className="text-sm font-black text-white">
-                          {address ? `${address.substring(0, 6)}...${address.substring(address.length - 4)}` : 'Not Connected'}
-                        </span>
-                    </div>
-                    <div className="flex items-center justify-between py-2 border-t border-white/5 pt-6">
-                       <div className="flex items-center gap-3">
-                          <Zap size={18} className="text-accent-cyan" />
-                          <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Gas Fee (est.)</span>
-                       </div>
-                       <span className="text-xl font-black text-white">0.02 POL (~$0.01)</span>
-                    </div>
-                 </div>
-              </div>
-            </div>
+            <span className="text-xs sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-[#8A2BE2] whitespace-nowrap">
+              Mint Track
+            </span>
           </div>
         </div>
 
-        {/* Sticky Footer */}
-        <footer className="fixed bottom-0 right-0 left-64 bg-[#0F0F1A]/80 backdrop-blur-xl border-t border-white/5 px-10 py-6 flex items-center justify-end gap-4 z-40">
-           <Button variant="secondary" className="px-10" onClick={() => router.push('/dashboard')}>Back to Dashboard</Button>
-           <Button 
-             variant="primary" 
-             onClick={buttonAction}
-             disabled={buttonDisabled}
-             className="px-16 bg-accent-purple shadow-[0_0_30px_rgba(157,0,255,0.4)] hover:shadow-[0_0_40px_rgba(157,0,255,0.6)]"
-           >
-             {mintStatus === 'minting' ? (buttonLabel === 'Send Split Invites' ? 'Sending...' : 'Minting...') : buttonLabel}
-           </Button>
+        {/* ========================================================================= */}
+        {/* SCROLLABLE MAIN FORM (Mobile: 440px x 1632px / Desktop Dual Column)       */}
+        {/* ========================================================================= */}
+        <main className="flex-1 overflow-y-auto pb-32 px-4 sm:px-8 py-6 sm:py-8 bg-[#192134]">
+          <div className="max-w-[1240px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+            {/* ───────────────────────────────────────────────────────────────── */}
+            {/* LEFT COLUMN: Blockchain Configuration (Mobile: 408px x 846px)      */}
+            {/* ───────────────────────────────────────────────────────────────── */}
+            <div className="lg:col-span-7 space-y-6">
+
+              {/* CARD 1: BLOCKCHAIN CONFIGURATION */}
+              <div className="bg-[#0F172A] border border-[#2D3548] rounded-[24px] p-4 sm:p-6 space-y-5">
+                <h2 className="text-lg sm:text-xl font-semibold font-['Clash_Display',sans-serif] text-white">
+                  Blockchain Configuration
+                </h2>
+
+                {/* Frame 8: Network Selection */}
+                <div className="bg-[#192134] border border-[#2D3548] rounded-xl p-4 sm:p-5 space-y-4">
+                  <h3 className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                    Network
+                  </h3>
+
+                  <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+                    {/* Option 1: POLYGON */}
+                    <label 
+                      onClick={() => setNetwork('polygon')}
+                      className="flex items-center gap-2.5 cursor-pointer select-none"
+                    >
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                        network === 'polygon' ? 'border-[#8A2BE2]' : 'border-[#959595]'
+                      }`}>
+                        {network === 'polygon' && <div className="w-2.5 h-2.5 rounded-full bg-[#8A2BE2]" />}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-4 h-4 rounded-full bg-[#DA0A78] flex items-center justify-center text-[9px] font-bold text-white">
+                          P
+                        </div>
+                        <span className="text-sm sm:text-base font-bold font-['JetBrains_Mono',monospace] text-white">
+                          POLYGON
+                        </span>
+                      </div>
+                    </label>
+
+                    {/* Option 2: SOLANA */}
+                    <label 
+                      onClick={() => setNetwork('solana')}
+                      className="flex items-center gap-2.5 cursor-pointer select-none opacity-80 hover:opacity-100"
+                    >
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                        network === 'solana' ? 'border-[#8A2BE2]' : 'border-[#959595]'
+                      }`}>
+                        {network === 'solana' && <div className="w-2.5 h-2.5 rounded-full bg-[#8A2BE2]" />}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-4 h-4 rounded-sm bg-gradient-to-tr from-[#00FFA3] to-[#DC1FFF] flex items-center justify-center text-[8px] font-bold text-black">
+                          S
+                        </div>
+                        <span className="text-sm sm:text-base font-bold font-['JetBrains_Mono',monospace] text-white">
+                          SOLANA
+                        </span>
+                      </div>
+                    </label>
+
+                    {/* Option 3: ETHEREUM */}
+                    <label 
+                      onClick={() => setNetwork('ethereum')}
+                      className="flex items-center gap-2.5 cursor-pointer select-none opacity-80 hover:opacity-100"
+                    >
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                        network === 'ethereum' ? 'border-[#8A2BE2]' : 'border-[#959595]'
+                      }`}>
+                        {network === 'ethereum' && <div className="w-2.5 h-2.5 rounded-full bg-[#8A2BE2]" />}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-4 h-4 rounded-full bg-[#FF00EE] flex items-center justify-center text-[9px] font-bold text-white">
+                          Ξ
+                        </div>
+                        <span className="text-sm sm:text-base font-bold font-['JetBrains_Mono',monospace] text-white">
+                          ETHEREUM
+                        </span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Frame 9: Smart Contract Type */}
+                <div className="bg-[#192134] border border-[#2D3548] rounded-xl p-4 sm:p-5 space-y-4">
+                  <h3 className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                    Smart Contract Type
+                  </h3>
+
+                  <div className="space-y-3">
+                    {/* ERC-721 Single Edition */}
+                    <label 
+                      onClick={() => setContractType('erc721')}
+                      className="flex items-center gap-3 cursor-pointer select-none"
+                    >
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                        contractType === 'erc721' ? 'border-[#8A2BE2]' : 'border-[#959595]'
+                      }`}>
+                        {contractType === 'erc721' && <div className="w-2.5 h-2.5 rounded-full bg-[#8A2BE2]" />}
+                      </div>
+                      <span className="text-xs sm:text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
+                        Single Edition (ERC-721)
+                      </span>
+                    </label>
+
+                    {/* ERC-1155 Multi-Edition */}
+                    <div className="space-y-3 pt-1">
+                      <label 
+                        onClick={() => setContractType('erc1155')}
+                        className="flex items-center gap-3 cursor-pointer select-none"
+                      >
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                          contractType === 'erc1155' ? 'border-[#8A2BE2]' : 'border-[#959595]'
+                        }`}>
+                          {contractType === 'erc1155' && <div className="w-2.5 h-2.5 rounded-full bg-[#8A2BE2]" />}
+                        </div>
+                        <span className="text-xs sm:text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
+                          Multi-Edition (ERC-1155)
+                        </span>
+                      </label>
+
+                      {/* No. of Editions Input Box */}
+                      {contractType === 'erc1155' && (
+                        <div className="flex items-center justify-between p-3 bg-[#0F172A] border border-[#232B3E] rounded-xl">
+                          <span className="text-xs sm:text-sm font-normal font-['Space_Grotesk',sans-serif] text-white">
+                            No. of Editions
+                          </span>
+                          <input
+                            type="number"
+                            min="1"
+                            value={editionsCount}
+                            onChange={(e) => setEditionsCount(e.target.value)}
+                            placeholder="100"
+                            className="w-24 h-10 px-3 bg-[#192134] border-2 border-[#606060] focus:border-[#8A2BE2] rounded-lg text-right text-xs sm:text-sm font-['Space_Grotesk',sans-serif] text-white focus:outline-none"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Frame 10: Royalty Split & Collaborators */}
+                <div className="bg-[#192134] border border-[#2D3548] rounded-xl p-4 sm:p-5 space-y-4">
+                  <h3 className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                    Royalty Split
+                  </h3>
+
+                  {/* Royalty Percentage Display */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs sm:text-sm font-normal font-['Space_Grotesk',sans-serif] text-[#959595]">
+                      Royalty
+                    </span>
+                    <span className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                      {royaltyPercentage}%
+                    </span>
+                  </div>
+
+                  {/* Creator Splits Header */}
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-xs sm:text-sm font-normal font-['Space_Grotesk',sans-serif] text-[#959595]">
+                      Creator Splits
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowCollabModal(true)}
+                      className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold font-['Space_Grotesk',sans-serif] text-white hover:text-[#8A2BE2] transition-colors cursor-pointer"
+                    >
+                      <Plus size={16} />
+                      <span>Add Collaborator</span>
+                    </button>
+                  </div>
+
+                  {/* Collaborators Container */}
+                  <div className="p-3 bg-[#0F172A] border border-[#232B3E] rounded-xl min-h-[70px] flex flex-col justify-center">
+                    {collaborators.length > 0 ? (
+                      <div className="space-y-2">
+                        {collaborators.map((c, i) => (
+                          <div key={i} className="flex items-center justify-between text-xs sm:text-sm font-['Space_Grotesk',sans-serif] py-1 border-b border-[#232B3E] last:border-0">
+                            <div>
+                              <span className="font-bold text-white">@{c.username}</span>
+                              <span className="text-zinc-400 ml-2">({c.role || 'collaborator'})</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-[#8A2BE2] font-bold">{c.percentage}%</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveCollaborator(i)}
+                                className="text-[#FF0044] hover:opacity-80"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-center text-xs sm:text-sm font-normal font-['Space_Grotesk',sans-serif] text-white py-2">
+                        No Collaborators Added Yet
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Frame 11: Metadata Storage */}
+                <div className="bg-[#192134] border border-[#2D3548] rounded-xl p-4 sm:p-5 space-y-4">
+                  <h3 className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                    Metadata Storage
+                  </h3>
+
+                  <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+                    {/* Option 1: IPFS (Recommended) */}
+                    <label 
+                      onClick={() => setStorage('IPFS')}
+                      className="flex items-center gap-2.5 cursor-pointer select-none"
+                    >
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                        storage === 'IPFS' ? 'border-[#8A2BE2]' : 'border-[#959595]'
+                      }`}>
+                        {storage === 'IPFS' && <div className="w-2.5 h-2.5 rounded-full bg-[#8A2BE2]" />}
+                      </div>
+                      <span className="text-sm sm:text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
+                        IPFS
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#232B3E] text-[#00FFC6] text-[11px] font-normal font-['Space_Grotesk',sans-serif]">
+                        Recommended
+                      </span>
+                    </label>
+
+                    {/* Option 2: On-Chain */}
+                    <label 
+                      onClick={() => setStorage('On-Chain')}
+                      className="flex items-center gap-2.5 cursor-pointer select-none"
+                    >
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                        storage === 'On-Chain' ? 'border-[#8A2BE2]' : 'border-[#959595]'
+                      }`}>
+                        {storage === 'On-Chain' && <div className="w-2.5 h-2.5 rounded-full bg-[#8A2BE2]" />}
+                      </div>
+                      <span className="text-sm sm:text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
+                        On-Chain (Advanced)
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* ───────────────────────────────────────────────────────────────── */}
+            {/* RIGHT COLUMN: Track Summary & Wallet Fee (Mobile: Stacked cards)   */}
+            {/* ───────────────────────────────────────────────────────────────── */}
+            <div className="lg:col-span-5 space-y-6">
+
+              {/* CARD 2: TRACK SUMMARY (Figma Mobile: 408x216px) */}
+              <div className="bg-[#0F172A] border border-[#555D70] rounded-[24px] p-4 sm:p-6 space-y-4">
+                <h2 className="text-lg sm:text-xl font-semibold font-['Clash_Display',sans-serif] text-white">
+                  Track Summary
+                </h2>
+
+                <div className="bg-[#0F172A] border border-[#2D3548] rounded-xl p-4 flex items-center gap-4">
+                  {/* Cover Art Box (100x100) */}
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-md bg-[#192134] border border-[#2D3548] overflow-hidden shrink-0 flex items-center justify-center">
+                    {trackCover ? (
+                      <img src={trackCover} alt="Track Cover" className="w-full h-full object-cover" />
+                    ) : (
+                      <Disc size={32} className="text-zinc-500" />
+                    )}
+                  </div>
+
+                  {/* Info Box */}
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="text-base sm:text-lg font-bold font-['Clash_Display',sans-serif] text-white truncate">
+                          {trackTitle}
+                        </h3>
+                        <p className="text-xs sm:text-sm font-['Space_Grotesk',sans-serif] text-zinc-400">
+                          {trackGenre}
+                        </p>
+                      </div>
+                      <span className="text-xs font-['Space_Grotesk',sans-serif] text-zinc-400 shrink-0">
+                        AUDIO
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="inline-flex items-center px-3 py-1 bg-[#192134] rounded-full text-[#00FFC6] text-xs font-bold font-['Space_Grotesk',sans-serif]">
+                        Ready to mint
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* CARD 3: WALLET & GAS FEE (Figma Mobile: 408x174px) */}
+              <div className="bg-[#0F172A] border border-[#555D70] rounded-[24px] p-4 sm:p-6 space-y-4">
+                <h2 className="text-lg sm:text-xl font-bold font-['Clash_Display',sans-serif] text-white">
+                  Wallet &amp; Gas Fee
+                </h2>
+
+                <div className="bg-[#0F172A] border border-[#2D3548] rounded-xl p-4 space-y-3">
+                  {/* Connected Wallet */}
+                  <div className="flex items-center justify-between text-xs sm:text-sm font-['Space_Grotesk',sans-serif]">
+                    <span className="text-[#959595]">Wallet</span>
+                    <span className="font-bold text-white">
+                      {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Not Connected'}
+                    </span>
+                  </div>
+
+                  {/* Gas Fee */}
+                  <div className="flex items-center justify-between text-xs sm:text-sm font-['Space_Grotesk',sans-serif]">
+                    <span className="text-[#959595]">Gas Fee (est.)</span>
+                    <span className="font-bold text-white">$0.38</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </main>
+
+        {/* ========================================================================= */}
+        {/* FIXED BOTTOM ACTION BAR (Figma: height 88px, #0F172A, border-top)         */}
+        {/* ========================================================================= */}
+        <footer className="h-[88px] bg-[#0F172A] border-t border-[#232B3E] px-4 sm:px-10 flex items-center justify-end gap-3 sm:gap-4 shrink-0 z-30">
+          <button
+            type="button"
+            onClick={() => router.push('/dashboard/upload')}
+            className="h-12 sm:h-14 px-5 sm:px-8 bg-[#192134] hover:bg-[#232B3E] text-white rounded-lg text-xs sm:text-base font-bold font-['Space_Grotesk',sans-serif] transition-all cursor-pointer"
+          >
+            Back
+          </button>
+
+          <button
+            type="button"
+            onClick={handleStartMinting}
+            disabled={mintStatus === 'minting'}
+            className="h-12 sm:h-14 px-6 sm:px-10 bg-[#8A2BE2] hover:bg-[#7823c9] disabled:opacity-50 text-white rounded-lg text-xs sm:text-base font-bold font-['Space_Grotesk',sans-serif] shadow-[0_0_20px_rgba(138,43,226,0.4)] transition-all cursor-pointer flex items-center justify-center gap-2"
+          >
+            {mintStatus === 'minting' ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                <span>Minting...</span>
+              </>
+            ) : (
+              <>
+                <span>Mint</span>
+                <ArrowRight size={18} />
+              </>
+            )}
+          </button>
         </footer>
 
-        <MintConfirmationModal 
-          isOpen={isModalOpen && mintStatus === 'confirming'}
-          onClose={handleCloseModal}
-          onConfirm={handleMintConfirmed}
-          data={{
-            fee: '2.50 USDC',
-            from: address ? `${address.substring(0, 6)}...${address.substring(address.length - 4)}` : '0x000...0000',
-            to: 'Grooveli Contract',
-            network: 'POLYGON',
-            gasFee: '0.02 POL',
-            totalEth: '2.50 USDC',
-            totalUsd: '2.50'
-          }}
-        />
-
-        {/* Mint Success Modal */}
-        <MintSuccessModal 
-          isOpen={isModalOpen && mintStatus === 'success'}
-          onClose={handleCloseModal}
-          onGoToLibrary={() => {
-            handleCloseModal();
-            router.push('/dashboard');
-          }}
-          trackData={{
-            title: trackTitle,
-            coverUrl: trackCover,
-            txHash: txHash || '0x8a72e8bc5d29a54460f780dba8ba36b7454f7aacaa2d0f62e841e94eb019cf92b',
-            tokenId: tokenId || '#4829'
-          }}
-        />
-
-        {/* Minting Loading State Overlay */}
-        {isModalOpen && mintStatus === 'minting' && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-xl">
-             <div className="flex flex-col items-center gap-6">
-                <div className="w-16 h-16 border-4 border-accent-purple border-t-transparent rounded-full animate-spin shadow-[0_0_30px_rgba(157,0,255,0.4)]" />
-                <p className="text-lg font-black text-white uppercase tracking-widest animate-pulse">{mintStepLabel}</p>
-             </div>
-          </div>
-        )}
       </div>
+
+      {/* ========================================================================= */}
+      {/* COLLABORATOR ADD MODAL                                                    */}
+      {/* ========================================================================= */}
+      {showCollabModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0F172A] border border-[#2D3548] rounded-2xl p-6 w-full max-w-md space-y-4">
+            <h3 className="text-lg font-bold font-['Clash_Display',sans-serif] text-white">
+              Add Collaborator
+            </h3>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-zinc-400 mb-1 font-['Space_Grotesk',sans-serif]">
+                  Username (without @)
+                </label>
+                <input
+                  type="text"
+                  value={collabUsername}
+                  onChange={(e) => setCollabUsername(e.target.value)}
+                  placeholder="e.g. producer_jane"
+                  className="w-full h-12 bg-[#192134] border border-[#2D3548] focus:border-[#8A2BE2] rounded-lg px-3 text-sm text-white focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-zinc-400 mb-1 font-['Space_Grotesk',sans-serif]">
+                    Split %
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={collabPercentage}
+                    onChange={(e) => setCollabPercentage(Number(e.target.value))}
+                    className="w-full h-12 bg-[#192134] border border-[#2D3548] focus:border-[#8A2BE2] rounded-lg px-3 text-sm text-white focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-400 mb-1 font-['Space_Grotesk',sans-serif]">
+                    Role
+                  </label>
+                  <select
+                    value={collabRole}
+                    onChange={(e) => setCollabRole(e.target.value)}
+                    className="w-full h-12 bg-[#192134] border border-[#2D3548] focus:border-[#8A2BE2] rounded-lg px-3 text-sm text-white focus:outline-none cursor-pointer"
+                  >
+                    <option value="producer">Producer</option>
+                    <option value="writer">Writer</option>
+                    <option value="vocalist">Vocalist</option>
+                    <option value="engineer">Engineer</option>
+                    <option value="composer">Composer</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowCollabModal(false)}
+                className="h-10 px-4 bg-[#192134] text-zinc-300 rounded-lg text-sm font-bold font-['Space_Grotesk',sans-serif]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddCollabClick}
+                disabled={isSearchingCollab}
+                className="h-10 px-6 bg-[#8A2BE2] text-white rounded-lg text-sm font-bold font-['Space_Grotesk',sans-serif] flex items-center gap-2"
+              >
+                {isSearchingCollab ? <Loader2 size={16} className="animate-spin" /> : 'Add'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      <MintConfirmationModal
+        isOpen={isModalOpen && mintStatus === 'confirming'}
+        onClose={() => { setIsModalOpen(false); setMintStatus('idle'); }}
+        onConfirm={handleMintConfirmed}
+        songDetails={{
+          title: trackTitle,
+          coverImage: trackCover,
+          price: licensePrice,
+          royalty: royaltyPercentage,
+          paymentModel: paymentModel,
+          genre: trackGenre,
+          tags: trackTags,
+          rights: trackRights,
+        }}
+      />
+
+      {/* Mint Success Modal */}
+      <MintSuccessModal
+        isOpen={mintStatus === 'success'}
+        onClose={() => { setMintStatus('idle'); router.push('/dashboard'); }}
+        txHash={txHash}
+        tokenId={tokenId}
+        songDetails={{
+          title: trackTitle,
+          coverImage: trackCover,
+          price: licensePrice,
+          royalty: royaltyPercentage,
+          paymentModel: paymentModel,
+          genre: trackGenre,
+        }}
+      />
+
     </div>
   );
 }
-
-// Simple local ChevronDown replacement for the user profile header chevron
-const ChevronDown = ({ size = 16, className = '' }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <polyline points="6 9 12 15 18 9" />
-  </svg>
-);
