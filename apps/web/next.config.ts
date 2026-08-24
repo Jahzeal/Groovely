@@ -8,8 +8,14 @@ const nextConfig: NextConfig = {
       '@tanstack/react-query',
     ],
   },
-  // API requests are proxied to the backend via src/app/api/[...path]/route.ts
-  // No rewrites needed here.
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'https://groovely-ttyi.onrender.com/api/:path*',
+      },
+    ];
+  },
   webpack(config) {
     config.resolve = config.resolve || {};
     config.resolve.fallback = {
