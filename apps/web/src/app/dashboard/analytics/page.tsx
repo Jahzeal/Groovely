@@ -2,413 +2,655 @@
 
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/dashboard/Sidebar';
-import { TopBar } from '@/components/dashboard/TopBar';
-import { apiFetch, resolveIpfsUrl } from '@/lib/api';
 import { 
+  Search, 
+  Bell, 
+  ChevronRight, 
+  ChevronLeft, 
   Radio, 
   Wallet, 
   UploadCloud, 
-  Info, 
-  TrendingUp, 
-  TrendingDown,
-  Eye,
-  MoreVertical,
-  ChevronRight,
-  ChevronLeft,
-  Search,
-  Plus,
+  Play, 
+  Pause, 
+  MoreVertical, 
+  Plus, 
+  Disc,
+  Send,
   Loader2
 } from 'lucide-react';
+import { Twitter, Instagram } from '@/components/ui/SocialIcons';
+import { apiFetch, resolveIpfsUrl } from '@/lib/api';
+import { useMusicPlayer } from '@/components/marketplace/MusicPlayerContext';
+import { MusicPlayer } from '@/components/marketplace/MusicPlayer';
+import { usePrivy } from '@privy-io/react-auth';
+import { useAccount } from 'wagmi';
 import Link from 'next/link';
 
-// --- Sub-components ---
-
-const StatCard = ({ icon: Icon, label, value, change, isLoading }: any) => (
-  <div className="glass-card p-8 flex flex-col gap-4 relative overflow-hidden group hover:border-accent-purple/30 transition-all duration-500">
-    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-20 transition-opacity">
-       <Icon size={80} />
-    </div>
-    <div className="flex items-center justify-between">
-      <div className="w-10 h-10 bg-[#0F0F1A] border border-white/10 rounded-xl flex items-center justify-center">
-         <Icon className="text-accent-purple" size={20} />
-      </div>
-      <div className="flex items-center gap-2 hover:bg-white/5 p-1 rounded-md transition-colors cursor-help group/info">
-         <Info size={14} className="text-zinc-600 group-hover/info:text-zinc-400" />
-      </div>
-    </div>
-    <div className="space-y-1">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">{label}</p>
-        {isLoading ? (
-          <div className="h-10 w-24 bg-white/5 animate-pulse rounded-lg mt-1" />
-        ) : (
-          <>
-            <div className="flex items-baseline gap-3">
-                <span className="text-4xl font-black tracking-tight text-white">{value}</span>
-            </div>
-            <div className="flex items-center gap-2 mt-2">
-                {change !== null && (
-                  <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${change >= 0 ? 'bg-[#00FF85]/10 text-[#00FF85] border-[#00FF85]/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}>
-                    {change >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-                    {Math.abs(change)}%
-                  </div>
-                )}
-                <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest whitespace-nowrap">This Month</span>
-            </div>
-          </>
-        )}
-    </div>
-  </div>
-);
-
-const PerformanceChart = ({ playsData, isLoading }: { playsData: number[], isLoading: boolean }) => {
-    // If data is missing or loading, use a default or show loading
-    const data = playsData.length > 0 ? playsData : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
-    const width = 800;
-    const height = 300;
-    const padding = 40;
-    
-    const maxVal = Math.max(...data, 100); // Minimum max scale of 100
-    const getX = (index: number) => (index * (width - padding * 2)) / (data.length - 1) + padding;
-    const getY = (value: number) => height - padding - ((value / maxVal) * (height - padding * 2));
-
-    const curveD = data.reduce((acc, val, i, arr) => {
-      if (i === 0) return `M ${getX(i)} ${getY(val)}`;
-      const prevX = getX(i - 1);
-      const prevY = getY(arr[i - 1]);
-      const currX = getX(i);
-      const currY = getY(val);
-      const cpX = (prevX + currX) / 2;
-      return `${acc} C ${cpX} ${prevY}, ${cpX} ${currY}, ${currX} ${currY}`;
-    }, '');
-
-    if (isLoading) {
-      return (
-        <div className="w-full h-80 flex items-center justify-center bg-white/5 rounded-2xl animate-pulse">
-           <Loader2 className="w-8 h-8 text-accent-purple animate-spin" />
-        </div>
-      );
-    }
-
-    return (
-      <div className="w-full h-80 relative">
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full">
-          <defs>
-            <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.2" />
-              <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0" />
-            </linearGradient>
-            <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#8B5CF6" />
-              <stop offset="100%" stopColor="#2DD4BF" />
-            </linearGradient>
-          </defs>
-          
-          {/* Areas */}
-          <path d={`${curveD} L ${getX(data.length-1)} ${height-padding} L ${padding} ${height-padding} Z`} fill="url(#chartGradient)" />
-          
-          {/* Grid Lines */}
-          {[0, 0.5, 1].map((p) => {
-            const y = height - padding - p * (height - padding * 2);
-            return <line key={p} x1={padding} y1={y} x2={width - padding} y2={y} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />;
-          })}
-
-          {/* Line */}
-          <path d={curveD} fill="none" stroke="url(#lineGradient)" strokeWidth="3" strokeLinecap="round" />
-          
-          {/* Labels */}
-          {months.map((m, i) => (
-            <text key={m} x={getX(i)} y={height - 10} fill="rgba(255,255,255,0.3)" fontSize="10" textAnchor="middle" className="font-black uppercase tracking-widest">{m}</text>
-          ))}
-        </svg>
-      </div>
-    );
-};
-
-const StatusBadge = ({ status }: any) => {
-  const styles: any = {
-    Live: "bg-[#00FF85]/10 text-[#00FF85] border-[#00FF85]/20",
-    Draft: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
-    Failed: "bg-red-500/10 text-red-500 border-red-500/20",
-    Minting: "bg-accent-purple/10 text-accent-purple border-accent-purple/20"
-  };
-  return (
-    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${styles[status]}`}>
-      {status}
-    </span>
-  );
-};
+interface TrackItem {
+  id: number;
+  title: string;
+  cover_url?: string;
+  audio_url?: string;
+  category: string;
+  streams: number;
+  earnings: number;
+  status: 'Live' | 'Draft' | 'Failed' | 'Minting';
+}
 
 export default function AnalyticsPage() {
-  const [activeTab, setActiveTab] = useState('Plays');
-  const [stats, setStats] = useState<any>(null);
-  const [playsData, setPlaysData] = useState<number[]>([]);
-  const [earningsData, setEarningsData] = useState<number[]>([]);
-  const [listenersData, setListenersData] = useState<number[]>([]);
-  const [topTracks, setTopTracks] = useState<any[]>([]);
-  const [tracks, setTracks] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user } = usePrivy();
+  const { address } = useAccount();
+  const { playTrack, currentTrack, isPlaying } = useMusicPlayer();
+
+  const [activeChartTab, setActiveChartTab] = useState<'Plays' | '$ Earnings' | 'Listeners'>('Plays');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  const [stats, setStats] = useState({
+    streams: 1230,
+    streamsChange: 15,
+    earnings: 1032.60,
+    earningsChange: 10.5,
+    uploads: 10,
+    uploadsChange: -0.5,
+  });
+
+  const [tracks, setTracks] = useState<TrackItem[]>([
+    {
+      id: 1,
+      title: 'Slow Lights on Third Street',
+      cover_url: 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=150&q=80',
+      category: 'Music',
+      streams: 5000,
+      earnings: 234.01,
+      status: 'Live',
+    },
+    {
+      id: 2,
+      title: 'Midnight Bounce',
+      cover_url: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=150&q=80',
+      category: 'Beat',
+      streams: 0,
+      earnings: 0,
+      status: 'Draft',
+    },
+    {
+      id: 3,
+      title: 'Late Nights, Loose Thoughts — Ep. 01',
+      cover_url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=150&q=80',
+      category: 'Podcast',
+      streams: 40000,
+      earnings: 1000.01,
+      status: 'Live',
+    },
+    {
+      id: 4,
+      title: 'After the Noise',
+      cover_url: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=150&q=80',
+      category: 'Music',
+      streams: 0,
+      earnings: 0,
+      status: 'Failed',
+    },
+    {
+      id: 5,
+      title: 'No Wahala, Just Vibes',
+      cover_url: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=150&q=80',
+      category: 'Skit',
+      streams: 0,
+      earnings: 0,
+      status: 'Minting',
+    },
+  ]);
+
+  const activeAddress = address || user?.wallet?.address;
+  const abbrev = activeAddress
+    ? `${activeAddress.slice(0, 5)}...${activeAddress.slice(-3)}`
+    : '0xc...y69';
 
   useEffect(() => {
-    async function fetchData() {
-      setIsLoading(true);
+    async function loadData() {
+      setLoading(true);
       try {
-        // Fetch stats
-        const statsRes = await apiFetch('/api/creator/dashboard/stats');
-        if (statsRes && statsRes.ok) {
-          const data = await statsRes.json();
-          setStats(data.data);
+        const [statsRes, tracksRes] = await Promise.all([
+          apiFetch('/api/creator/dashboard/stats'),
+          apiFetch('/api/creator/dashboard/tracks'),
+        ]);
+
+        if (statsRes?.ok) {
+          const statsJson = await statsRes.json();
+          const s = statsJson.data || statsJson;
+          setStats((prev) => ({
+            ...prev,
+            streams: s.streams?.total ?? prev.streams,
+            streamsChange: s.streams?.change ?? prev.streamsChange,
+            earnings: s.earnings?.total ?? prev.earnings,
+            earningsChange: s.earnings?.change ?? prev.earningsChange,
+            uploads: s.uploads?.total ?? prev.uploads,
+            uploadsChange: s.uploads?.change ?? prev.uploadsChange,
+          }));
         }
 
-        // Fetch plays analytics
-        const playsRes = await apiFetch('/api/creator/analytics/plays');
-        if (playsRes && playsRes.ok) {
-          const data = await playsRes.json();
-          setPlaysData(data.data || []);
+        if (tracksRes?.ok) {
+          const trkJson = await tracksRes.json();
+          const list = trkJson.data?.tracks || trkJson.tracks || [];
+          if (Array.isArray(list) && list.length > 0) {
+            setTracks(list);
+          }
         }
-
-        // Fetch earnings analytics
-        const earningsRes = await apiFetch('/api/creator/analytics/earnings');
-        if (earningsRes && earningsRes.ok) {
-          const data = await earningsRes.json();
-          setEarningsData(data.data || []);
-        }
-
-        // Fetch listeners analytics
-        const listenersRes = await apiFetch('/api/creator/analytics/listeners');
-        if (listenersRes && listenersRes.ok) {
-          const data = await listenersRes.json();
-          setListenersData(data.data || []);
-        }
-
-        // Fetch top tracks analytics
-        const topTracksRes = await apiFetch('/api/creator/analytics/top-tracks');
-        if (topTracksRes && topTracksRes.ok) {
-          const data = await topTracksRes.json();
-          setTopTracks(data.data || []);
-        }
-
-        // Fetch tracks
-        const tracksRes = await apiFetch('/api/creator/dashboard/tracks');
-        if (tracksRes && tracksRes.ok) {
-          const data = await tracksRes.json();
-          setTracks(data.data?.tracks || []);
-        }
-      } catch (error) {
-        console.error('Failed to fetch analytics data', error);
+      } catch (err) {
+        console.error('Failed to load analytics data:', err);
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     }
-
-    fetchData();
+    loadData();
   }, []);
 
+  const chartPoints = [
+    { label: '511' },
+    { label: '510' },
+    { label: '509' },
+    { label: '507' },
+    { label: '506' },
+    { label: '504' },
+    { label: '503' },
+    { label: '502' },
+    { label: '501' },
+    { label: '508' },
+    { label: '505' },
+    { label: '500' },
+  ];
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'Live':
+        return (
+          <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-['Space_Grotesk',sans-serif] font-normal bg-[rgba(0,255,136,0.1)] text-[#00FF88]">
+            Live
+          </span>
+        );
+      case 'Draft':
+        return (
+          <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-['Space_Grotesk',sans-serif] font-normal bg-[rgba(255,230,0,0.1)] text-[#FFE600]">
+            Draft
+          </span>
+        );
+      case 'Failed':
+        return (
+          <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-['Space_Grotesk',sans-serif] font-normal bg-[rgba(255,0,68,0.1)] text-[#FF0044]">
+            Failed
+          </span>
+        );
+      case 'Minting':
+        return (
+          <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full text-xs font-['Space_Grotesk',sans-serif] bg-[#697184] text-[#0F172A] font-bold">
+            <Loader2 size={12} className="animate-spin" />
+            Minting
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-['Space_Grotesk',sans-serif] bg-white/5 text-zinc-400">
+            {status}
+          </span>
+        );
+    }
+  };
+
+  const filteredTracks = tracks.filter(t =>
+    t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.category.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="flex h-screen overflow-hidden bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
-      <Sidebar />
+    <div className="flex h-screen overflow-hidden bg-[#192134] text-white font-sans selection:bg-[#8A2BE2] selection:text-white">
+      {/* Left Sidebar */}
+      <Sidebar activePage="analytics" />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <TopBar />
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#192134]">
+        
+        {/* ========================================================================= */}
+        {/* TOP BAR (Figma Frame 25) - Height: 80px                                   */}
+        {/* ========================================================================= */}
+        <header className="flex items-center justify-between px-8 py-4 h-20 bg-[#0F172A]/10 border-b border-[#232B3E] backdrop-blur-[25px] sticky top-0 z-30">
+          <div className="flex items-center gap-6 flex-1">
+            <h1 className="text-2xl font-bold font-['Clash_Display',sans-serif] text-white tracking-tight shrink-0">
+              Analytics
+            </h1>
 
-        <main className="flex-1 p-10 overflow-y-auto mesh-gradient">
-          {/* Stats Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
-            <StatCard 
-              icon={Radio} 
-              label="Streams" 
-              value={stats?.streams?.total || "0"} 
-              change={stats?.streams?.change} 
-              isLoading={isLoading}
-            />
-            <StatCard 
-              icon={Wallet} 
-              label="Earnings" 
-              value={stats?.earnings?.total ? `$${parseFloat(stats.earnings.total).toFixed(4)}` : "$0.0000"} 
-              change={stats?.earnings?.change} 
-              isLoading={isLoading}
-            />
-            <StatCard 
-              icon={UploadCloud} 
-              label="Uploads" 
-              value={stats?.uploads?.total || "0"} 
-              change={stats?.uploads?.change} 
-              isLoading={isLoading}
-            />
+            <div className="relative w-72 lg:w-[300px]">
+              <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-[#CACACA]">
+                <Search size={18} />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search"
+                className="w-full h-12 bg-transparent border-2 border-[#232B3E] focus:border-[#8A2BE2] rounded-lg pl-11 pr-4 text-sm font-['Space_Grotesk',sans-serif] text-white placeholder-[#CACACA] focus:outline-none transition-all"
+              />
+            </div>
           </div>
 
-          {/* Performance Chart */}
-          <div className="glass-card p-10 mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-             <div className="flex items-center justify-between mb-10">
-                <h3 className="text-xl font-black uppercase tracking-widest text-white">Performance Chart</h3>
-                <div className="flex bg-[#0F0F1A] p-1.5 rounded-xl border border-white/5">
-                   {['Plays', '$ Earnings', 'Listeners'].map(tab => (
-                     <button 
-                       key={tab}
-                       onClick={() => setActiveTab(tab)}
-                       className={`px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-accent-purple text-white shadow-lg' : 'text-zinc-500 hover:text-white'}`}
-                     >
-                        {tab}
-                     </button>
-                   ))}
+          <div className="flex items-center gap-3">
+            <button className="text-white hover:opacity-80 transition-opacity p-2 relative">
+              <Bell size={20} />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#8A2BE2] rounded-full shadow-[0_0_6px_rgba(138,43,226,0.8)]" />
+            </button>
+
+            <div className="w-px h-8 bg-[#232B3E] mx-1" />
+
+            <div className="flex items-center gap-2 bg-transparent px-2 py-1 rounded-lg">
+              <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 flex items-center justify-center bg-[#FF5C16]/10 p-0.5">
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg"
+                  alt="Wallet"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <span className="text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                {abbrev}
+              </span>
+            </div>
+          </div>
+        </header>
+
+        {/* ========================================================================= */}
+        {/* MAIN SCROLLABLE CONTENT                                                   */}
+        {/* ========================================================================= */}
+        <main className="flex-1 overflow-y-auto pb-28 px-4 sm:px-8 md:px-10 pt-6 md:pt-8 bg-[#192134]">
+          <div className="max-w-[1200px] mx-auto space-y-6">
+
+            {/* ===================================================================== */}
+            {/* TOP 3 METRIC CARDS ROW (Figma Frame 200: Streams, Earnings, Uploads)   */}
+            {/* ===================================================================== */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              
+              {/* Streams Card */}
+              <div className="bg-[#0F172A] rounded-xl p-4 flex flex-col justify-between h-[228px] border border-[#232B3E]/40 hover:border-[#8A2BE2]/40 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div className="w-16 h-16 rounded-full bg-[#192134] flex items-center justify-center text-[#697184]">
+                    <Radio size={32} />
+                  </div>
+                  <button className="text-[#CACACA] hover:text-white transition-colors">
+                    <MoreVertical size={20} />
+                  </button>
                 </div>
-             </div>
-             <PerformanceChart 
-               playsData={
-                 activeTab === 'Plays' ? playsData : 
-                 activeTab === '$ Earnings' ? earningsData : 
-                 listenersData
-               } 
-               isLoading={isLoading} 
-             />
-          </div>
 
-          {/* Tracks Performance */}
-          <div className="glass-card p-10 mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
-             <div className="flex items-center justify-between mb-8">
-                <h3 className="text-xl font-black uppercase tracking-widest text-white">Tracks Performance</h3>
-                <Link href="/dashboard/upload" className="bg-accent-purple hover:bg-opacity-90 text-white text-[10px] font-black uppercase tracking-widest py-3 px-8 rounded-xl flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(157,0,255,0.2)]">
-                   <Plus size={14} />
-                   Upload & Mint
+                <div>
+                  <p className="text-base font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">Streams</p>
+                  <p className="text-4xl font-bold font-['Clash_Display',sans-serif] text-white my-1">
+                    {Number(stats.streams).toLocaleString()}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">This Month</span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-['Space_Grotesk',sans-serif] bg-[rgba(0,255,136,0.1)] text-[#40FFA6]">
+                      +{stats.streamsChange}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Earnings Card */}
+              <div className="bg-[#0F172A] rounded-xl p-4 flex flex-col justify-between h-[228px] border border-[#232B3E]/40 hover:border-[#8A2BE2]/40 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div className="w-16 h-16 rounded-full bg-[#192134] flex items-center justify-center text-[#697184]">
+                    <Wallet size={32} />
+                  </div>
+                  <button className="text-[#CACACA] hover:text-white transition-colors">
+                    <MoreVertical size={20} />
+                  </button>
+                </div>
+
+                <div>
+                  <p className="text-base font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">Earnings</p>
+                  <p className="text-4xl font-bold font-['Clash_Display',sans-serif] text-white my-1">
+                    ${Number(stats.earnings).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">This Month</span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-['Space_Grotesk',sans-serif] bg-[rgba(0,255,136,0.1)] text-[#40FFA6]">
+                      +{stats.earningsChange}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Uploads Card */}
+              <div className="bg-[#0F172A] rounded-xl p-4 flex flex-col justify-between h-[228px] border border-[#232B3E]/40 hover:border-[#8A2BE2]/40 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div className="w-16 h-16 rounded-full bg-[#192134] flex items-center justify-center text-[#697184]">
+                    <UploadCloud size={32} />
+                  </div>
+                  <button className="text-[#CACACA] hover:text-white transition-colors">
+                    <MoreVertical size={20} />
+                  </button>
+                </div>
+
+                <div>
+                  <p className="text-base font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">Uploads</p>
+                  <p className="text-4xl font-bold font-['Clash_Display',sans-serif] text-white my-1">
+                    {stats.uploads}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">This Month</span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-['Space_Grotesk',sans-serif] bg-[rgba(255,51,102,0.1)] text-[#FA003E]">
+                      {stats.uploadsChange}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* ===================================================================== */}
+            {/* PERFORMANCE CHART SECTION (Figma Frame 195 - Height: 428px)           */}
+            {/* ===================================================================== */}
+            <div className="bg-[#0F172A] rounded-xl p-4 sm:p-6 border border-[#232B3E]/40">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                <h2 className="text-xl font-bold font-['Clash_Display',sans-serif] text-white">
+                  Performance Chart
+                </h2>
+
+                <div className="flex items-center gap-3">
+                  {(['Plays', '$ Earnings', 'Listeners'] as const).map((tab) => {
+                    const isActive = activeChartTab === tab;
+                    return (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveChartTab(tab)}
+                        className={`px-4 py-2 rounded-lg text-sm font-bold font-['Space_Grotesk',sans-serif] transition-all cursor-pointer ${
+                          isActive
+                            ? 'bg-[rgba(138,43,226,0.1)] border-2 border-[#4E0AA6] text-[#CACACA] shadow-[0_0_12px_rgba(138,43,226,0.3)]'
+                            : 'bg-[#192134] text-[#CACACA] hover:text-white border-2 border-transparent'
+                        }`}
+                      >
+                        {tab}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Chart Canvas Box */}
+              <div className="bg-[#192134] rounded-xl p-4 sm:p-6 h-[300px] sm:h-[332px] flex flex-col justify-between relative overflow-hidden">
+                <div className="relative flex-1 w-full flex items-end">
+                  <svg className="w-full h-[85%] overflow-visible" viewBox="0 0 1000 200" preserveAspectRatio="none">
+                    <line x1="0" y1="0" x2="1000" y2="0" stroke="#2D3548" strokeDasharray="3 3" strokeWidth="1" />
+                    <line x1="0" y1="50" x2="1000" y2="50" stroke="#2D3548" strokeDasharray="3 3" strokeWidth="1" />
+                    <line x1="0" y1="100" x2="1000" y2="100" stroke="#2D3548" strokeDasharray="3 3" strokeWidth="1" />
+                    <line x1="0" y1="150" x2="1000" y2="150" stroke="#2D3548" strokeDasharray="3 3" strokeWidth="1" />
+                    <line x1="0" y1="200" x2="1000" y2="200" stroke="#2D3548" strokeWidth="1" />
+
+                    <defs>
+                      <linearGradient id="analyticsChartGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#8A2BE2" stopOpacity="0.35" />
+                        <stop offset="100%" stopColor="#8A2BE2" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+
+                    <path
+                      d="M 0 160 Q 80 120, 160 140 T 320 80 T 480 50 T 640 100 T 800 30 T 1000 70 L 1000 200 L 0 200 Z"
+                      fill="url(#analyticsChartGrad)"
+                    />
+
+                    <path
+                      d="M 0 160 Q 80 120, 160 140 T 320 80 T 480 50 T 640 100 T 800 30 T 1000 70"
+                      fill="none"
+                      stroke="#FFFFFF"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                    />
+
+                    <circle cx="800" cy="30" r="5" fill="#8A2BE2" stroke="#FFFFFF" strokeWidth="2" />
+                  </svg>
+
+                  <div className="absolute left-0 top-0 bottom-6 flex flex-col justify-between text-[10px] font-['Inter',sans-serif] text-[#A3A3A3] pointer-events-none">
+                    <span>1 500</span>
+                    <span>1 000</span>
+                    <span>500</span>
+                    <span>0</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-between pl-8 pr-2 pt-2 border-t border-[#232B3E] text-[10px] font-['Inter',sans-serif] text-[#A3A3A3]">
+                  {chartPoints.map(p => (
+                    <span key={p.label}>{p.label}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* ===================================================================== */}
+            {/* TRACKS PERFORMANCE TABLE SECTION (Figma Table top: 816px)            */}
+            {/* ===================================================================== */}
+            <div className="bg-[#0F172A] rounded-xl p-4 sm:p-6 border border-[#232B3E]/40">
+              
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#232B3E]">
+                <h2 className="text-xl font-bold font-['Clash_Display',sans-serif] text-white">
+                  Tracks Performance
+                </h2>
+
+                <Link
+                  href="/dashboard/upload"
+                  className="inline-flex items-center justify-center gap-2 bg-[#8A2BE2] hover:bg-[#7823c9] text-white px-5 py-2.5 rounded-lg text-sm font-bold font-['Space_Grotesk',sans-serif] shadow-[0_0_15px_rgba(138,43,226,0.3)] transition-all cursor-pointer self-start sm:self-auto"
+                >
+                  <Plus size={18} />
+                  <span>Upload & Mint</span>
                 </Link>
-             </div>
+              </div>
 
-             <div className="overflow-x-auto">
-                {isLoading ? (
-                  <div className="flex flex-col gap-4">
-                    {[1, 2, 3, 4, 5].map(i => (
-                      <div key={i} className="h-16 w-full bg-white/5 animate-pulse rounded-xl" />
+              <div className="overflow-x-auto mt-4">
+                <table className="w-full text-left border-collapse min-w-[750px]">
+                  <thead>
+                    <tr className="bg-[#192134] border-b border-[#232B3E] text-[#CACACA] text-sm font-bold font-['Space_Grotesk',sans-serif]">
+                      <th className="py-3 px-4 rounded-l-lg">Track</th>
+                      <th className="py-3 px-4">Content</th>
+                      <th className="py-3 px-4 text-right">Streams</th>
+                      <th className="py-3 px-4 text-right">Earnings</th>
+                      <th className="py-3 px-4 text-center">Status</th>
+                      <th className="py-3 px-4 text-center rounded-r-lg">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#192134]">
+                    {filteredTracks.map((t) => (
+                      <tr key={t.id} className="bg-[#232B3E] hover:bg-[#2c364e] transition-colors">
+                        
+                        {/* Track 40x40 Thumbnail + Title */}
+                        <td className="py-3 px-4 flex items-center gap-3">
+                          <div className="w-10 h-10 rounded overflow-hidden shrink-0 bg-[#192134] shadow-sm">
+                            <img
+                              src={resolveIpfsUrl(t.cover_url) || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=150&q=80'}
+                              alt={t.title}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <span className="text-sm font-bold font-['Space_Grotesk',sans-serif] text-white truncate max-w-xs">
+                            {t.title}
+                          </span>
+                        </td>
+
+                        {/* Content Pill */}
+                        <td className="py-3 px-4">
+                          <span className="bg-[rgba(15,23,42,0.5)] text-[#CACACA] text-xs font-['Space_Grotesk',sans-serif] px-3 py-1 rounded-full">
+                            {t.category}
+                          </span>
+                        </td>
+
+                        {/* Streams */}
+                        <td className="py-3 px-4 text-right text-sm font-normal font-['Space_Grotesk',sans-serif] text-white">
+                          {t.streams.toLocaleString()}
+                        </td>
+
+                        {/* Earnings */}
+                        <td className="py-3 px-4 text-right text-sm font-normal font-['Space_Grotesk',sans-serif] text-white">
+                          ${t.earnings === 0 ? '0' : t.earnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+
+                        {/* Status Badge */}
+                        <td className="py-3 px-4 text-center">
+                          {getStatusBadge(t.status)}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-3 px-4 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() =>
+                                playTrack({
+                                  id: t.id,
+                                  title: t.title,
+                                  artist: 'You',
+                                  image: resolveIpfsUrl(t.cover_url) || '',
+                                  audioUrl: resolveIpfsUrl(t.audio_url),
+                                })
+                              }
+                              className="p-1.5 text-zinc-400 hover:text-white transition-colors"
+                              title="Play"
+                            >
+                              <Play size={16} />
+                            </button>
+                            <button className="p-1.5 text-zinc-400 hover:text-white transition-colors">
+                              <MoreVertical size={16} />
+                            </button>
+                          </div>
+                        </td>
+
+                      </tr>
                     ))}
-                  </div>
-                ) : tracks.length === 0 ? (
-                  <div className="py-20 text-center">
-                    <p className="text-zinc-500 font-bold uppercase tracking-widest">No tracks found</p>
-                  </div>
-                ) : (
-                  <table className="w-full text-left">
-                    <thead>
-                        <tr className="border-b border-white/5 text-[10px] font-black text-zinc-500 uppercase tracking-widest">
-                          <th className="pb-6 font-black">Track</th>
-                          <th className="pb-6 font-black">Content</th>
-                          <th className="pb-6 font-black text-center">Streams</th>
-                          <th className="pb-6 font-black text-center">Earnings</th>
-                          <th className="pb-6 font-black text-center">Status</th>
-                          <th className="pb-6 font-black text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                        {tracks.map((track, i) => (
-                          <tr key={i} className="group hover:bg-white/[0.02] transition-colors">
-                            <td className="py-6">
-                                <div className="flex items-center gap-4">
-                                  <img 
-                                    src={resolveIpfsUrl(track.cover_url) || "https://images.unsplash.com/photo-1514525253361-bee8d48800d5?w=100&h=100&fit=crop"} 
-                                    alt="" 
-                                    className="w-12 h-12 rounded-xl object-cover grayscale-[0.3] group-hover:grayscale-0 transition-all border border-white/5" 
-                                  />
-                                  <span className="text-sm font-black text-white group-hover:text-accent-purple transition-colors">{track.title}</span>
-                                </div>
-                            </td>
-                            <td className="py-6">
-                                <span className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-zinc-400">{track.category || 'Music'}</span>
-                            </td>
-                            <td className="py-6 text-center text-sm font-black text-zinc-200">{track.streams.toLocaleString()}</td>
-                            <td className="py-6 text-center text-sm font-black text-zinc-200">${track.earnings.toFixed(4)}</td>
-                            <td className="py-6 text-center"><StatusBadge status={track.status} /></td>
-                            <td className="py-6 text-right">
-                                <div className="flex items-center justify-end gap-4 text-zinc-500">
-                                  <button className="hover:text-white transition-colors"><Eye size={18} /></button>
-                                  <button className="hover:text-white transition-colors"><MoreVertical size={18} /></button>
-                                </div>
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                )}
-             </div>
+                  </tbody>
+                </table>
+              </div>
 
-             {!isLoading && tracks.length > 0 && (
-               <div className="mt-8 flex items-center justify-between border-t border-white/5 pt-8">
-                  <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Page 1 of 1</span>
-                  <div className="flex items-center gap-2">
-                    <button className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-zinc-600 cursor-not-allowed transition-colors"><ChevronLeft size={16} /></button>
-                    <button className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-white transition-all"><ChevronRight size={16} /></button>
+              {/* Table Pagination */}
+              <div className="flex items-center justify-center gap-4 mt-4 pt-3 text-sm font-['Space_Grotesk',sans-serif] text-[#CACACA]">
+                <span>Page 1 of 2</span>
+                <button className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer">
+                  <ChevronLeft size={16} />
+                  <span>Previous</span>
+                </button>
+                <button className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer">
+                  <span>Next</span>
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* ===================================================================== */}
+            {/* TOP TRACKS SECTION (Figma Frame 196, 197, 198)                        */}
+            {/* ===================================================================== */}
+            <div className="bg-[#0F172A] rounded-xl p-4 sm:p-6 border border-[#232B3E]/40">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold font-['Clash_Display',sans-serif] text-white">
+                  Top Tracks
+                </h2>
+              </div>
+
+              <div className="bg-[#192134] rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                
+                {/* Most Streams */}
+                <div className="bg-[#0F172A] rounded-lg p-3 flex items-center gap-3 border border-[#232B3E]/40">
+                  <div className="w-16 h-16 rounded overflow-hidden shrink-0 bg-[#192134]">
+                    <img
+                      src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=150&q=80"
+                      alt="Top stream"
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-               </div>
-             )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold font-['Space_Grotesk',sans-serif] text-white truncate">
+                      Late Nights, Loose Thoughts — Ep. 01
+                    </p>
+                    <span className="inline-block bg-[#192134] text-white text-[11px] font-['Space_Grotesk',sans-serif] px-2.5 py-0.5 rounded-full mt-1">
+                      Most Streams
+                    </span>
+                  </div>
+                </div>
+
+                {/* Most Earnings */}
+                <div className="bg-[#0F172A] rounded-lg p-3 flex items-center gap-3 border border-[#232B3E]/40">
+                  <div className="w-16 h-16 rounded overflow-hidden shrink-0 bg-[#192134]">
+                    <img
+                      src="https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=150&q=80"
+                      alt="Top earning"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold font-['Space_Grotesk',sans-serif] text-white truncate">
+                      Late Nights, Loose Thoughts — Ep. 01
+                    </p>
+                    <span className="inline-block bg-[#192134] text-white text-[11px] font-['Space_Grotesk',sans-serif] px-2.5 py-0.5 rounded-full mt-1">
+                      Most Earnings
+                    </span>
+                  </div>
+                </div>
+
+                {/* Best Track */}
+                <div className="bg-[#0F172A] rounded-lg p-3 flex items-center gap-3 border border-[#232B3E]/40">
+                  <div className="w-16 h-16 rounded overflow-hidden shrink-0 bg-[#192134]">
+                    <img
+                      src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=150&q=80"
+                      alt="Best track"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold font-['Space_Grotesk',sans-serif] text-white truncate">
+                      Late Nights, Loose Thoughts — Ep. 01
+                    </p>
+                    <span className="inline-block bg-[#192134] text-white text-[11px] font-['Space_Grotesk',sans-serif] px-2.5 py-0.5 rounded-full mt-1">
+                      Best Track
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Pagination */}
+              <div className="flex items-center justify-center gap-4 mt-4 text-sm font-['Space_Grotesk',sans-serif] text-[#CACACA]">
+                <span>Page 1 of 2</span>
+                <button className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer">
+                  <ChevronLeft size={16} />
+                  <span>Previous</span>
+                </button>
+                <button className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer">
+                  <span>Next</span>
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* ===================================================================== */}
+            {/* FOOTER (Figma Text input container)                                   */}
+            {/* ===================================================================== */}
+            <footer className="mt-14 pt-6 border-t border-[#232B3E] flex flex-col md:flex-row justify-between items-center gap-4 text-[#CACACA]">
+              <div className="flex flex-wrap items-center justify-center gap-x-2.5 text-sm font-['Space_Grotesk',sans-serif]">
+                <a href="#" className="hover:text-white transition-colors">About Groovely</a>
+                <span className="w-1 h-1 bg-[#CACACA] rounded-full" />
+                <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+                <span className="w-1 h-1 bg-[#CACACA] rounded-full" />
+                <a href="#" className="hover:text-white transition-colors">Terms of Use</a>
+                <span className="w-1 h-1 bg-[#CACACA] rounded-full" />
+                <a href="#" className="hover:text-white transition-colors">Docs/Developer API</a>
+                <span className="w-1 h-1 bg-[#CACACA] rounded-full" />
+                <a href="#" className="hover:text-white transition-colors">Feedback</a>
+              </div>
+
+              <div className="flex items-center gap-4 text-[#CACACA]">
+                <a href="#" className="hover:text-white transition-colors" aria-label="Twitter"><Twitter size={16} /></a>
+                <a href="#" className="hover:text-white transition-colors" aria-label="Disc"><Disc size={16} /></a>
+                <a href="#" className="hover:text-white transition-colors" aria-label="Telegram"><Send size={16} /></a>
+                <a href="#" className="hover:text-white transition-colors" aria-label="Instagram"><Instagram size={16} /></a>
+              </div>
+            </footer>
+
           </div>
-
-          {/* Top Tracks Section */}
-          <div className="space-y-8 mb-20 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-             <h3 className="text-xl font-black uppercase tracking-widest text-white px-2">Top Tracks</h3>
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {isLoading ? (
-                  [1, 2, 3].map(i => (
-                    <div key={i} className="h-64 w-full bg-white/5 animate-pulse rounded-2xl" />
-                  ))
-                ) : topTracks.length === 0 ? (
-                  <div className="col-span-full py-10 text-center">
-                    <p className="text-zinc-500 font-bold uppercase tracking-widest">No top tracks identified yet</p>
-                  </div>
-                ) : topTracks.slice(0, 3).map((track, i) => (
-                  <div key={i} className="glass-card group cursor-pointer overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(139,92,246,0.1)]">
-                     <div className="relative h-48">
-                        <img 
-                          src={resolveIpfsUrl(track.cover_url) || "https://images.unsplash.com/photo-1493225255756-d9584f8606e9?w=300&h=200&fit=crop"} 
-                          alt={track.title} 
-                          className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700" 
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A15]/90 to-transparent" />
-                        <div className="absolute top-4 left-4">
-                           <span className="bg-accent-purple/20 backdrop-blur-md border border-accent-purple/30 text-accent-purple text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-lg">
-                              {track.badge || (i === 0 ? "Most Streams" : i === 1 ? "Most Earnings" : "Best Track")}
-                           </span>
-                        </div>
-                     </div>
-                     <div className="p-6">
-                        <h4 className="text-sm font-black text-white group-hover:text-accent-purple transition-colors line-clamp-1">{track.title}</h4>
-                        <div className="mt-4 flex items-center gap-1.5 text-accent-cyan opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">
-                           <span className="text-[10px] font-black uppercase tracking-widest">View Deep Insights</span>
-                           <ChevronRight size={12} />
-                        </div>
-                     </div>
-                  </div>
-                ))}
-             </div>
-             
-             {!isLoading && tracks.length > 0 && (
-               <div className="flex items-center justify-center gap-4 pt-4">
-                  <div className="flex items-center gap-2">
-                    <button className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-zinc-600 cursor-not-allowed"><ChevronLeft size={14} /></button>
-                    <button className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-white"><ChevronRight size={14} /></button>
-                  </div>
-                  <span className="text-[10px] font-bold text-zinc-700 uppercase tracking-widest">Page 1 of 1</span>
-               </div>
-             )}
-          </div>
-
-          {/* Footer */}
-          <footer className="py-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-10 opacity-70 hover:opacity-100 transition-opacity">
-             <div className="flex flex-wrap items-center gap-x-8 gap-y-4 text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                <a href="#" className="hover:text-accent-purple transition-colors">About Grooveli</a>
-                <span className="w-1 h-1 bg-zinc-800 rounded-full" />
-                <a href="#" className="hover:text-accent-purple transition-colors">Privacy Policy</a>
-                <span className="w-1 h-1 bg-zinc-800 rounded-full" />
-                <a href="#" className="hover:text-accent-purple transition-colors">Terms of Use</a>
-                <span className="w-1 h-1 bg-zinc-800 rounded-full" />
-                <a href="#" className="hover:text-accent-purple transition-colors">Docs/Developer API</a>
-                <span className="w-1 h-1 bg-zinc-800 rounded-full" />
-                <a href="#" className="hover:text-accent-purple transition-colors text-accent-cyan">Feedback</a>
-             </div>
-
-             <div className="flex items-center gap-8 text-zinc-500">
-                <p className="text-[10px] font-black uppercase tracking-widest">© Copyright 2025</p>
-             </div>
-          </footer>
         </main>
       </div>
+
+      <MusicPlayer />
     </div>
   );
 }

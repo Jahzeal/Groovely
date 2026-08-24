@@ -3,179 +3,139 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/dashboard/Sidebar';
-import { TopBar } from '@/components/dashboard/TopBar';
 import { 
-  Wallet, 
-  Info, 
-  TrendingUp, 
-  TrendingDown,
+  Search, 
+  Bell, 
   ChevronRight, 
-  ChevronLeft,
-  Music,
-  Loader2
+  ChevronLeft, 
+  Wallet, 
+  MoreVertical, 
+  Disc,
+  Send,
+  Loader2,
+  TrendingUp,
+  Download,
+  Filter
 } from 'lucide-react';
+import { Twitter, Instagram } from '@/components/ui/SocialIcons';
 import { apiFetch, resolveIpfsUrl } from '@/lib/api';
+import { MusicPlayer } from '@/components/marketplace/MusicPlayer';
+import { usePrivy } from '@privy-io/react-auth';
+import { useAccount } from 'wagmi';
 
-// --- Sub-components ---
-
-const PerformanceChart = ({ customData }: { customData?: number[] }) => {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  
-  const data = customData && customData.length === 12
-    ? customData
-    : (customData && customData.length > 0
-        ? [...customData, ...Array(Math.max(0, 12 - customData.length)).fill(0)]
-        : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  
-  const width = 800;
-  const height = 300;
-  const padding = 40;
-  
-  const maxVal = Math.max(...data, 100);
-  const minVal = 0;
-  
-  const getX = (index: number) => (index * (width - padding * 2)) / (data.length - 1) + padding;
-  const getY = (value: number) => height - padding - ((value - minVal) * (height - padding * 2)) / (maxVal - minVal);
-
-  const curveD = data.reduce((acc, val, i, arr) => {
-    if (i === 0) return `M ${getX(i)} ${getY(val)}`;
-    const prevX = getX(i - 1);
-    const prevY = getY(arr[i - 1]);
-    const currX = getX(i);
-    const currY = getY(val);
-    const cpX = (prevX + currX) / 2;
-    return `${acc} C ${cpX} ${prevY}, ${cpX} ${currY}, ${currX} ${currY}`;
-  }, '');
-
-  return (
-    <div className="relative w-full overflow-hidden group">
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto drop-shadow-[0_0_20px_rgba(139,92,246,0.2)]">
-        {/* Grid Lines */}
-        {[0, 0.25, 0.5, 0.75, 1].map((p) => {
-          const y = height - padding - p * (height - padding * 2);
-          return (
-            <g key={p}>
-              <line x1={padding} y1={y} x2={width - padding} y2={y} stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-              <text x={padding - 10} y={y} fill="rgba(255,255,255,0.3)" fontSize="10" textAnchor="end" dominantBaseline="middle">
-                ${Math.round(p * maxVal)}
-              </text>
-            </g>
-          );
-        })}
-
-        {/* The Curve */}
-        <path
-          d={curveD}
-          fill="none"
-          stroke="url(#gradient)"
-          strokeWidth="4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        
-        {/* Hover Points and Vertical Lines */}
-        {data.map((val, i) => (
-          <g key={i} onMouseEnter={() => setHoveredIndex(i)} onMouseLeave={() => setHoveredIndex(null)} className="cursor-pointer">
-            <rect x={getX(i) - 20} y={0} width="40" height={height} fill="transparent" />
-            {hoveredIndex === i && (
-              <line x1={getX(i)} y1={padding} x2={getX(i)} y2={height - padding} stroke="rgba(139, 92, 246, 0.5)" strokeWidth="1" strokeDasharray="4 2" />
-            )}
-            <circle
-              cx={getX(i)}
-              cy={getY(val)}
-              r={hoveredIndex === i ? '6' : '0'}
-              fill="#8B5CF6"
-              className="transition-all duration-200"
-            />
-          </g>
-        ))}
-
-        {/* X-Axis labels */}
-        {months.map((m, i) => (
-          <text key={m} x={getX(i)} y={height - 10} fill={hoveredIndex === i ? '#8B5CF6' : 'rgba(255,255,255,0.3)'} fontSize="9" textAnchor="middle" className="transition-colors uppercase font-black tracking-widest">
-            {m.slice(0, 3)}
-          </text>
-        ))}
-
-        <defs>
-          <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#8B5CF6" />
-            <stop offset="50%" stopColor="#D946EF" />
-            <stop offset="100%" stopColor="#2DD4BF" />
-          </linearGradient>
-        </defs>
-      </svg>
-      
-      {/* Tooltip */}
-      {hoveredIndex !== null && (
-        <div 
-          className="absolute bg-[#0F0F1A] border border-white/10 p-3 rounded-xl shadow-2xl pointer-events-none transform -translate-x-1/2 -translate-y-[120%]"
-          style={{ left: `${(getX(hoveredIndex) / width) * 100}%`, top: `${(getY(data[hoveredIndex]) / height) * 100}%` }}
-        >
-          <p className="text-[10px] font-black uppercase tracking-widest text-[#8B5CF6] mb-1">{months[hoveredIndex]}</p>
-          <p className="text-xl font-black text-white">${data[hoveredIndex].toLocaleString()}</p>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const StatusBadge = ({ status }: { status: string }) => {
-  const styles: Record<string, string> = {
-    Completed: 'bg-[#00FF85]/10 text-[#00FF85] border-[#00FF85]/20',
-    Pending: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
-    Failed: 'bg-red-500/10 text-red-500 border-red-500/20'
-  };
-  
-  return (
-    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${styles[status] || styles.Completed}`}>
-      {status}
-    </span>
-  );
-};
-
-// --- Page Main Component ---
+interface TransactionItem {
+  id: string | number;
+  type: string; // e.g. License Purchase for "Slow Lights on Third Street"
+  content: string; // Music, Beat, Podcast, Skit
+  amount: number | string; // e.g. 994
+  date: string; // 15 May 2020 8:30 am
+  status: 'Live' | 'Draft' | 'Failed' | 'Completed' | 'Pending';
+  image?: string;
+}
 
 export default function EarningsPage() {
   const router = useRouter();
-  const [activeChartTab, setActiveChartTab] = useState<'licenses' | 'sales'>('licenses');
-  const [stats, setStats] = useState<any>(null);
-  const [transactions, setTransactions] = useState<any[]>([]);
-  const [chartData, setChartData] = useState<number[]>([]);
+  const { user } = usePrivy();
+  const { address } = useAccount();
+
+  const [activeChartTab, setActiveChartTab] = useState<'Licenses' | 'Sales'>('Licenses');
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+
+  const [earningsTotal, setEarningsTotal] = useState<number>(1032.60);
+  const [earningsChange, setEarningsChange] = useState<number>(10.5);
+
+  const [transactions, setTransactions] = useState<TransactionItem[]>([
+    {
+      id: 1,
+      type: 'License Purchase for “Slow Lights on Third Street”',
+      content: 'Music',
+      amount: 994,
+      date: '15 May 2020 8:30 am',
+      status: 'Live',
+      image: 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=150&q=80',
+    },
+    {
+      id: 2,
+      type: 'NFT Sale of “Midnight Bounce”',
+      content: 'Beat',
+      amount: 426,
+      date: '15 May 2020 9:00 am',
+      status: 'Draft',
+      image: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=150&q=80',
+    },
+    {
+      id: 3,
+      type: 'Withdrawal of $500',
+      content: 'Podcast',
+      amount: 877,
+      date: '15 May 2020 9:30 am',
+      status: 'Live',
+      image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=150&q=80',
+    },
+    {
+      id: 4,
+      type: 'NFT Sale of “After the Noise”',
+      content: 'Music',
+      amount: 883,
+      date: '15 May 2020 8:00 am',
+      status: 'Failed',
+      image: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=150&q=80',
+    },
+    {
+      id: 5,
+      type: 'License Purchase for “No Wahala, Just Vibes”',
+      content: 'Skit',
+      amount: 740,
+      date: '15 May 2020 8:30 am',
+      status: 'Live',
+      image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=150&q=80',
+    },
+  ]);
+
+  const activeAddress = address || user?.wallet?.address;
+  const abbrev = activeAddress
+    ? `${activeAddress.slice(0, 5)}...${activeAddress.slice(-3)}`
+    : '0xc...y69';
 
   useEffect(() => {
     async function loadData() {
       setLoading(true);
       try {
-        const [statsRes, txRes, analyticsRes] = await Promise.all([
+        const [statsRes, txRes] = await Promise.all([
           apiFetch('/api/creator/dashboard/stats'),
           apiFetch('/api/creator/dashboard/transactions'),
-          apiFetch('/api/analytics/earnings'),
         ]);
 
         if (statsRes?.ok) {
           const statsJson = await statsRes.json();
-          setStats(statsJson.data || statsJson);
+          const s = statsJson.data || statsJson;
+          if (s.earnings?.total !== undefined) {
+            setEarningsTotal(Number(s.earnings.total));
+          }
+          if (s.earnings?.change !== undefined) {
+            setEarningsChange(Number(s.earnings.change));
+          }
         }
 
         if (txRes?.ok) {
           const txJson = await txRes.json();
-          const txs = txJson.data?.transactions || txJson.transactions || [];
-          setTransactions(Array.isArray(txs) ? txs : []);
-        }
-
-        if (analyticsRes?.ok) {
-          const analyticsJson = await analyticsRes.json();
-          const dataPoints = analyticsJson.data?.map((d: any) => Number(d.total) || 0) || [];
-          if (dataPoints.length > 0) {
-            setChartData(dataPoints);
+          const list = txJson.data?.transactions || txJson.transactions || [];
+          if (Array.isArray(list) && list.length > 0) {
+            const mapped: TransactionItem[] = list.map((item: any, idx: number) => ({
+              id: item.id || idx,
+              type: item.title ? `${item.type || 'NFT Sale of'} “${item.title}”` : (item.type || 'Transaction'),
+              content: item.content || 'Music',
+              amount: item.amount || 0,
+              date: item.date ? new Date(item.date).toLocaleString('en-US', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true }) : 'Recent',
+              status: (item.status === 'Completed' || item.status === 'Live') ? 'Live' : (item.status === 'Pending' ? 'Draft' : 'Failed'),
+              image: resolveIpfsUrl(item.image) || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=150&q=80'
+            }));
+            setTransactions(mapped);
           }
         }
       } catch (err) {
-        console.error('Failed to load earnings data:', err);
+        console.error('Failed to load earnings stats/transactions:', err);
       } finally {
         setLoading(false);
       }
@@ -183,144 +143,355 @@ export default function EarningsPage() {
     loadData();
   }, []);
 
-  const totalEarnings = Number(stats?.earnings?.total || 0);
-  const earningsChange = Number(stats?.earnings?.change || 0);
+  const chartPoints = [
+    { label: '511' },
+    { label: '510' },
+    { label: '509' },
+    { label: '507' },
+    { label: '506' },
+    { label: '504' },
+    { label: '503' },
+    { label: '502' },
+    { label: '501' },
+    { label: '508' },
+    { label: '505' },
+    { label: '500' },
+  ];
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'Live':
+      case 'Completed':
+        return (
+          <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-['Space_Grotesk',sans-serif] font-normal bg-[rgba(0,255,136,0.1)] text-[#00FF88]">
+            Live
+          </span>
+        );
+      case 'Draft':
+      case 'Pending':
+        return (
+          <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-['Space_Grotesk',sans-serif] font-normal bg-[rgba(255,230,0,0.1)] text-[#FFE600]">
+            Draft
+          </span>
+        );
+      case 'Failed':
+        return (
+          <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-['Space_Grotesk',sans-serif] font-normal bg-[rgba(255,0,68,0.1)] text-[#FF0044]">
+            Failed
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-['Space_Grotesk',sans-serif] bg-white/5 text-zinc-400">
+            {status}
+          </span>
+        );
+    }
+  };
+
+  const filteredTransactions = transactions.filter(t =>
+    t.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.content.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
+    <div className="flex h-screen overflow-hidden bg-[#192134] text-white font-sans selection:bg-[#8A2BE2] selection:text-white">
+      {/* Universal Left Sidebar */}
       <Sidebar activePage="earnings" />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <TopBar />
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#192134]">
+        
+        {/* ========================================================================= */}
+        {/* TOP BAR (Figma Frame 25) - Height: 80px                                   */}
+        {/* ========================================================================= */}
+        <header className="flex items-center justify-between px-8 py-4 h-20 bg-[#0F172A]/10 border-b border-[#232B3E] backdrop-blur-[25px] sticky top-0 z-30">
+          <div className="flex items-center gap-6 flex-1">
+            <h1 className="text-2xl font-bold font-['Clash_Display',sans-serif] text-white tracking-tight shrink-0">
+              Earnings
+            </h1>
 
-        <main className="flex-1 p-10 overflow-y-auto mesh-gradient">
-          {/* Header Stats */}
-          <div className="glass-card p-10 mb-12 flex flex-col md:flex-row items-center justify-between gap-8 animate-in fade-in slide-in-from-top-4 duration-500">
-             <div className="flex items-center gap-8">
-                <div className="w-16 h-16 bg-[#0F0F1A] border border-white/10 rounded-2xl flex items-center justify-center shadow-inner group">
-                   <Wallet className="text-accent-purple group-hover:scale-110 transition-transform" size={32} />
+            <div className="relative w-72 lg:w-[300px]">
+              <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-[#CACACA]">
+                <Search size={18} />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search"
+                className="w-full h-12 bg-transparent border-2 border-[#232B3E] focus:border-[#8A2BE2] rounded-lg pl-11 pr-4 text-sm font-['Space_Grotesk',sans-serif] text-white placeholder-[#CACACA] focus:outline-none transition-all"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button className="text-white hover:opacity-80 transition-opacity p-2 relative">
+              <Bell size={20} />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#8A2BE2] rounded-full shadow-[0_0_6px_rgba(138,43,226,0.8)]" />
+            </button>
+
+            <div className="w-px h-8 bg-[#232B3E] mx-1" />
+
+            <div className="flex items-center gap-2 bg-transparent px-2 py-1 rounded-lg">
+              <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 flex items-center justify-center bg-[#FF5C16]/10 p-0.5">
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg"
+                  alt="Wallet"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <span className="text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                {abbrev}
+              </span>
+            </div>
+          </div>
+        </header>
+
+        {/* ========================================================================= */}
+        {/* MAIN SCROLLABLE CONTENT                                                   */}
+        {/* ========================================================================= */}
+        <main className="flex-1 overflow-y-auto pb-28 px-4 sm:px-8 md:px-10 pt-6 md:pt-8 bg-[#192134]">
+          <div className="max-w-[1200px] mx-auto space-y-6">
+
+            {/* ===================================================================== */}
+            {/* TOP SINGLE FULL-WIDTH METRIC CARD (Figma Metric/Earnings Frame 200)   */}
+            {/* ===================================================================== */}
+            <div className="bg-[#0F172A] rounded-xl p-4 sm:p-6 flex flex-col justify-between h-[228px] border border-[#232B3E]/40 hover:border-[#8A2BE2]/40 transition-colors">
+              
+              {/* Card Top Row: Icon + More */}
+              <div className="flex items-start justify-between">
+                <div className="w-16 h-16 rounded-full bg-[#192134] flex items-center justify-center text-[#697184]">
+                  <Wallet size={32} />
                 </div>
-                <div className="space-y-1">
-                   <h2 className="text-zinc-500 text-sm font-black uppercase tracking-[0.2em] flex items-center gap-2">
-                      Total Revenue
-                      <div className="w-4 h-4 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors cursor-help">
-                        <Info size={10} />
-                      </div>
-                   </h2>
-                   <div className="flex items-baseline gap-4">
-                      <span className="text-5xl font-black tracking-tighter text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
-                        ${totalEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <button className="text-[#CACACA] hover:text-white transition-colors">
+                  <MoreVertical size={20} />
+                </button>
+              </div>
+
+              {/* Card Content & Action Row (Frame 203) */}
+              <div>
+                <p className="text-base font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA] mb-1">
+                  Earnings
+                </p>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  {/* Big Number + Badge (Frame 202) */}
+                  <div>
+                    <p className="text-4xl font-bold font-['Clash_Display',sans-serif] text-white">
+                      ${earningsTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">This Month</span>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-['Space_Grotesk',sans-serif] bg-[rgba(0,255,136,0.1)] text-[#40FFA6]">
+                        +{earningsChange}%
                       </span>
-                      <div className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border text-xs font-black ${
-                        earningsChange >= 0
-                          ? 'bg-[#00FF85]/10 text-[#00FF85] border-[#00FF85]/20'
-                          : 'bg-red-500/10 text-red-400 border-red-500/20'
-                      }`}>
-                         {earningsChange >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                         {earningsChange >= 0 ? `+${earningsChange}%` : `${earningsChange}%`}
-                      </div>
-                   </div>
-                   <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Lifetime Creator Sales & Streams</p>
-                </div>
-             </div>
-
-              <button
-                onClick={() => router.push('/dashboard/settings')}
-                className="bg-accent-purple hover:bg-opacity-90 text-white font-black py-5 px-10 rounded-2xl transition-all shadow-[0_0_30px_rgba(157,0,255,0.3)] hover:scale-105 active:scale-95 text-sm uppercase tracking-widest shrink-0"
-              >
-                 Withdraw Earnings
-              </button>
-          </div>
-
-          {/* Performance Chart Section */}
-          <div className="glass-card p-10 mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-             <div className="flex items-center justify-between mb-10">
-                <h3 className="text-xl font-black uppercase tracking-widest text-white">Performance Chart</h3>
-                <div className="flex bg-[#0F0F1A] p-1.5 rounded-xl border border-white/5">
-                   <button 
-                     onClick={() => setActiveChartTab('licenses')}
-                     className={`px-6 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeChartTab === 'licenses' ? 'bg-accent-purple text-white shadow-lg' : 'text-zinc-500 hover:text-white'}`}
-                   >
-                      Licenses
-                   </button>
-                   <button 
-                     onClick={() => setActiveChartTab('sales')}
-                     className={`px-6 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeChartTab === 'sales' ? 'bg-accent-purple text-white shadow-lg' : 'text-zinc-500 hover:text-white'}`}
-                   >
-                      Sales
-                   </button>
-                </div>
-             </div>
-             
-             <PerformanceChart customData={chartData} />
-          </div>
-
-          {/* Transactions Table Section */}
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
-             <h3 className="text-xl font-black uppercase tracking-widest text-white px-2">Transactions</h3>
-             
-             <div className="glass-card overflow-hidden">
-                {loading ? (
-                  <div className="flex flex-col items-center justify-center py-20 gap-3">
-                    <Loader2 size={32} className="text-accent-purple animate-spin" />
-                    <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Loading transactions…</p>
+                    </div>
                   </div>
-                ) : transactions.length > 0 ? (
-                  <table className="w-full text-left">
-                     <thead>
-                        <tr className="border-b border-white/5 text-[10px] font-black text-zinc-500 uppercase tracking-widest bg-white/[0.01]">
-                          <th className="p-6 font-black">Type</th>
-                          <th className="p-6 font-black">Content</th>
-                          <th className="p-6 font-black text-center">Amount</th>
-                          <th className="p-6 font-black text-center">Date</th>
-                          <th className="p-6 font-black text-center">Status</th>
-                        </tr>
-                     </thead>
-                     <tbody className="divide-y divide-white/5">
-                        {transactions.map((t) => (
-                          <tr key={t.id} className="group hover:bg-white/[0.02] transition-colors">
-                            <td className="p-6">
-                               <div className="flex items-center gap-4">
-                                  <img 
-                                    src={resolveIpfsUrl(t.image) || "https://images.unsplash.com/photo-1514525253361-bee8d48800d5?w=100&h=100&fit=crop"} 
-                                    alt="" 
-                                    className="w-12 h-12 rounded-xl object-cover grayscale-[0.3] group-hover:grayscale-0 transition-all border border-white/5" 
-                                  />
-                                  <div className="flex flex-col">
-                                     <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1">{t.type || 'NFT Sale'}</span>
-                                     <span className="text-sm font-black text-white group-hover:text-accent-purple transition-colors">"{t.title}"</span>
-                                  </div>
-                               </div>
-                            </td>
-                            <td className="p-6">
-                               <span className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                                  {t.content || 'Music'}
-                               </span>
-                            </td>
-                            <td className="p-6 text-center text-sm font-black text-accent-cyan">
-                               ${Number(t.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC
-                            </td>
-                            <td className="p-6 text-center text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-                               {t.date ? new Date(t.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recent'}
-                            </td>
-                            <td className="p-6 text-center">
-                               <StatusBadge status={t.status || 'Completed'} />
-                            </td>
-                          </tr>
-                        ))}
-                     </tbody>
-                  </table>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
-                    <Music size={32} className="text-zinc-600" />
-                    <p className="text-sm font-bold text-zinc-400">No transactions recorded yet</p>
-                    <p className="text-xs text-zinc-600 max-w-sm">When fans purchase your track editions or license your content, your revenue will display here.</p>
+
+                  {/* Action CTA: Withdraw Earnings (Frame 201) */}
+                  <button
+                    onClick={() => router.push('/dashboard/settings')}
+                    className="inline-flex items-center justify-center bg-[#8A2BE2] hover:bg-[#7823c9] text-white px-8 py-3.5 rounded-lg text-base font-bold font-['Space_Grotesk',sans-serif] shadow-[0_0_15px_rgba(138,43,226,0.3)] transition-all cursor-pointer self-start sm:self-auto"
+                  >
+                    Withdraw Earnings
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            {/* ===================================================================== */}
+            {/* PERFORMANCE CHART SECTION (Figma Frame 195)                           */}
+            {/* ===================================================================== */}
+            <div className="bg-[#0F172A] rounded-xl p-4 sm:p-6 border border-[#232B3E]/40">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                <h2 className="text-xl font-bold font-['Clash_Display',sans-serif] text-white">
+                  Performance Chart
+                </h2>
+
+                <div className="flex items-center gap-3">
+                  {(['Licenses', 'Sales'] as const).map((tab) => {
+                    const isActive = activeChartTab === tab;
+                    return (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveChartTab(tab)}
+                        className={`px-6 py-2.5 rounded-lg text-sm font-bold font-['Space_Grotesk',sans-serif] transition-all cursor-pointer ${
+                          isActive
+                            ? 'bg-[rgba(138,43,226,0.1)] border-2 border-[#4E0AA6] text-white shadow-[0_0_12px_rgba(138,43,226,0.3)]'
+                            : 'bg-[#192134] text-[#CACACA] hover:text-white border-2 border-transparent'
+                        }`}
+                      >
+                        {tab}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Line Chart Canvas */}
+              <div className="bg-[#192134] rounded-xl p-4 sm:p-6 h-[300px] sm:h-[332px] flex flex-col justify-between relative overflow-hidden">
+                <div className="relative flex-1 w-full flex items-end">
+                  <svg className="w-full h-[85%] overflow-visible" viewBox="0 0 1000 200" preserveAspectRatio="none">
+                    {/* Horizontal Grid lines */}
+                    <line x1="0" y1="0" x2="1000" y2="0" stroke="#2D3548" strokeDasharray="3 3" strokeWidth="1" />
+                    <line x1="0" y1="50" x2="1000" y2="50" stroke="#2D3548" strokeDasharray="3 3" strokeWidth="1" />
+                    <line x1="0" y1="100" x2="1000" y2="100" stroke="#2D3548" strokeDasharray="3 3" strokeWidth="1" />
+                    <line x1="0" y1="150" x2="1000" y2="150" stroke="#2D3548" strokeDasharray="3 3" strokeWidth="1" />
+                    <line x1="0" y1="200" x2="1000" y2="200" stroke="#2D3548" strokeWidth="1" />
+
+                    <defs>
+                      <linearGradient id="earningsChartGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#8A2BE2" stopOpacity="0.35" />
+                        <stop offset="100%" stopColor="#8A2BE2" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+
+                    <path
+                      d="M 0 160 Q 80 120, 160 140 T 320 80 T 480 50 T 640 100 T 800 30 T 1000 70 L 1000 200 L 0 200 Z"
+                      fill="url(#earningsChartGrad)"
+                    />
+
+                    <path
+                      d="M 0 160 Q 80 120, 160 140 T 320 80 T 480 50 T 640 100 T 800 30 T 1000 70"
+                      fill="none"
+                      stroke="#FFFFFF"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                    />
+
+                    <circle cx="800" cy="30" r="5" fill="#8A2BE2" stroke="#FFFFFF" strokeWidth="2" />
+                  </svg>
+
+                  {/* Y-Axis scale */}
+                  <div className="absolute left-0 top-0 bottom-6 flex flex-col justify-between text-[10px] font-['Inter',sans-serif] text-[#A3A3A3] pointer-events-none">
+                    <span>1 500</span>
+                    <span>1 000</span>
+                    <span>500</span>
+                    <span>0</span>
                   </div>
-                )}
-             </div>
+                </div>
+
+                {/* X-Axis labels */}
+                <div className="flex justify-between pl-8 pr-2 pt-2 border-t border-[#232B3E] text-[10px] font-['Inter',sans-serif] text-[#A3A3A3]">
+                  {chartPoints.map(p => (
+                    <span key={p.label}>{p.label}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* ===================================================================== */}
+            {/* TRANSACTIONS TABLE SECTION (Figma Table top: 816px)                  */}
+            {/* ===================================================================== */}
+            <div className="bg-[#0F172A] rounded-xl p-4 sm:p-6 border border-[#232B3E]/40">
+              
+              <div className="flex items-center justify-between pb-4 border-b border-[#232B3E]">
+                <h2 className="text-xl font-bold font-['Clash_Display',sans-serif] text-white">
+                  Transactions
+                </h2>
+              </div>
+
+              <div className="overflow-x-auto mt-4">
+                <table className="w-full text-left border-collapse min-w-[750px]">
+                  <thead>
+                    <tr className="bg-[#192134] border-b border-[#232B3E] text-[#CACACA] text-sm font-bold font-['Space_Grotesk',sans-serif]">
+                      <th className="py-3 px-4 rounded-l-lg">Type</th>
+                      <th className="py-3 px-4">Content</th>
+                      <th className="py-3 px-4 text-right">Amount</th>
+                      <th className="py-3 px-4 text-right">Date</th>
+                      <th className="py-3 px-4 text-center rounded-r-lg">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#192134]">
+                    {filteredTransactions.map((tx) => (
+                      <tr key={tx.id} className="bg-[#232B3E] hover:bg-[#2c364e] transition-colors">
+                        
+                        {/* Type Column: Checkbox/Thumbnail 40x40 + Text */}
+                        <td className="py-3 px-4 flex items-center gap-3">
+                          <div className="w-10 h-10 rounded overflow-hidden shrink-0 bg-[#192134] shadow-sm">
+                            <img
+                              src={tx.image || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=150&q=80'}
+                              alt=""
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <span className="text-sm font-normal font-['Space_Grotesk',sans-serif] text-white truncate max-w-md">
+                            {tx.type}
+                          </span>
+                        </td>
+
+                        {/* Content Column: Pill (Music, Beat, Podcast, Skit) */}
+                        <td className="py-3 px-4">
+                          <span className="bg-[rgba(15,23,42,0.5)] text-[#CACACA] text-xs font-['Space_Grotesk',sans-serif] px-3 py-1 rounded-full">
+                            {tx.content}
+                          </span>
+                        </td>
+
+                        {/* Amount Column */}
+                        <td className="py-3 px-4 text-right text-sm font-normal font-['Space_Grotesk',sans-serif] text-white">
+                          ${typeof tx.amount === 'number' ? tx.amount.toLocaleString() : tx.amount}
+                        </td>
+
+                        {/* Date Column */}
+                        <td className="py-3 px-4 text-right text-sm font-normal font-['Space_Grotesk',sans-serif] text-white">
+                          {tx.date}
+                        </td>
+
+                        {/* Status Column */}
+                        <td className="py-3 px-4 text-center">
+                          {getStatusBadge(tx.status)}
+                        </td>
+
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Table Pagination Controls (Figma Frame 192, 193, 194) */}
+              <div className="flex items-center justify-center gap-4 mt-4 pt-3 text-sm font-['Space_Grotesk',sans-serif] text-[#CACACA]">
+                <span>Page 1 of 2</span>
+                <button className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer">
+                  <ChevronLeft size={16} />
+                  <span>Previous</span>
+                </button>
+                <button className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer">
+                  <span>Next</span>
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* ===================================================================== */}
+            {/* FOOTER (Figma Text input container)                                   */}
+            {/* ===================================================================== */}
+            <footer className="mt-14 pt-6 border-t border-[#232B3E] flex flex-col md:flex-row justify-between items-center gap-4 text-[#CACACA]">
+              <div className="flex flex-wrap items-center justify-center gap-x-2.5 text-sm font-['Space_Grotesk',sans-serif]">
+                <a href="#" className="hover:text-white transition-colors">About Groovely</a>
+                <span className="w-1 h-1 bg-[#CACACA] rounded-full" />
+                <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+                <span className="w-1 h-1 bg-[#CACACA] rounded-full" />
+                <a href="#" className="hover:text-white transition-colors">Terms of Use</a>
+                <span className="w-1 h-1 bg-[#CACACA] rounded-full" />
+                <a href="#" className="hover:text-white transition-colors">Docs/Developer API</a>
+                <span className="w-1 h-1 bg-[#CACACA] rounded-full" />
+                <a href="#" className="hover:text-white transition-colors">Feedback</a>
+              </div>
+
+              <div className="flex items-center gap-4 text-[#CACACA]">
+                <a href="#" className="hover:text-white transition-colors" aria-label="Twitter"><Twitter size={16} /></a>
+                <a href="#" className="hover:text-white transition-colors" aria-label="Disc"><Disc size={16} /></a>
+                <a href="#" className="hover:text-white transition-colors" aria-label="Telegram"><Send size={16} /></a>
+                <a href="#" className="hover:text-white transition-colors" aria-label="Instagram"><Instagram size={16} /></a>
+              </div>
+            </footer>
+
           </div>
         </main>
       </div>
+
+      <MusicPlayer />
     </div>
   );
 }
