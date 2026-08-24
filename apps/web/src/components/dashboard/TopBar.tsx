@@ -125,7 +125,7 @@ export const TopBar = ({ displayName = 'Creator' }: { displayName?: string }) =>
   };
 
   return (
-    <header className="bg-[#192134] lg:bg-[#050510] border-b border-[#232B3E] lg:border-white/5 transition-all">
+    <header className="bg-[#192134] border-b border-[#2D3548] transition-all">
       {/* Mobile Header: 2-Tier Figma Layout (Frame 25 / Frame 305 & Frame 76) */}
       <div className="lg:hidden flex flex-col p-4 gap-3 bg-[rgba(15,23,42,0.6)] backdrop-blur-md">
         {/* Row 1: Menu + Greeting on Left, Notification + Divider + Wallet on Right */}

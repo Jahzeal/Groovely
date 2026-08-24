@@ -4,8 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { apiFetch } from '@/lib/api';
 import toast from 'react-hot-toast';
-import { Check, X, ShieldAlert, Disc, User, Activity } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { Check, X, ShieldAlert, Disc, User, Activity, Menu, Bell, ChevronDown } from 'lucide-react';
 
 interface Invitation {
   id: number;
@@ -56,7 +55,6 @@ export default function InvitationsPage() {
 
       if (res && res.ok) {
         toast.success(accept ? 'Invitation accepted!' : 'Invitation rejected.');
-        // Remove from list or update local state
         setInvitations((prev) => prev.filter((item) => item.id !== id));
       } else {
         const json = res ? await res.json() : null;
@@ -70,122 +68,145 @@ export default function InvitationsPage() {
     }
   };
 
+  const toggleMobileSidebar = () => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('toggle_mobile_sidebar'));
+    }
+  };
+
   return (
-    <div className="flex h-screen overflow-hidden bg-[#050510] text-white font-sans">
+    <div className="flex h-screen overflow-hidden bg-[#192134] text-white font-sans selection:bg-[#8A2BE2] selection:text-white">
       <Sidebar activePage="invitations" />
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto px-12 py-10 relative">
-        {/* Decorative background glows */}
-        <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-accent-purple/5 blur-[150px] rounded-full pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-accent-cyan/5 blur-[120px] rounded-full pointer-events-none" />
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#192134]">
+        {/* Mobile Header */}
+        <div className="md:hidden flex items-center justify-between px-4 py-3 bg-white/[0.01] border-b border-[#2D3548] backdrop-blur-[50px] sticky top-0 z-30">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleMobileSidebar}
+              className="p-1 text-white hover:opacity-80 transition-opacity cursor-pointer"
+              aria-label="Open menu"
+            >
+              <Menu size={24} />
+            </button>
+            <h1 className="text-xl font-bold font-['Clash_Display',sans-serif] text-white tracking-tight">
+              Split Invites
+            </h1>
+          </div>
+        </div>
 
-        <div className="relative z-10 max-w-5xl mx-auto space-y-10">
-          {/* Header */}
-          <div className="flex justify-between items-center pb-6 border-b border-white/5">
-            <div>
-              <h1 className="text-4xl font-black tracking-tight text-white uppercase leading-none">
-                Split Invitations
-              </h1>
-              <p className="text-zinc-500 text-sm mt-2 font-medium">
+        {/* Desktop Header */}
+        <header className="hidden md:flex items-center justify-between px-8 py-4 h-20 bg-[#0F172A]/10 border-b border-[#232B3E] backdrop-blur-[25px] sticky top-0 z-30">
+          <h1 className="text-2xl font-bold font-['Clash_Display',sans-serif] text-white tracking-tight">
+            Split Invitations
+          </h1>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-[#232B3E] border border-[#2D3548] rounded-lg text-xs font-bold text-[#CACACA]">
+            <Activity size={14} className="text-[#00FF88] animate-pulse" />
+            <span>Direct Splits Engine Active</span>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto px-4 sm:px-8 md:px-10 py-6 md:py-8 bg-[#192134]">
+          <div className="max-w-4xl space-y-6">
+            <div className="hidden md:block">
+              <p className="text-sm font-['Space_Grotesk',sans-serif] text-[#CACACA]">
                 Review and approve revenue split shares for tracks you co-created.
               </p>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/[0.02] border border-white/5 rounded-2xl text-xs font-bold text-zinc-400">
-              <Activity size={14} className="text-accent-cyan animate-pulse" />
-              <span>Direct Splits Engine Active</span>
-            </div>
-          </div>
 
-          {/* Cards List */}
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 space-y-4">
-              <Disc className="w-10 h-10 text-accent-purple animate-spin" />
-              <p className="text-zinc-500 text-sm font-bold tracking-widest uppercase">Loading invites...</p>
-            </div>
-          ) : invitations.length === 0 ? (
-            <div className="bg-white/[0.01] border border-white/5 rounded-[32px] p-12 text-center flex flex-col items-center justify-center space-y-6">
-              <div className="p-5 bg-white/[0.03] border border-white/5 rounded-full text-zinc-600">
-                <ShieldAlert size={40} className="text-zinc-500" />
+            {/* Cards List */}
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                <Disc className="w-10 h-10 text-[#8A2BE2] animate-spin" />
+                <p className="text-[#CACACA] text-sm font-bold tracking-widest uppercase font-['Space_Grotesk',sans-serif]">Loading invites...</p>
               </div>
-              <div className="space-y-2">
-                <h3 className="text-xl font-bold text-white uppercase tracking-tight">You're all caught up!</h3>
-                <p className="text-zinc-500 text-sm max-w-md mx-auto">
-                  There are no pending collaborator invitations or split approvals waiting for you.
-                </p>
+            ) : invitations.length === 0 ? (
+              <div className="bg-[#0F172A] border border-[#2D3548] rounded-2xl p-10 text-center flex flex-col items-center justify-center space-y-4">
+                <div className="p-4 bg-[#232B3E] border border-[#2D3548] rounded-full text-zinc-400">
+                  <ShieldAlert size={36} className="text-zinc-400" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-lg sm:text-xl font-bold font-['Clash_Display',sans-serif] text-white">
+                    You're all caught up!
+                  </h3>
+                  <p className="text-[#CACACA] text-sm max-w-md mx-auto font-['Space_Grotesk',sans-serif]">
+                    There are no pending collaborator invitations or split approvals waiting for you.
+                  </p>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="grid gap-6">
-              {invitations.map((invite) => {
-                const percent = (invite.basis_points / 100).toFixed(1);
-                return (
-                  <div 
-                    key={invite.id} 
-                    className="bg-white/[0.02] border border-white/5 rounded-[32px] p-6 hover:bg-white/[0.03] transition-all hover:border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 group"
-                  >
-                    {/* Track Info */}
-                    <div className="flex items-center gap-5">
-                      <div className="p-4 bg-accent-purple/10 border border-accent-purple/20 rounded-2xl text-accent-purple group-hover:scale-105 transition-transform duration-300">
-                        <Disc size={28} className="animate-spin-slow" />
+            ) : (
+              <div className="grid gap-4">
+                {invitations.map((invite) => {
+                  const percent = (invite.basis_points / 100).toFixed(1);
+                  return (
+                    <div 
+                      key={invite.id} 
+                      className="bg-[#0F172A] border border-[#2D3548] rounded-xl p-5 hover:border-[#8A2BE2]/50 transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-5 group"
+                    >
+                      {/* Track Info */}
+                      <div className="flex items-center gap-4">
+                        <div className="p-3.5 bg-[#8A2BE2]/10 border border-[#8A2BE2]/20 rounded-xl text-[#8A2BE2]">
+                          <Disc size={24} />
+                        </div>
+                        <div className="space-y-0.5">
+                          <h3 className="text-base sm:text-lg font-bold font-['Clash_Display',sans-serif] text-white">
+                            {invite.song_title}
+                          </h3>
+                          <div className="flex items-center gap-2 text-[#CACACA] text-xs font-['Space_Grotesk',sans-serif]">
+                            <User size={12} />
+                            <span>
+                              Uploader: <span className="text-white font-medium">@{invite.creator_username}</span> ({invite.creator_display_name})
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="space-y-1">
-                        <h3 className="text-lg font-black text-white group-hover:text-accent-cyan transition-colors">
-                          {invite.song_title}
-                        </h3>
-                        <div className="flex items-center gap-2 text-zinc-500 text-xs">
-                          <User size={12} />
-                          <span>
-                            Uploader: <span className="text-zinc-300 font-semibold">@{invite.creator_username}</span> ({invite.creator_display_name})
+
+                      {/* Split details */}
+                      <div className="flex items-center gap-6">
+                        <div className="text-left md:text-right">
+                          <span className="text-[10px] font-bold uppercase text-[#CACACA] tracking-wider block font-['Space_Grotesk',sans-serif]">Role</span>
+                          <span className="text-xs font-bold text-white capitalize bg-[#232B3E] border border-[#2D3548] px-2.5 py-1 rounded-md mt-1 inline-block font-['Space_Grotesk',sans-serif]">
+                            {invite.role || 'Writer'}
+                          </span>
+                        </div>
+                        <div className="text-left md:text-right">
+                          <span className="text-[10px] font-bold uppercase text-[#CACACA] tracking-wider block font-['Space_Grotesk',sans-serif]">Split</span>
+                          <span className="text-xl sm:text-2xl font-bold text-[#00FF88] block font-['JetBrains_Mono',monospace]">
+                            {percent}%
                           </span>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Split details */}
-                    <div className="flex items-center gap-10">
-                      <div className="text-left md:text-right">
-                        <span className="text-[10px] font-black uppercase text-zinc-600 tracking-widest block">Role Tag</span>
-                        <span className="text-sm font-bold text-white capitalize bg-white/5 border border-white/5 px-3 py-1 rounded-lg mt-1 inline-block">
-                          {invite.role || 'Writer'}
-                        </span>
-                      </div>
-                      <div className="text-left md:text-right">
-                        <span className="text-[10px] font-black uppercase text-zinc-600 tracking-widest block">Revenue Split</span>
-                        <span className="text-2xl font-black text-accent-cyan block leading-none mt-1">
-                          {percent}%
-                        </span>
+                      {/* Actions */}
+                      <div className="flex items-center gap-3 w-full md:w-auto pt-3 md:pt-0 border-t border-[#2D3548] md:border-t-0">
+                        <button
+                          type="button"
+                          onClick={() => handleRespond(invite.id, false)}
+                          disabled={actioningId !== null}
+                          className="flex-1 md:flex-none py-2.5 px-4 bg-[#FF0044]/10 hover:bg-[#FF0044]/20 text-[#FF0044] border border-[#FF0044]/30 rounded-lg text-xs font-bold font-['Space_Grotesk',sans-serif] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                        >
+                          <X size={14} />
+                          <span>Reject</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRespond(invite.id, true)}
+                          disabled={actioningId !== null}
+                          className="flex-1 md:flex-none py-2.5 px-4 bg-[#8A2BE2] hover:bg-[#7823c9] text-white rounded-lg text-xs font-bold font-['Space_Grotesk',sans-serif] shadow-[0_0_15px_rgba(138,43,226,0.3)] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                        >
+                          <Check size={14} />
+                          <span>Accept</span>
+                        </button>
                       </div>
                     </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-3 w-full md:w-auto pt-4 md:pt-0 border-t border-white/5 md:border-t-0">
-                      <Button
-                        variant="secondary"
-                        onClick={() => handleRespond(invite.id, false)}
-                        disabled={actioningId !== null}
-                        className="flex-1 md:flex-none py-3.5 px-6 border border-red-500/20 bg-red-950/10 hover:bg-red-950/20 text-red-400 rounded-2xl text-xs uppercase tracking-widest font-black flex items-center justify-center gap-2 transition-all"
-                      >
-                        <X size={14} />
-                        <span>Reject</span>
-                      </Button>
-                      <Button
-                        variant="primary"
-                        onClick={() => handleRespond(invite.id, true)}
-                        disabled={actioningId !== null}
-                        className="flex-1 md:flex-none py-3.5 px-6 bg-accent-purple hover:bg-opacity-95 shadow-[0_0_15px_rgba(157,0,255,0.2)] hover:shadow-[0_0_25px_rgba(157,0,255,0.4)] rounded-2xl text-xs uppercase tracking-widest font-black flex items-center justify-center gap-2 transition-all border-none"
-                      >
-                        <Check size={14} />
-                        <span>Accept</span>
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </main>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

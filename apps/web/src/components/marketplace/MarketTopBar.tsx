@@ -108,7 +108,7 @@ export const MarketTopBar = () => {
   };
 
   return (
-    <header className="flex flex-col md:flex-row items-stretch md:items-center justify-between px-4 sm:px-6 md:px-10 py-3 sm:py-5 bg-[#050510]/80 backdrop-blur-md border-b border-white/5 sticky top-0 z-40 gap-3 md:gap-4">
+    <header className="flex flex-col md:flex-row items-stretch md:items-center justify-between px-4 sm:px-6 md:px-10 py-3 sm:py-5 bg-[#192134]/80 backdrop-blur-md border-b border-[#2D3548] sticky top-0 z-40 gap-3 md:gap-4">
       {/* Top row on mobile / Left side on desktop: Hamburger + Search + Right Icons */}
       <div className="flex items-center justify-between gap-3 w-full md:w-auto md:flex-1 md:max-w-2xl">
         {/* Mobile Hamburger Button */}

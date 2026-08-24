@@ -557,14 +557,14 @@ export default function MintPage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
+    <div className="flex h-screen overflow-hidden bg-[#192134] text-white font-sans selection:bg-[#8A2BE2] selection:text-white">
       {/* Sidebar */}
       <Sidebar />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col relative pb-32 overflow-y-auto">
+      <div className="flex-1 flex flex-col relative pb-32 overflow-y-auto bg-[#192134]">
         {/* Top Header */}
-        <header className="flex items-center justify-between px-10 py-6 border-b border-white/5 bg-[#050510]/80 backdrop-blur-xl sticky top-0 z-50">
+        <header className="flex items-center justify-between px-10 py-6 border-b border-[#2D3548] bg-[#192134]/80 backdrop-blur-xl sticky top-0 z-50">
           <div className="flex items-center gap-6">
             <Link href="/dashboard/upload">
               <button className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest group">

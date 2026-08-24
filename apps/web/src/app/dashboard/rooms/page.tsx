@@ -389,10 +389,10 @@ export default function ListeningRoomPage() {
   );
 
   return (
-    <div className={`flex h-screen overflow-hidden bg-[#050510] text-white font-sans ${step === 'room' ? 'h-screen overflow-hidden' : ''}`}>
+    <div className={`flex h-screen overflow-hidden bg-[#192134] text-white font-sans ${step === 'room' ? 'h-screen overflow-hidden' : ''}`}>
       <Sidebar activePage={step === 'room' ? 'rooms' : ''} />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="flex items-center justify-between px-10 py-8 bg-[#050510]">
+      <div className="flex-1 flex flex-col overflow-hidden bg-[#192134]">
+        <header className="flex items-center justify-between px-10 py-8 bg-[#192134] border-b border-[#2D3548]">
           {step !== 'live' && step !== 'room' && (
             <button 
               onClick={handleBack}

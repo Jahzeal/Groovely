@@ -36,7 +36,7 @@ export const GenreBar = () => {
   const currentCategories = CATEGORIES[activeType] || [];
 
   return (
-    <div className="flex items-center gap-0 px-8 py-4 border-b border-white/5 bg-[#050510]/80 backdrop-blur-md sticky top-[73px] z-20">
+    <div className="flex items-center gap-0 px-8 py-4 border-b border-[#2D3548] bg-[#192134]/80 backdrop-blur-md sticky top-[73px] z-20">
       {/* Dynamic Category pills - scrollable */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar flex-1 pr-4">
         {currentCategories.map(cat => {

@@ -91,10 +91,10 @@ const RoomCard = ({ room }: any) => (
 
 export default function CommunityPage() {
   return (
-    <div className="flex h-screen overflow-hidden bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
+    <div className="flex h-screen overflow-hidden bg-[#192134] text-white font-sans selection:bg-[#8A2BE2] selection:text-white">
       <Sidebar activePage="community" />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden bg-[#192134]">
         <TopBar />
 
         <main className="flex-1 p-10 overflow-y-auto mesh-gradient custom-scrollbar">

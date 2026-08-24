@@ -26,7 +26,7 @@ export const ExploreNav = () => {
   const currentGenres = CATEGORIES[activeType] || CATEGORIES['All'];
 
   return (
-    <div className="flex items-center gap-0 px-4 sm:px-8 py-3 sm:py-4 bg-[#050510]/80 backdrop-blur-md sticky top-[73px] z-20 overflow-x-auto no-scrollbar border-b border-white/5">
+    <div className="flex items-center gap-0 px-4 sm:px-8 py-3 sm:py-4 bg-[#192134]/80 backdrop-blur-md sticky top-[73px] z-20 overflow-x-auto no-scrollbar border-b border-[#2D3548]">
       {/* Content type tabs */}
       <div className="flex items-center gap-1 shrink-0 pr-4">
         {CONTENT_TYPES.map(type => (

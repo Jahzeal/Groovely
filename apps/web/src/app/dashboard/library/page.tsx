@@ -188,12 +188,12 @@ export default function LibraryPage() {
   );
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
+    <div className="flex h-screen overflow-hidden bg-[#192134] text-white font-sans selection:bg-[#8A2BE2] selection:text-white">
       <Sidebar activePage="library" />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden bg-[#192134]">
         {/* Header */}
-        <header className="flex items-center justify-between px-10 py-8 border-b border-white/5 bg-[#050510]/80 backdrop-blur-xl sticky top-0 z-50">
+        <header className="flex items-center justify-between px-10 py-8 border-b border-[#2D3548] bg-[#192134]/80 backdrop-blur-xl sticky top-0 z-50">
           <h1 className="text-2xl font-black tracking-tighter">My Library</h1>
           
            <div className="flex-1 max-w-md mx-10 relative group">

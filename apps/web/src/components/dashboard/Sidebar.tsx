@@ -36,16 +36,16 @@ interface NavItemProps {
 const NavItem = ({ icon: Icon, label, href, active, comingSoon, badgeCount }: NavItemProps) => {
   const inner = (
     <div className={`
-      flex items-center gap-3 px-6 py-3.5 cursor-pointer transition-all duration-300
+      flex items-center gap-3 px-6 py-3.5 cursor-pointer transition-all duration-200 font-['Space_Grotesk',sans-serif]
       ${active
-        ? 'bg-accent-purple/10 border-r-4 border-accent-purple text-white font-bold'
-        : 'text-zinc-500 hover:text-white hover:bg-white/5'
+        ? 'bg-[#8A2BE2]/10 border-r-4 border-[#8A2BE2] text-white font-bold'
+        : 'text-[#CACACA] hover:text-white hover:bg-white/5 font-medium'
       }
     `}>
-      <Icon size={20} className={active ? 'text-accent-purple' : ''} />
+      <Icon size={20} className={active ? 'text-[#8A2BE2]' : 'text-[#CACACA]'} />
       <span className="text-sm tracking-wide">{label}</span>
       {badgeCount !== undefined && badgeCount > 0 && (
-        <span className="ml-auto flex items-center justify-center h-5 w-5 rounded-full bg-accent-purple text-[10px] font-black text-white shadow-[0_0_10px_rgba(157,0,255,0.4)]">
+        <span className="ml-auto flex items-center justify-center h-5 w-5 rounded-full bg-[#8A2BE2] text-[10px] font-black text-white shadow-[0_0_10px_rgba(138,43,226,0.5)]">
           {badgeCount}
         </span>
       )}
@@ -98,25 +98,24 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
   }, [initialRole]);
 
   useEffect(() => {
-    if (!mounted || !token || role !== 'creator') return;
+    if (!token) return;
     const fetchInvites = async () => {
       try {
         const res = await apiFetch('/api/creator/invitations');
         if (res && res.ok) {
           const json = await res.json();
-          const invites = json.data || [];
-          setInviteCount(invites.length);
+          if (Array.isArray(json.data)) {
+            setInviteCount(json.data.length);
+          }
         }
       } catch (err) {
-        console.error('Failed to fetch invitations count:', err);
+        console.error('Failed to fetch pending invites for sidebar badge:', err);
       }
     };
     fetchInvites();
-    const interval = setInterval(fetchInvites, 30000);
-    return () => clearInterval(interval);
-  }, [mounted, token, role]);
+  }, [token]);
 
-  const isMarket = activePage === 'market' || pathname?.startsWith('/marketplace');
+  const isMarket = activePage === 'market' || pathname === '/marketplace' || pathname?.startsWith('/marketplace/');
   const isDashboard = !isMarket && (activePage === 'dashboard' || pathname === '/dashboard');
 
   const handleSignOut = async () => {
@@ -157,7 +156,7 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
   }
 
   const sidebarContent = (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-[#192134]">
       <div className="px-6 mb-8 flex items-center justify-between">
         <Link href="/" onClick={() => setIsMobileOpen(false)}>
           <Logo />
@@ -165,7 +164,7 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
         {isMobileOpen && (
           <button
             onClick={() => setIsMobileOpen(false)}
-            className="lg:hidden p-2 text-zinc-400 hover:text-white rounded-lg bg-white/5 border border-white/10"
+            className="lg:hidden p-2 text-zinc-400 hover:text-white rounded-lg bg-white/5 border border-[#2D3548]"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -178,13 +177,13 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
       <div className="px-4 mb-6">
         {role === 'creator' ? (
           <Link href="/dashboard/upload" className="w-full" onClick={() => setIsMobileOpen(false)}>
-            <button className="w-full bg-accent-purple hover:bg-opacity-90 text-white font-bold py-3.5 sm:py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(157,0,255,0.2)] text-sm sm:text-base">
+            <button className="w-full bg-[#8A2BE2] hover:bg-[#7823c9] text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(138,43,226,0.3)] text-sm font-['Space_Grotesk',sans-serif] cursor-pointer">
               <Upload size={18} />
               <span>Upload &amp; Mint</span>
             </button>
           </Link>
         ) : (
-          <button className="w-full bg-accent-purple hover:bg-opacity-90 text-white font-bold py-3.5 sm:py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(157,0,255,0.2)] text-sm sm:text-base">
+          <button className="w-full bg-[#8A2BE2] hover:bg-[#7823c9] text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(138,43,226,0.3)] text-sm font-['Space_Grotesk',sans-serif] cursor-pointer">
             <Plus size={18} />
             <span>Create Playlist</span>
           </button>
@@ -195,18 +194,18 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
         {role === 'creator' ? (
           <>
             <NavItem icon={LayoutDashboard} label="Dashboard" href="/dashboard" active={isDashboard} />
-            <NavItem icon={Library} label="My Library" href="/library" active={pathname === '/library'} />
+            <NavItem icon={Library} label="My Library" href="/library" active={pathname === '/library' || pathname === '/dashboard/library'} />
             <NavItem icon={UserCheck} label="Split Invites" href="/dashboard/invitations" active={pathname === '/dashboard/invitations'} badgeCount={inviteCount} />
             <NavItem icon={Wallet} label="Earnings" href="/dashboard/earnings" active={pathname === '/dashboard/earnings'} />
 
-            <div className="h-px bg-white/5 my-4 mx-6" />
+            <div className="h-px bg-[#2D3548] my-4 mx-6" />
 
             <NavItem icon={Store} label="Grooveli Market" href="/marketplace" active={isMarket} />
             <NavItem icon={BarChart3} label="Analytics" href="/dashboard/analytics" active={pathname === '/dashboard/analytics'} />
             <NavItem icon={Sparkles} label="AI Tools" comingSoon />
             <NavItem icon={Headphones} label="Listening Rooms" comingSoon />
 
-            <div className="h-px bg-white/5 my-4 mx-6" />
+            <div className="h-px bg-[#2D3548] my-4 mx-6" />
 
             <NavItem icon={User} label="Profile" href="/dashboard/profile" active={pathname === '/dashboard/profile'} />
             <NavItem icon={FileText} label="Licenses" href="/dashboard/licenses" active={pathname === '/dashboard/licenses'} />
@@ -216,7 +215,7 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
         ) : (
           <>
             <NavItem icon={LayoutDashboard} label="Discover" href="/explore" active={activePage === 'explore' || pathname === '/explore'} />
-            <NavItem icon={Library} label="My Library" href="/library" active={pathname === '/library'} />
+            <NavItem icon={Library} label="My Library" href="/library" active={pathname === '/library' || pathname === '/dashboard/library'} />
             <NavItem icon={Store} label="Grooveli Market" href="/marketplace" active={isMarket} />
           </>
         )}
@@ -225,12 +224,12 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
       <div className="mt-auto px-4 pt-4 pb-2">
         <button
           onClick={handleSignOut}
-          className="w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white font-bold py-3.5 rounded-xl border border-white/5 transition-all text-sm"
+          className="w-full flex items-center justify-center gap-2 bg-[#232B3E] hover:bg-[#2d374f] text-white font-bold py-3 rounded-xl border border-[#2D3548] transition-all text-xs sm:text-sm font-['Space_Grotesk',sans-serif] cursor-pointer"
         >
           <LogOut size={16} />
           <span>Sign Out</span>
         </button>
-        <p className="text-[10px] text-zinc-700 text-center mt-4 uppercase font-black tracking-widest">
+        <p className="text-[10px] text-zinc-500 text-center mt-3 uppercase font-bold tracking-widest font-['Space_Grotesk',sans-serif]">
           © Copyright 2025
         </p>
       </div>
@@ -240,7 +239,7 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
   return (
     <>
       {/* Desktop Sidebar (hidden on mobile, visible on lg screens) */}
-      <aside className="hidden lg:flex w-64 h-screen sticky top-0 bg-[#0F0F1A] border-r border-white/5 flex-col py-8 shrink-0">
+      <aside className="hidden lg:flex w-64 h-screen sticky top-0 bg-[#192134] border-r border-[#2D3548] flex-col py-6 shrink-0 z-30">
         {sidebarContent}
       </aside>
 
@@ -254,7 +253,7 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
           />
 
           {/* Drawer Panel */}
-          <div className="relative w-[280px] sm:w-[320px] max-w-[85vw] h-full bg-[#0F0F1A] border-r border-white/10 py-6 z-10 flex flex-col shadow-2xl animate-in slide-in-from-left duration-300">
+          <div className="relative w-[280px] sm:w-[320px] max-w-[85vw] h-full bg-[#192134] border-r border-[#2D3548] py-6 z-10 flex flex-col shadow-2xl animate-in slide-in-from-left duration-300">
             {sidebarContent}
           </div>
         </div>
