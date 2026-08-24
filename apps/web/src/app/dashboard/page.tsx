@@ -224,42 +224,6 @@ export default function DashboardPage() {
             </div>
           </footer>
         </main>
-
-        {/* Figma Mobile Docked Audio Player (Figma Frame: height 82px, bg #0F172A, border-top 1px solid #232B3E, purple progress #8A2BE2) */}
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 h-[82px] bg-[#0F172A] border-t border-[#232B3E] px-4 flex items-center justify-between z-40 shadow-2xl">
-          {/* Top Progress Line */}
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-black/40">
-            <div className="w-[35%] h-full bg-[#8A2BE2] rounded-r-full" />
-          </div>
-
-          {/* Track Info */}
-          <div className="flex items-center gap-3 min-w-0 flex-1 pr-4">
-            <div className="w-[48px] h-[48px] rounded-[4px] bg-[#232B3E] overflow-hidden shrink-0 border border-white/5 flex items-center justify-center">
-              <Disc size={24} className="text-zinc-500 animate-spin" style={{ animationDuration: '6s' }} />
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="font-['Space_Grotesk',sans-serif] font-bold text-[14px] text-white truncate">
-                Groovely Radio Stream
-              </span>
-              <span className="font-['Space_Grotesk',sans-serif] font-medium text-[12px] text-[#CACACA] truncate">
-                Featured Creators
-              </span>
-            </div>
-          </div>
-
-          {/* Player Controls */}
-          <div className="flex items-center gap-3 shrink-0">
-            <button className="text-white hover:text-[#8A2BE2] transition-colors p-1" title="Previous">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="19 20 9 12 19 4 19 20" /><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" strokeWidth="2" /></svg>
-            </button>
-            <button className="w-9 h-9 rounded-full bg-[#8A2BE2] text-white flex items-center justify-center shadow-[0_0_12px_rgba(138,43,226,0.5)] active:scale-95 transition-transform" title="Play">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4" /></svg>
-            </button>
-            <button className="text-white hover:text-[#8A2BE2] transition-colors p-1" title="Next">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4" /><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" strokeWidth="2" /></svg>
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );

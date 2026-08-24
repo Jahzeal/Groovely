@@ -101,7 +101,7 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
     if (!token) return;
     const fetchInvites = async () => {
       try {
-        const res = await apiFetch('/api/creator/invitations');
+        const res = await apiFetch('/api/creator/invitations', { skipAuthRedirect: true });
         if (res && res.ok) {
           const json = await res.json();
           if (Array.isArray(json.data)) {
