@@ -537,8 +537,8 @@ export default function ProfilePage() {
                                   id: item.id,
                                   title: item.title,
                                   artist: item.artist,
-                                  image: item.cover_url || undefined,
-                                  audioUrl: item.audio_url || undefined,
+                                  image: item.cover_url || '',
+                                  audioUrl: item.audio_url || '',
                                 })
                               }
                               className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 backdrop-blur-[2px] cursor-pointer"

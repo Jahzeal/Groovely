@@ -7,7 +7,7 @@ interface Track {
   id: string | number;
   title: string;
   artist: string;
-  image: string;
+  image?: string;
   audioUrl?: string;
   uploaderId?: number;
   price?: string | number;
