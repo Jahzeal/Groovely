@@ -11,7 +11,8 @@ async function bootstrap() {
 
   // Enable CORS
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-  const allowedOrigins = clientUrl.split(',').map(item => item.trim());
+  const extracted = clientUrl.match(/https?:\/\/[^\s,]+/g) || ['http://localhost:3000'];
+  const allowedOrigins = Array.from(new Set(extracted.map(item => item.replace(/\/+$/, '').trim())));
   console.log('[CORS] Allowed origins:', allowedOrigins);
 
   app.enableCors({
@@ -36,16 +37,19 @@ async function bootstrap() {
   });
 
   // Body parser limit (Express-fileupload equivalent configuration if needed, handled by express platform)
-  app.use(session({
-    secret: process.env.JWT_SECRET || 'session_secret',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    }
-  }));
+  const sessionMiddleware = typeof session === 'function' ? session : (session as any)?.default;
+  if (sessionMiddleware) {
+    app.use(sessionMiddleware({
+      secret: process.env.JWT_SECRET || 'session_secret',
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      }
+    }));
+  }
 
   // Passport middlewares
   app.use(passport.initialize());
