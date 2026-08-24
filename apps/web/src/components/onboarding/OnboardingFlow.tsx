@@ -337,9 +337,8 @@ export const OnboardingFlow = () => {
 
       // 3. Fetch Nonce
       console.log('Step 3: Fetching nonce...');
-      // Use a relative URL so the Next.js proxy handles routing (no CORS).
-      const nonceRes = await fetch(`/api/auth/nonce/${walletAddr}`);
-      if (!nonceRes.ok) throw new Error('Failed to fetch nonce');
+      const nonceRes = await apiFetch(`/api/auth/nonce/${walletAddr}`, { skipAuthRedirect: true });
+      if (!nonceRes || !nonceRes.ok) throw new Error('Failed to fetch nonce');
       const { nonce, message } = await nonceRes.json();
       console.log('Step 3 SUCCESS. Nonce data:', { nonce, messageLength: message?.length });
 
@@ -354,12 +353,13 @@ export const OnboardingFlow = () => {
       let connectRes;
 
       const payloadRole = role === 'creator' ? 'creator' : 'fan';
-      connectRes = await fetch('/api/auth/signup/wallet', {
+      connectRes = await apiFetch('/api/auth/signup/wallet', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ walletAddress: walletAddr, role: payloadRole, signature }),
+        skipAuthRedirect: true,
       });
       
+      if (!connectRes) throw new Error('Authentication failed - no response from backend');
       const authData = await connectRes.json();
 
       if (!connectRes.ok) throw new Error(authData.error || authData.message || 'Authentication failed');

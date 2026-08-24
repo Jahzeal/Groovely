@@ -40,18 +40,18 @@ async function handler(
 
     const contentType = backendResponse.headers.get('content-type') || '';
     const isText = contentType.includes('application/json') || contentType.includes('text/');
-    
+
     let responseBody: any = backendResponse.body;
     if (isText && responseBody) {
-       responseBody = await backendResponse.text();
+      responseBody = await backendResponse.text();
     }
 
     const responseHeaders = new Headers(backendResponse.headers);
     responseHeaders.delete('transfer-encoding');
     responseHeaders.delete('connection');
     if (isText) {
-       responseHeaders.delete('content-encoding');
-       responseHeaders.delete('content-length');
+      responseHeaders.delete('content-encoding');
+      responseHeaders.delete('content-length');
     }
 
     return new NextResponse(responseBody, {
@@ -66,8 +66,8 @@ async function handler(
 
     return NextResponse.json(
       {
-        error: isTimeout 
-          ? 'Upload is taking too long. Please try again with a smaller file or faster connection.' 
+        error: isTimeout
+          ? 'Upload is taking too long. Please try again with a smaller file or faster connection.'
           : 'Failed to communicate with backend server.',
         destination,
         detail: error?.message || error?.toString(),
@@ -77,10 +77,10 @@ async function handler(
   }
 }
 
-export const GET     = handler;
-export const POST    = handler;
-export const PUT     = handler;
-export const PATCH   = handler;
-export const DELETE  = handler;
+export const GET = handler;
+export const POST = handler;
+export const PUT = handler;
+export const PATCH = handler;
+export const DELETE = handler;
 export const OPTIONS = handler;
 
