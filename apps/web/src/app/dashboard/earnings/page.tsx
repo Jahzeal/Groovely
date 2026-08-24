@@ -1,40 +1,35 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { 
   Search, 
   Bell, 
-  ChevronRight, 
-  ChevronLeft, 
-  ChevronDown,
-  Wallet, 
-  MoreVertical, 
-  Menu,
+  ChevronDown, 
+  ArrowUpRight, 
+  Menu, 
   X,
   Disc,
   Send,
-  Loader2
+  Loader2,
+  Music
 } from 'lucide-react';
 import { Twitter, Instagram } from '@/components/ui/SocialIcons';
 import { apiFetch, resolveIpfsUrl } from '@/lib/api';
-import { MusicPlayer } from '@/components/marketplace/MusicPlayer';
 import { usePrivy } from '@privy-io/react-auth';
 import { useAccount } from 'wagmi';
 
 interface TransactionItem {
-  id: string | number;
+  id: number | string;
   type: string;
   content: string;
   amount: number | string;
   date: string;
-  status: 'Live' | 'Draft' | 'Failed' | 'Completed' | 'Pending';
+  status: 'Live' | 'Draft' | 'Failed';
   image?: string;
 }
 
 export default function EarningsPage() {
-  const router = useRouter();
   const { user } = usePrivy();
   const { address } = useAccount();
 
@@ -43,61 +38,14 @@ export default function EarningsPage() {
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const [earningsTotal, setEarningsTotal] = useState<number>(1032.60);
-  const [earningsChange, setEarningsChange] = useState<number>(10.5);
-
-  const [transactions, setTransactions] = useState<TransactionItem[]>([
-    {
-      id: 1,
-      type: 'License Purchase for “Slow Lights on Third Street”',
-      content: 'Music',
-      amount: 994,
-      date: '15 May 2020 8:30 am',
-      status: 'Live',
-      image: 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=150&q=80',
-    },
-    {
-      id: 2,
-      type: 'NFT Sale of “Midnight Bounce”',
-      content: 'Beat',
-      amount: 426,
-      date: '15 May 2020 9:00 am',
-      status: 'Draft',
-      image: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=150&q=80',
-    },
-    {
-      id: 3,
-      type: 'Withdrawal of $500',
-      content: 'Podcast',
-      amount: 877,
-      date: '15 May 2020 9:30 am',
-      status: 'Live',
-      image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=150&q=80',
-    },
-    {
-      id: 4,
-      type: 'NFT Sale of “After the Noise”',
-      content: 'Music',
-      amount: 883,
-      date: '15 May 2020 8:00 am',
-      status: 'Failed',
-      image: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=150&q=80',
-    },
-    {
-      id: 5,
-      type: 'License Purchase for “No Wahala, Just Vibes”',
-      content: 'Skit',
-      amount: 740,
-      date: '15 May 2020 8:30 am',
-      status: 'Live',
-      image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=150&q=80',
-    },
-  ]);
+  const [earningsTotal, setEarningsTotal] = useState<number>(0);
+  const [earningsChange, setEarningsChange] = useState<number>(0);
+  const [transactions, setTransactions] = useState<TransactionItem[]>([]);
 
   const activeAddress = address || user?.wallet?.address;
   const abbrev = activeAddress
     ? `${activeAddress.slice(0, 5)}...${activeAddress.slice(-3)}`
-    : '0xc...y69';
+    : '0x00...000';
 
   useEffect(() => {
     async function loadData() {
@@ -121,16 +69,16 @@ export default function EarningsPage() {
 
         if (txRes?.ok) {
           const txJson = await txRes.json();
-          const list = txJson.data?.transactions || txJson.transactions || [];
-          if (Array.isArray(list) && list.length > 0) {
+          const list = txJson.data?.transactions || txJson.transactions || (Array.isArray(txJson.data) ? txJson.data : []);
+          if (Array.isArray(list)) {
             const mapped: TransactionItem[] = list.map((item: any, idx: number) => ({
               id: item.id || idx,
-              type: item.title ? `${item.type || 'NFT Sale of'} “${item.title}”` : (item.type || 'Transaction'),
-              content: item.content || 'Music',
+              type: item.title ? `${item.type || 'NFT Sale of'} “${item.title}”` : (item.type || item.description || 'Transaction'),
+              content: item.content || item.category || 'Music',
               amount: item.amount || 0,
-              date: item.date ? new Date(item.date).toLocaleString('en-US', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true }) : 'Recent',
-              status: (item.status === 'Completed' || item.status === 'Live') ? 'Live' : (item.status === 'Pending' ? 'Draft' : 'Failed'),
-              image: resolveIpfsUrl(item.image) || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=150&q=80'
+              date: item.date || item.created_at ? new Date(item.date || item.created_at).toLocaleString('en-US', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true }) : 'Recent',
+              status: (item.status === 'Completed' || item.status === 'Live' || item.status === 'success') ? 'Live' : (item.status === 'Pending' ? 'Draft' : 'Failed'),
+              image: item.image || item.cover_url ? resolveIpfsUrl(item.image || item.cover_url) : undefined
             }));
             setTransactions(mapped);
           }
@@ -322,50 +270,40 @@ export default function EarningsPage() {
         {/* MAIN SCROLLABLE CONTENT                                                   */}
         {/* ========================================================================= */}
         <main className="flex-1 overflow-y-auto pb-28 px-4 sm:px-8 md:px-10 pt-4 md:pt-8 bg-[#192134]">
-          <div className="max-w-[1200px] mx-auto space-y-4 sm:space-y-6">
+          <div className="max-w-[1200px] mx-auto space-y-6">
 
             {/* ===================================================================== */}
-            {/* TOP METRIC CARD (Mobile: 408x204px / Desktop: 1192x228px)             */}
+            {/* METRIC EARNINGS CARD (Mobile: 408x204px / Desktop: 1192x228px)        */}
             {/* ===================================================================== */}
-            <div className="bg-[#0F172A] rounded-xl p-4 sm:p-6 flex flex-col justify-between min-h-[204px] sm:h-[228px] border border-[#232B3E]/40 hover:border-[#8A2BE2]/40 transition-colors">
+            <div className="bg-[#0F172A] rounded-xl p-4 sm:p-6 border border-[#232B3E]/40 flex flex-col justify-between min-h-[190px] sm:h-[228px]">
               
-              {/* Card Top: Icon + More button */}
               <div className="flex items-start justify-between">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#192134] flex items-center justify-center text-[#697184]">
-                  <Wallet size={28} className="sm:w-8 sm:h-8" />
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#192134] flex items-center justify-center text-white">
+                  <span className="text-2xl sm:text-3xl font-bold font-['Clash_Display',sans-serif]">$</span>
                 </div>
-                <button className="text-[#CACACA] hover:text-white transition-colors">
-                  <MoreVertical size={20} />
+
+                <button 
+                  onClick={() => alert('Withdrawal feature coming soon!')}
+                  className="flex items-center gap-2 bg-[#8A2BE2] hover:bg-[#7823c9] text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-bold font-['Space_Grotesk',sans-serif] shadow-[0_0_20px_rgba(138,43,226,0.4)] transition-all cursor-pointer"
+                >
+                  <span>Withdraw</span>
+                  <ArrowUpRight size={16} />
                 </button>
               </div>
 
-              {/* Card Content & Action Row (Frame 203) */}
-              <div>
-                <p className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA] mb-1">
-                  Earnings
+              <div className="mt-4">
+                <p className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">
+                  Total Earnings
                 </p>
-
-                <div className="flex items-center justify-between gap-3 sm:gap-4">
-                  {/* Big Amount + Badge (Frame 202) */}
-                  <div>
-                    <p className="text-2xl sm:text-4xl font-bold font-['Clash_Display',sans-serif] text-white">
-                      ${earningsTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                    <div className="flex items-center gap-1.5 sm:gap-2 mt-1">
-                      <span className="text-[11px] sm:text-xs font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">This Month</span>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-['Space_Grotesk',sans-serif] bg-[rgba(0,255,136,0.1)] text-[#40FFA6]">
-                        +{earningsChange}%
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Action CTA: Withdraw (Mobile Frame 201: 138x56px) */}
-                  <button
-                    onClick={() => router.push('/dashboard/settings')}
-                    className="inline-flex items-center justify-center bg-[#8A2BE2] hover:bg-[#7823c9] text-white px-5 sm:px-8 py-3 sm:py-3.5 rounded-lg text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] shadow-[0_0_15px_rgba(138,43,226,0.3)] transition-all cursor-pointer"
-                  >
-                    Withdraw
-                  </button>
+                <div className="flex items-baseline gap-3 mt-1">
+                  <h3 className="text-2xl sm:text-4xl font-bold font-['Clash_Display',sans-serif] text-white">
+                    ${earningsTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </h3>
+                  {earningsChange !== 0 && (
+                    <span className="text-xs sm:text-sm font-bold font-['Space_Grotesk',sans-serif] text-[#00FF88]">
+                      +{earningsChange}%
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -474,63 +412,63 @@ export default function EarningsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#192134]">
-                    {filteredTransactions.map((tx) => (
-                      <tr key={tx.id} className="bg-[#232B3E] hover:bg-[#2c364e] transition-colors">
-                        
-                        {/* Type Column: Thumbnail + Description */}
-                        <td className="py-3 px-3 sm:px-4 flex items-center gap-3">
-                          <div className="w-10 h-10 rounded overflow-hidden shrink-0 bg-[#192134] shadow-sm">
-                            <img
-                              src={tx.image || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=150&q=80'}
-                              alt=""
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <span className="text-xs sm:text-sm font-normal font-['Space_Grotesk',sans-serif] text-white truncate max-w-[220px] sm:max-w-md">
-                            {tx.type}
-                          </span>
+                    {filteredTransactions.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-12 text-center text-sm font-['Space_Grotesk',sans-serif] text-[#CACACA]/70">
+                          No transactions recorded yet.
                         </td>
-
-                        {/* Content Column: Pill */}
-                        <td className="py-3 px-3 sm:px-4">
-                          <span className="bg-[rgba(15,23,42,0.5)] text-[#CACACA] text-[11px] sm:text-xs font-['Space_Grotesk',sans-serif] px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full">
-                            {tx.content}
-                          </span>
-                        </td>
-
-                        {/* Amount */}
-                        <td className="py-3 px-3 sm:px-4 text-right text-xs sm:text-sm font-normal font-['Space_Grotesk',sans-serif] text-white">
-                          ${typeof tx.amount === 'number' ? tx.amount.toLocaleString() : tx.amount}
-                        </td>
-
-                        {/* Date */}
-                        <td className="py-3 px-3 sm:px-4 text-right text-[11px] sm:text-sm font-normal font-['Space_Grotesk',sans-serif] text-[#CACACA] whitespace-nowrap">
-                          {tx.date}
-                        </td>
-
-                        {/* Status */}
-                        <td className="py-3 px-3 sm:px-4 text-center">
-                          {getStatusBadge(tx.status)}
-                        </td>
-
                       </tr>
-                    ))}
+                    ) : (
+                      filteredTransactions.map((tx) => (
+                        <tr key={tx.id} className="bg-[#232B3E] hover:bg-[#2c364e] transition-colors">
+                          
+                          {/* Type Column: Thumbnail + Description */}
+                          <td className="py-3 px-3 sm:px-4 flex items-center gap-3">
+                            <div className="w-10 h-10 rounded overflow-hidden shrink-0 bg-[#192134] flex items-center justify-center shadow-sm">
+                              {tx.image ? (
+                                <img
+                                  src={tx.image}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <Music size={18} className="text-[#8A2BE2]/60" />
+                              )}
+                            </div>
+                            <span className="text-xs sm:text-sm font-normal font-['Space_Grotesk',sans-serif] text-white truncate max-w-[220px] sm:max-w-md">
+                              {tx.type}
+                            </span>
+                          </td>
+
+                          {/* Content Column: Pill */}
+                          <td className="py-3 px-3 sm:px-4">
+                            <span className="bg-[rgba(15,23,42,0.5)] text-[#CACACA] text-[11px] sm:text-xs font-['Space_Grotesk',sans-serif] px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full">
+                              {tx.content}
+                            </span>
+                          </td>
+
+                          {/* Amount */}
+                          <td className="py-3 px-3 sm:px-4 text-right text-xs sm:text-sm font-normal font-['Space_Grotesk',sans-serif] text-white">
+                            ${typeof tx.amount === 'number' ? tx.amount.toLocaleString() : tx.amount}
+                          </td>
+
+                          {/* Date */}
+                          <td className="py-3 px-3 sm:px-4 text-right text-[11px] sm:text-sm font-normal font-['Space_Grotesk',sans-serif] text-[#CACACA] whitespace-nowrap">
+                            {tx.date}
+                          </td>
+
+                          {/* Status */}
+                          <td className="py-3 px-3 sm:px-4 text-center">
+                            {getStatusBadge(tx.status)}
+                          </td>
+
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
 
-              {/* Table Pagination */}
-              <div className="flex items-center justify-center gap-4 mt-4 pt-3 text-xs sm:text-sm font-['Space_Grotesk',sans-serif] text-[#CACACA]">
-                <span>Page 1 of 2</span>
-                <button className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer">
-                  <ChevronLeft size={16} />
-                  <span>Previous</span>
-                </button>
-                <button className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer">
-                  <span>Next</span>
-                  <ChevronRight size={16} />
-                </button>
-              </div>
             </div>
 
             {/* ===================================================================== */}
@@ -565,7 +503,6 @@ export default function EarningsPage() {
         </main>
       </div>
 
-      <MusicPlayer />
     </div>
   );
 }
