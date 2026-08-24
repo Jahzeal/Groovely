@@ -386,27 +386,29 @@ export default function MintPage() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#192134] text-white font-sans selection:bg-[#8A2BE2] selection:text-white">
-      {/* Sidebar */}
+      {/* Sidebar (256px) */}
       <Sidebar activePage="dashboard" />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#192134]">
         
         {/* ========================================================================= */}
-        {/* TOP BAR HEADER (Figma Segmented Picker Header - height: 60px)             */}
+        {/* TOP BAR HEADER (Figma Page Header - height: 60px)                          */}
         {/* ========================================================================= */}
-        <header className="flex items-center justify-between px-4 sm:px-8 py-3.5 bg-[#0F172A] border-b border-[#232B3E] shrink-0 z-20">
-          <div className="flex items-center gap-2.5 sm:gap-3">
+        <header className="flex items-center justify-between px-6 sm:px-8 py-3.5 bg-[#0F172A] border-b border-[#232B3E] shrink-0 z-20">
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => router.back()}
-              className="p-1.5 rounded-lg text-white hover:bg-white/5 transition-colors cursor-pointer"
+              onClick={() => router.push('/dashboard/upload')}
+              className="flex items-center gap-2 text-white hover:text-[#8A2BE2] transition-colors cursor-pointer"
               aria-label="Back"
             >
-              <ChevronLeft size={20} />
+              <div className="w-7 h-7 flex items-center justify-center">
+                <ChevronLeft size={20} />
+              </div>
+              <span className="text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                Back
+              </span>
             </button>
-            <h1 className="text-sm sm:text-lg font-bold font-['Space_Grotesk',sans-serif] text-white tracking-tight">
-              Upload &amp; Mint Audio
-            </h1>
           </div>
 
           <div className="flex items-center gap-2 text-xs sm:text-sm font-['Space_Grotesk',sans-serif] text-[#E5E5E5]">
@@ -416,15 +418,15 @@ export default function MintPage() {
         </header>
 
         {/* ========================================================================= */}
-        {/* STEP BREADCRUMB BAR (Figma Frame 311 - height: 64px, scrollable)          */}
+        {/* STEP BREADCRUMB BAR (Figma Step Indicator - height: 64px)                 */}
         {/* ========================================================================= */}
-        <div className="flex items-center px-4 sm:px-8 py-4 bg-[#192134] border-b border-[#232B3E] shrink-0 gap-4 sm:gap-6 overflow-x-auto no-scrollbar">
-          {/* Step 1: Completed / Step 1 */}
-          <Link href="/dashboard/upload" className="flex items-center gap-2.5 sm:gap-3 shrink-0 hover:opacity-80 transition-opacity">
+        <div className="flex items-center px-6 sm:px-8 py-4 bg-[#192134] border-b border-[#232B3E] shrink-0 gap-6 overflow-x-auto no-scrollbar">
+          {/* Step 1: Completed */}
+          <Link href="/dashboard/upload" className="flex items-center gap-3 shrink-0 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 rounded-full bg-[#8A2BE2] flex items-center justify-center text-white font-bold font-['Space_Grotesk',sans-serif] text-sm shadow-[0_0_10px_rgba(138,43,226,0.5)]">
               <Check size={16} strokeWidth={3} />
             </div>
-            <span className="text-xs sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-[#8A2BE2] whitespace-nowrap">
+            <span className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-[#8A2BE2] whitespace-nowrap">
               Upload Audio, Add Metadata &amp; Licensing
             </span>
           </Link>
@@ -435,55 +437,57 @@ export default function MintPage() {
           </div>
 
           {/* Step 2: Active */}
-          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
             <div className="w-8 h-8 rounded-full bg-[#8A2BE2] flex items-center justify-center text-white font-bold font-['Space_Grotesk',sans-serif] text-sm shadow-[0_0_10px_rgba(138,43,226,0.5)]">
               2
             </div>
-            <span className="text-xs sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-[#8A2BE2] whitespace-nowrap">
+            <span className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-[#8A2BE2] whitespace-nowrap">
               Mint Track
             </span>
           </div>
         </div>
 
         {/* ========================================================================= */}
-        {/* SCROLLABLE MAIN FORM (Mobile: 440px x 1632px / Desktop Dual Column)       */}
+        {/* SCROLLABLE MAIN FORM (Desktop: 1512px x 1198px / Mobile: 440px x 1632px)   */}
         {/* ========================================================================= */}
         <main className="flex-1 overflow-y-auto pb-32 px-4 sm:px-8 py-6 sm:py-8 bg-[#192134]">
           <div className="max-w-[1240px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
             {/* ───────────────────────────────────────────────────────────────── */}
-            {/* LEFT COLUMN: Blockchain Configuration (Mobile: 408px x 846px)      */}
+            {/* LEFT COLUMN: Blockchain Configuration (Figma Desktop: 720px width) */}
             {/* ───────────────────────────────────────────────────────────────── */}
             <div className="lg:col-span-7 space-y-6">
 
-              {/* CARD 1: BLOCKCHAIN CONFIGURATION */}
-              <div className="bg-[#0F172A] border border-[#2D3548] rounded-[24px] p-4 sm:p-6 space-y-5">
-                <h2 className="text-lg sm:text-xl font-semibold font-['Clash_Display',sans-serif] text-white">
+              {/* CARD 1: BLOCKCHAIN CONFIGURATION (Figma height 870px, #0F172A) */}
+              <div className="bg-[#0F172A] border border-[#2D3548] rounded-[24px] p-6 space-y-6">
+                <h2 className="text-xl font-semibold font-['Clash_Display',sans-serif] text-white">
                   Blockchain Configuration
                 </h2>
 
-                {/* Frame 8: Network Selection */}
-                <div className="bg-[#192134] border border-[#2D3548] rounded-xl p-4 sm:p-5 space-y-4">
-                  <h3 className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                {/* Frame 8: Network Box (688px x 128px) */}
+                <div className="bg-[#192134] border border-[#2D3548] rounded-xl p-5 space-y-4">
+                  <h3 className="text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
                     Network
                   </h3>
 
-                  <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+                  <div className="flex flex-wrap items-center justify-between sm:justify-start gap-4 sm:gap-8 pt-1">
                     {/* Option 1: POLYGON */}
                     <label 
                       onClick={() => setNetwork('polygon')}
-                      className="flex items-center gap-2.5 cursor-pointer select-none"
+                      className="flex items-center gap-3 cursor-pointer select-none"
                     >
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
                         network === 'polygon' ? 'border-[#8A2BE2]' : 'border-[#959595]'
                       }`}>
-                        {network === 'polygon' && <div className="w-2.5 h-2.5 rounded-full bg-[#8A2BE2]" />}
+                        {network === 'polygon' && <div className="w-3 h-3 rounded-full bg-[#8A2BE2]" />}
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-4 h-4 rounded-full bg-[#DA0A78] flex items-center justify-center text-[9px] font-bold text-white">
-                          P
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-6 flex items-center justify-center">
+                          <div className="w-4 h-4 rounded-full bg-[#DA0A78] flex items-center justify-center text-[10px] font-bold text-white">
+                            P
+                          </div>
                         </div>
-                        <span className="text-sm sm:text-base font-bold font-['JetBrains_Mono',monospace] text-white">
+                        <span className="text-base font-bold font-['JetBrains_Mono',monospace] text-white">
                           POLYGON
                         </span>
                       </div>
@@ -492,18 +496,18 @@ export default function MintPage() {
                     {/* Option 2: SOLANA */}
                     <label 
                       onClick={() => setNetwork('solana')}
-                      className="flex items-center gap-2.5 cursor-pointer select-none opacity-80 hover:opacity-100"
+                      className="flex items-center gap-3 cursor-pointer select-none opacity-80 hover:opacity-100"
                     >
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
                         network === 'solana' ? 'border-[#8A2BE2]' : 'border-[#959595]'
                       }`}>
-                        {network === 'solana' && <div className="w-2.5 h-2.5 rounded-full bg-[#8A2BE2]" />}
+                        {network === 'solana' && <div className="w-3 h-3 rounded-full bg-[#8A2BE2]" />}
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-4 h-4 rounded-sm bg-gradient-to-tr from-[#00FFA3] to-[#DC1FFF] flex items-center justify-center text-[8px] font-bold text-black">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-4 bg-gradient-to-tr from-[#00FFA3] to-[#DC1FFF] rounded-sm flex items-center justify-center text-[9px] font-bold text-black">
                           S
                         </div>
-                        <span className="text-sm sm:text-base font-bold font-['JetBrains_Mono',monospace] text-white">
+                        <span className="text-base font-bold font-['JetBrains_Mono',monospace] text-white">
                           SOLANA
                         </span>
                       </div>
@@ -512,18 +516,18 @@ export default function MintPage() {
                     {/* Option 3: ETHEREUM */}
                     <label 
                       onClick={() => setNetwork('ethereum')}
-                      className="flex items-center gap-2.5 cursor-pointer select-none opacity-80 hover:opacity-100"
+                      className="flex items-center gap-3 cursor-pointer select-none opacity-80 hover:opacity-100"
                     >
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
                         network === 'ethereum' ? 'border-[#8A2BE2]' : 'border-[#959595]'
                       }`}>
-                        {network === 'ethereum' && <div className="w-2.5 h-2.5 rounded-full bg-[#8A2BE2]" />}
+                        {network === 'ethereum' && <div className="w-3 h-3 rounded-full bg-[#8A2BE2]" />}
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-4 h-4 rounded-full bg-[#FF00EE] flex items-center justify-center text-[9px] font-bold text-white">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded-full bg-[#FF00EE] flex items-center justify-center text-[10px] font-bold text-white">
                           Ξ
                         </div>
-                        <span className="text-sm sm:text-base font-bold font-['JetBrains_Mono',monospace] text-white">
+                        <span className="text-base font-bold font-['JetBrains_Mono',monospace] text-white">
                           ETHEREUM
                         </span>
                       </div>
@@ -531,48 +535,48 @@ export default function MintPage() {
                   </div>
                 </div>
 
-                {/* Frame 9: Smart Contract Type */}
-                <div className="bg-[#192134] border border-[#2D3548] rounded-xl p-4 sm:p-5 space-y-4">
-                  <h3 className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                {/* Frame 9: Smart Contract Type Box (688px x 208px) */}
+                <div className="bg-[#192134] border border-[#2D3548] rounded-xl p-5 space-y-4">
+                  <h3 className="text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
                     Smart Contract Type
                   </h3>
 
-                  <div className="space-y-3">
-                    {/* ERC-721 Single Edition */}
+                  <div className="space-y-4">
+                    {/* Single Edition ERC-721 */}
                     <label 
                       onClick={() => setContractType('erc721')}
                       className="flex items-center gap-3 cursor-pointer select-none"
                     >
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
                         contractType === 'erc721' ? 'border-[#8A2BE2]' : 'border-[#959595]'
                       }`}>
-                        {contractType === 'erc721' && <div className="w-2.5 h-2.5 rounded-full bg-[#8A2BE2]" />}
+                        {contractType === 'erc721' && <div className="w-3 h-3 rounded-full bg-[#8A2BE2]" />}
                       </div>
-                      <span className="text-xs sm:text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
+                      <span className="text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
                         Single Edition (ERC-721)
                       </span>
                     </label>
 
-                    {/* ERC-1155 Multi-Edition */}
-                    <div className="space-y-3 pt-1">
+                    {/* Multi-Edition ERC-1155 */}
+                    <div className="space-y-3">
                       <label 
                         onClick={() => setContractType('erc1155')}
                         className="flex items-center gap-3 cursor-pointer select-none"
                       >
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
                           contractType === 'erc1155' ? 'border-[#8A2BE2]' : 'border-[#959595]'
                         }`}>
-                          {contractType === 'erc1155' && <div className="w-2.5 h-2.5 rounded-full bg-[#8A2BE2]" />}
+                          {contractType === 'erc1155' && <div className="w-3 h-3 rounded-full bg-[#8A2BE2]" />}
                         </div>
-                        <span className="text-xs sm:text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
+                        <span className="text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
                           Multi-Edition (ERC-1155)
                         </span>
                       </label>
 
-                      {/* No. of Editions Input Box */}
+                      {/* Frame 100: No. of Editions Input Box */}
                       {contractType === 'erc1155' && (
-                        <div className="flex items-center justify-between p-3 bg-[#0F172A] border border-[#232B3E] rounded-xl">
-                          <span className="text-xs sm:text-sm font-normal font-['Space_Grotesk',sans-serif] text-white">
+                        <div className="flex items-center justify-between p-3.5 bg-[#0F172A] border border-[#232B3E] rounded-xl">
+                          <span className="text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
                             No. of Editions
                           </span>
                           <input
@@ -581,7 +585,7 @@ export default function MintPage() {
                             value={editionsCount}
                             onChange={(e) => setEditionsCount(e.target.value)}
                             placeholder="100"
-                            className="w-24 h-10 px-3 bg-[#192134] border-2 border-[#606060] focus:border-[#8A2BE2] rounded-lg text-right text-xs sm:text-sm font-['Space_Grotesk',sans-serif] text-white focus:outline-none"
+                            className="w-28 h-12 px-3 bg-[#192134] border-2 border-[#606060] focus:border-[#8A2BE2] rounded-lg text-right text-base font-['Space_Grotesk',sans-serif] text-white focus:outline-none"
                           />
                         </div>
                       )}
@@ -589,53 +593,53 @@ export default function MintPage() {
                   </div>
                 </div>
 
-                {/* Frame 10: Royalty Split & Collaborators */}
-                <div className="bg-[#192134] border border-[#2D3548] rounded-xl p-4 sm:p-5 space-y-4">
-                  <h3 className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                {/* Frame 10: Royalty Split Box (688px x 232px) */}
+                <div className="bg-[#192134] border border-[#2D3548] rounded-xl p-5 space-y-4">
+                  <h3 className="text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
                     Royalty Split
                   </h3>
 
-                  {/* Royalty Percentage Display */}
+                  {/* Royalty Percentage Row */}
                   <div className="flex items-center justify-between">
-                    <span className="text-xs sm:text-sm font-normal font-['Space_Grotesk',sans-serif] text-[#959595]">
+                    <span className="text-base font-normal font-['Space_Grotesk',sans-serif] text-[#959595]">
                       Royalty
                     </span>
-                    <span className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                    <span className="text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
                       {royaltyPercentage}%
                     </span>
                   </div>
 
-                  {/* Creator Splits Header */}
+                  {/* Creator Splits Row & Add Button */}
                   <div className="flex items-center justify-between pt-1">
-                    <span className="text-xs sm:text-sm font-normal font-['Space_Grotesk',sans-serif] text-[#959595]">
+                    <span className="text-base font-normal font-['Space_Grotesk',sans-serif] text-[#959595]">
                       Creator Splits
                     </span>
                     <button
                       type="button"
                       onClick={() => setShowCollabModal(true)}
-                      className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold font-['Space_Grotesk',sans-serif] text-white hover:text-[#8A2BE2] transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-2 text-base font-bold font-['Space_Grotesk',sans-serif] text-white hover:text-[#8A2BE2] transition-colors cursor-pointer"
                     >
-                      <Plus size={16} />
+                      <Plus size={18} />
                       <span>Add Collaborator</span>
                     </button>
                   </div>
 
-                  {/* Collaborators Container */}
-                  <div className="p-3 bg-[#0F172A] border border-[#232B3E] rounded-xl min-h-[70px] flex flex-col justify-center">
+                  {/* Collaborators Box */}
+                  <div className="p-4 bg-[#0F172A] border border-[#232B3E] rounded-xl min-h-[80px] flex flex-col justify-center">
                     {collaborators.length > 0 ? (
-                      <div className="space-y-2">
+                      <div className="space-y-2.5">
                         {collaborators.map((c, i) => (
-                          <div key={i} className="flex items-center justify-between text-xs sm:text-sm font-['Space_Grotesk',sans-serif] py-1 border-b border-[#232B3E] last:border-0">
+                          <div key={i} className="flex items-center justify-between text-base font-['Space_Grotesk',sans-serif] py-1 border-b border-[#232B3E] last:border-0">
                             <div>
                               <span className="font-bold text-white">@{c.username}</span>
-                              <span className="text-zinc-400 ml-2">({c.role || 'collaborator'})</span>
+                              <span className="text-zinc-400 ml-2 text-sm">({c.role || 'collaborator'})</span>
                             </div>
                             <div className="flex items-center gap-3">
                               <span className="text-[#8A2BE2] font-bold">{c.percentage}%</span>
                               <button
                                 type="button"
                                 onClick={() => handleRemoveCollaborator(i)}
-                                className="text-[#FF0044] hover:opacity-80"
+                                className="text-[#FF0044] hover:opacity-80 cursor-pointer"
                               >
                                 ×
                               </button>
@@ -644,34 +648,34 @@ export default function MintPage() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-center text-xs sm:text-sm font-normal font-['Space_Grotesk',sans-serif] text-white py-2">
+                      <p className="text-center text-base font-normal font-['Space_Grotesk',sans-serif] text-white py-2">
                         No Collaborators Added Yet
                       </p>
                     )}
                   </div>
                 </div>
 
-                {/* Frame 11: Metadata Storage */}
-                <div className="bg-[#192134] border border-[#2D3548] rounded-xl p-4 sm:p-5 space-y-4">
-                  <h3 className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                {/* Frame 11: Metadata Storage Box (688px x 144px) */}
+                <div className="bg-[#192134] border border-[#2D3548] rounded-xl p-5 space-y-4">
+                  <h3 className="text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
                     Metadata Storage
                   </h3>
 
-                  <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+                  <div className="flex flex-wrap items-center gap-6">
                     {/* Option 1: IPFS (Recommended) */}
                     <label 
                       onClick={() => setStorage('IPFS')}
-                      className="flex items-center gap-2.5 cursor-pointer select-none"
+                      className="flex items-center gap-3 cursor-pointer select-none"
                     >
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
                         storage === 'IPFS' ? 'border-[#8A2BE2]' : 'border-[#959595]'
                       }`}>
-                        {storage === 'IPFS' && <div className="w-2.5 h-2.5 rounded-full bg-[#8A2BE2]" />}
+                        {storage === 'IPFS' && <div className="w-3 h-3 rounded-full bg-[#8A2BE2]" />}
                       </div>
-                      <span className="text-sm sm:text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
+                      <span className="text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
                         IPFS
                       </span>
-                      <span className="px-2.5 py-0.5 rounded-full bg-[#232B3E] text-[#00FFC6] text-[11px] font-normal font-['Space_Grotesk',sans-serif]">
+                      <span className="px-3 py-1 rounded-full bg-[#232B3E] text-[#00FFC6] text-xs font-normal font-['Space_Grotesk',sans-serif]">
                         Recommended
                       </span>
                     </label>
@@ -679,14 +683,14 @@ export default function MintPage() {
                     {/* Option 2: On-Chain */}
                     <label 
                       onClick={() => setStorage('On-Chain')}
-                      className="flex items-center gap-2.5 cursor-pointer select-none"
+                      className="flex items-center gap-3 cursor-pointer select-none"
                     >
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
                         storage === 'On-Chain' ? 'border-[#8A2BE2]' : 'border-[#959595]'
                       }`}>
-                        {storage === 'On-Chain' && <div className="w-2.5 h-2.5 rounded-full bg-[#8A2BE2]" />}
+                        {storage === 'On-Chain' && <div className="w-3 h-3 rounded-full bg-[#8A2BE2]" />}
                       </div>
-                      <span className="text-sm sm:text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
+                      <span className="text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
                         On-Chain (Advanced)
                       </span>
                     </label>
@@ -698,44 +702,46 @@ export default function MintPage() {
             </div>
 
             {/* ───────────────────────────────────────────────────────────────── */}
-            {/* RIGHT COLUMN: Track Summary & Wallet Fee (Mobile: Stacked cards)   */}
+            {/* RIGHT COLUMN: Track Summary & Wallet Fee (Figma Desktop: 448px)   */}
             {/* ───────────────────────────────────────────────────────────────── */}
             <div className="lg:col-span-5 space-y-6">
 
-              {/* CARD 2: TRACK SUMMARY (Figma Mobile: 408x216px) */}
-              <div className="bg-[#0F172A] border border-[#555D70] rounded-[24px] p-4 sm:p-6 space-y-4">
-                <h2 className="text-lg sm:text-xl font-semibold font-['Clash_Display',sans-serif] text-white">
+              {/* CARD 2: TRACK SUMMARY (Figma Desktop: 448px x 224px, #0F172A) */}
+              <div className="bg-[#0F172A] border border-[#555D70] rounded-[24px] p-6 space-y-5">
+                <h2 className="text-xl font-semibold font-['Clash_Display',sans-serif] text-white">
                   Track Summary
                 </h2>
 
                 <div className="bg-[#0F172A] border border-[#2D3548] rounded-xl p-4 flex items-center gap-4">
                   {/* Cover Art Box (100x100) */}
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-md bg-[#192134] border border-[#2D3548] overflow-hidden shrink-0 flex items-center justify-center">
+                  <div className="w-24 h-24 rounded-md bg-[#192134] border border-[#2D3548] overflow-hidden shrink-0 flex items-center justify-center">
                     {trackCover ? (
                       <img src={trackCover} alt="Track Cover" className="w-full h-full object-cover" />
                     ) : (
-                      <Disc size={32} className="text-zinc-500" />
+                      <Disc size={36} className="text-zinc-500" />
                     )}
                   </div>
 
-                  {/* Info Box */}
+                  {/* Info Box (Frame 20: 268px x 106px) */}
                   <div className="flex-1 min-w-0 space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <h3 className="text-base sm:text-lg font-bold font-['Clash_Display',sans-serif] text-white truncate">
+                        <h3 className="text-xl font-bold font-['Clash_Display',sans-serif] text-white truncate">
                           {trackTitle}
                         </h3>
-                        <p className="text-xs sm:text-sm font-['Space_Grotesk',sans-serif] text-zinc-400">
+                        <p className="text-base font-['Space_Grotesk',sans-serif] text-zinc-300">
                           {trackGenre}
                         </p>
                       </div>
-                      <span className="text-xs font-['Space_Grotesk',sans-serif] text-zinc-400 shrink-0">
-                        AUDIO
-                      </span>
+                      <div className="text-right">
+                        <p className="text-base font-['Space_Grotesk',sans-serif] text-white">
+                          AUDIO
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-1">
-                      <span className="inline-flex items-center px-3 py-1 bg-[#192134] rounded-full text-[#00FFC6] text-xs font-bold font-['Space_Grotesk',sans-serif]">
+                    <div className="flex items-center justify-start pt-1">
+                      <span className="inline-flex items-center px-3 py-1 bg-[#192134] rounded-full text-[#00FFC6] text-base font-bold font-['Space_Grotesk',sans-serif]">
                         Ready to mint
                       </span>
                     </div>
@@ -743,15 +749,15 @@ export default function MintPage() {
                 </div>
               </div>
 
-              {/* CARD 3: WALLET & GAS FEE (Figma Mobile: 408x174px) */}
-              <div className="bg-[#0F172A] border border-[#555D70] rounded-[24px] p-4 sm:p-6 space-y-4">
-                <h2 className="text-lg sm:text-xl font-bold font-['Clash_Display',sans-serif] text-white">
+              {/* CARD 3: WALLET & GAS FEE (Figma Desktop: 448px x 182px, #0F172A) */}
+              <div className="bg-[#0F172A] border border-[#555D70] rounded-[24px] p-6 space-y-5">
+                <h2 className="text-xl font-bold font-['Clash_Display',sans-serif] text-white">
                   Wallet &amp; Gas Fee
                 </h2>
 
                 <div className="bg-[#0F172A] border border-[#2D3548] rounded-xl p-4 space-y-3">
                   {/* Connected Wallet */}
-                  <div className="flex items-center justify-between text-xs sm:text-sm font-['Space_Grotesk',sans-serif]">
+                  <div className="flex items-center justify-between text-base font-['Space_Grotesk',sans-serif]">
                     <span className="text-[#959595]">Wallet</span>
                     <span className="font-bold text-white">
                       {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Not Connected'}
@@ -759,7 +765,7 @@ export default function MintPage() {
                   </div>
 
                   {/* Gas Fee */}
-                  <div className="flex items-center justify-between text-xs sm:text-sm font-['Space_Grotesk',sans-serif]">
+                  <div className="flex items-center justify-between text-base font-['Space_Grotesk',sans-serif]">
                     <span className="text-[#959595]">Gas Fee (est.)</span>
                     <span className="font-bold text-white">$0.38</span>
                   </div>
@@ -772,22 +778,22 @@ export default function MintPage() {
         </main>
 
         {/* ========================================================================= */}
-        {/* FIXED BOTTOM ACTION BAR (Figma: height 88px, #0F172A, border-top)         */}
+        {/* FIXED BOTTOM ACTION BAR (Figma CTA Bar: height 88px, 1256px, #0F172A)     */}
         {/* ========================================================================= */}
-        <footer className="h-[88px] bg-[#0F172A] border-t border-[#232B3E] px-4 sm:px-10 flex items-center justify-end gap-3 sm:gap-4 shrink-0 z-30">
+        <footer className="h-[88px] bg-[#0F172A] border-t border-[#464646] px-6 sm:px-10 flex items-center justify-end gap-4 shrink-0 z-30">
           <button
             type="button"
             onClick={() => router.push('/dashboard/upload')}
-            className="h-12 sm:h-14 px-5 sm:px-8 bg-[#192134] hover:bg-[#232B3E] text-white rounded-lg text-xs sm:text-base font-bold font-['Space_Grotesk',sans-serif] transition-all cursor-pointer"
+            className="h-14 px-8 bg-[#192134] hover:bg-[#232B3E] text-white rounded-lg text-base font-bold font-['Space_Grotesk',sans-serif] transition-all cursor-pointer"
           >
-            Back
+            Save as draft
           </button>
 
           <button
             type="button"
             onClick={handleStartMinting}
             disabled={mintStatus === 'minting'}
-            className="h-12 sm:h-14 px-6 sm:px-10 bg-[#8A2BE2] hover:bg-[#7823c9] disabled:opacity-50 text-white rounded-lg text-xs sm:text-base font-bold font-['Space_Grotesk',sans-serif] shadow-[0_0_20px_rgba(138,43,226,0.4)] transition-all cursor-pointer flex items-center justify-center gap-2"
+            className="h-14 px-10 bg-[#8A2BE2] hover:bg-[#7823c9] disabled:opacity-50 text-white rounded-lg text-base font-bold font-['Space_Grotesk',sans-serif] shadow-[0_0_20px_rgba(138,43,226,0.4)] transition-all cursor-pointer flex items-center justify-center gap-2"
           >
             {mintStatus === 'minting' ? (
               <>
@@ -796,7 +802,7 @@ export default function MintPage() {
               </>
             ) : (
               <>
-                <span>Mint</span>
+                <span>Mint Track</span>
                 <ArrowRight size={18} />
               </>
             )}
