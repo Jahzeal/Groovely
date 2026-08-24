@@ -88,7 +88,6 @@ export default function UploadPage() {
   // UI state
   const [isUploading, setIsUploading] = useState(false);
   const [isDraggingAudio, setIsDraggingAudio] = useState(false);
-  const [isDraggingCover, setIsDraggingCover] = useState(false);
 
   const audioInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -103,7 +102,6 @@ export default function UploadPage() {
     
     if (file && file.type.startsWith('audio/')) {
       setAudioFile(file);
-      // Determine duration
       const audio = new Audio();
       audio.src = URL.createObjectURL(file);
       audio.onloadedmetadata = () => {
@@ -228,14 +226,14 @@ export default function UploadPage() {
       {/* Sidebar */}
       <Sidebar activePage="dashboard" />
 
-      {/* Main Content */}
+      {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#192134]">
         
         {/* ========================================================================= */}
         {/* TOP BAR HEADER (Figma Segmented Picker Header - height: 60px)             */}
         {/* ========================================================================= */}
-        <header className="flex items-center justify-between px-6 sm:px-8 py-3.5 bg-[#0F172A] border-b border-[#232B3E] shrink-0 z-20">
-          <div className="flex items-center gap-3">
+        <header className="flex items-center justify-between px-4 sm:px-8 py-3.5 bg-[#0F172A] border-b border-[#232B3E] shrink-0 z-20">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             <button
               onClick={() => router.back()}
               className="p-1.5 rounded-lg text-white hover:bg-white/5 transition-colors cursor-pointer"
@@ -243,7 +241,7 @@ export default function UploadPage() {
             >
               <ChevronLeft size={20} />
             </button>
-            <h1 className="text-base sm:text-lg font-bold font-['Space_Grotesk',sans-serif] text-white tracking-tight">
+            <h1 className="text-sm sm:text-lg font-bold font-['Space_Grotesk',sans-serif] text-white tracking-tight">
               Upload &amp; Mint Audio
             </h1>
           </div>
@@ -255,15 +253,15 @@ export default function UploadPage() {
         </header>
 
         {/* ========================================================================= */}
-        {/* STEP BREADCRUMB BAR (Figma Step 1 & 2 - height: 64px)                     */}
+        {/* STEP BREADCRUMB BAR (Figma Step 1 & 2 - height: 64px, scrollable on mobile)*/}
         {/* ========================================================================= */}
-        <div className="flex items-center px-6 sm:px-8 py-4 bg-[#192134] border-b border-[#232B3E] shrink-0 gap-6 overflow-x-auto no-scrollbar">
+        <div className="flex items-center px-4 sm:px-8 py-4 bg-[#192134] border-b border-[#232B3E] shrink-0 gap-4 sm:gap-6 overflow-x-auto no-scrollbar">
           {/* Step 1: Active */}
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
             <div className="w-8 h-8 rounded-full bg-[#8A2BE2] flex items-center justify-center text-white font-bold font-['Space_Grotesk',sans-serif] text-sm shadow-[0_0_10px_rgba(138,43,226,0.5)]">
               1
             </div>
-            <span className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-[#8A2BE2]">
+            <span className="text-xs sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-[#8A2BE2] whitespace-nowrap">
               Upload Audio, Add Metadata &amp; Licensing
             </span>
           </div>
@@ -274,30 +272,30 @@ export default function UploadPage() {
           </div>
 
           {/* Step 2: Inactive */}
-          <div className="flex items-center gap-3 shrink-0 opacity-70">
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 opacity-70">
             <div className="w-8 h-8 rounded-full border border-[#B0B0B0] flex items-center justify-center text-[#B0B0B0] font-normal font-['Space_Grotesk',sans-serif] text-sm">
               2
             </div>
-            <span className="text-sm sm:text-base font-normal font-['Space_Grotesk',sans-serif] text-[#B0B0B0]">
+            <span className="text-xs sm:text-base font-normal font-['Space_Grotesk',sans-serif] text-[#B0B0B0] whitespace-nowrap">
               Mint Track
             </span>
           </div>
         </div>
 
         {/* ========================================================================= */}
-        {/* SCROLLABLE MAIN FORM (Desktop Dual Column Layout)                         */}
+        {/* SCROLLABLE MAIN FORM                                                      */}
         {/* ========================================================================= */}
         <main className="flex-1 overflow-y-auto pb-32 px-4 sm:px-8 py-6 sm:py-8 bg-[#192134]">
           <div className="max-w-[1240px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
             {/* ───────────────────────────────────────────────────────────────── */}
-            {/* LEFT COLUMN (Cols 1 to 7): Audio, Cover Art, Details, Genre, Category */}
+            {/* LEFT COLUMN (Desktop Cols 1 to 7 / Mobile Stacked: 408px cards)    */}
             {/* ───────────────────────────────────────────────────────────────── */}
             <div className="lg:col-span-7 space-y-6">
 
-              {/* CARD 1: AUDIO UPLOAD (Figma: height 598px, #0F172A, radius 24px) */}
-              <div className="bg-[#0F172A] border border-[#2D3548] rounded-[24px] p-6 space-y-5">
-                <h2 className="text-xl font-semibold font-['Clash_Display',sans-serif] text-white">
+              {/* CARD 1: AUDIO UPLOAD (Figma Mobile: 408x499px, Desktop: 418x598px) */}
+              <div className="bg-[#0F172A] border border-[#2D3548] rounded-[24px] p-4 sm:p-6 space-y-4 sm:space-y-5">
+                <h2 className="text-lg sm:text-xl font-semibold font-['Clash_Display',sans-serif] text-white">
                   Audio
                 </h2>
 
@@ -315,50 +313,50 @@ export default function UploadPage() {
                   onDragLeave={(e) => { e.preventDefault(); setIsDraggingAudio(false); }}
                   onDrop={(e) => { e.preventDefault(); setIsDraggingAudio(false); handleAudioChange(e); }}
                   onClick={() => audioInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-xl p-8 sm:p-12 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
+                  className={`border-2 border-dashed rounded-xl p-6 sm:p-12 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
                     isDraggingAudio
                       ? 'border-[#8A2BE2] bg-[#8A2BE2]/5'
                       : 'border-[#2D3548] hover:border-[#8A2BE2]/50 bg-[#192134]/30'
                   }`}
                 >
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#8A2BE2]/10 flex items-center justify-center text-[#8A2BE2] mb-4">
-                    <Cloud size={48} />
+                  <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-[#8A2BE2]/10 flex items-center justify-center text-[#8A2BE2] mb-3 sm:mb-4">
+                    <Cloud size={36} className="sm:w-12 sm:h-12" />
                   </div>
 
-                  <p className="text-lg sm:text-xl font-bold font-['Clash_Display',sans-serif] text-white max-w-sm">
+                  <p className="text-base sm:text-xl font-bold font-['Clash_Display',sans-serif] text-white max-w-sm">
                     Drag &amp; drop your audio file here or
                   </p>
 
                   <button
                     type="button"
-                    className="mt-2 text-lg sm:text-xl font-bold font-['Clash_Display',sans-serif] text-[#8A2BE2] hover:underline"
+                    className="mt-1 sm:mt-2 text-base sm:text-xl font-bold font-['Clash_Display',sans-serif] text-[#8A2BE2] hover:underline cursor-pointer"
                   >
                     Browse
                   </button>
-                  <p className="text-xs text-zinc-400 mt-2 font-['Space_Grotesk',sans-serif]">
+                  <p className="text-[11px] sm:text-xs text-zinc-400 mt-2 font-['Space_Grotesk',sans-serif]">
                     Supported formats: MP3, WAV, FLAC, AAC (up to 100MB)
                   </p>
                 </div>
 
-                {/* Audio Status & Preview Box */}
-                <div className="bg-[#192134] border border-[#2D3548] rounded-xl p-4 flex items-center justify-between min-h-[90px]">
+                {/* Audio Status Box */}
+                <div className="bg-[#192134] border border-[#2D3548] rounded-xl p-4 flex items-center justify-between min-h-[80px] sm:min-h-[120px]">
                   {audioFile ? (
-                    <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <div className="w-12 h-12 rounded-lg bg-[#8A2BE2]/20 border border-[#8A2BE2]/40 flex items-center justify-center text-[#8A2BE2] shrink-0">
-                        <FileAudio size={24} />
+                    <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-[#8A2BE2]/20 border border-[#8A2BE2]/40 flex items-center justify-center text-[#8A2BE2] shrink-0">
+                        <FileAudio size={22} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold font-['Space_Grotesk',sans-serif] text-white truncate">
+                        <p className="text-xs sm:text-sm font-bold font-['Space_Grotesk',sans-serif] text-white truncate">
                           {audioFile.name}
                         </p>
-                        <p className="text-xs font-['Space_Grotesk',sans-serif] text-[#CACACA]">
+                        <p className="text-[11px] sm:text-xs font-['Space_Grotesk',sans-serif] text-[#CACACA]">
                           {(audioFile.size / (1024 * 1024)).toFixed(2)} MB {audioDuration && `• ${audioDuration}`}
                         </p>
                       </div>
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); setAudioFile(null); }}
-                        className="text-[#FF0044] hover:opacity-80 p-2"
+                        className="text-[#FF0044] hover:opacity-80 p-1.5 cursor-pointer"
                         aria-label="Remove audio"
                       >
                         <Trash2 size={18} />
@@ -366,7 +364,7 @@ export default function UploadPage() {
                     </div>
                   ) : (
                     <div className="w-full text-center py-2">
-                      <p className="text-base font-bold font-['Space_Grotesk',sans-serif] text-[#E5E5E5]">
+                      <p className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-[#E5E5E5]">
                         No Audio Uploaded Yet
                       </p>
                     </div>
@@ -374,113 +372,108 @@ export default function UploadPage() {
                 </div>
               </div>
 
-              {/* ROW: COVER ART + VISIBILITY SETTINGS */}
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-6">
-                
-                {/* CARD 2: COVER ART (Cols 1 to 7) */}
-                <div className="sm:col-span-7 bg-[#0F172A] border border-[#2D3548] rounded-[24px] p-6 space-y-4">
-                  <h2 className="text-xl font-semibold font-['Clash_Display',sans-serif] text-white">
-                    Cover Art
-                  </h2>
+              {/* CARD 2: COVER ART (Figma Mobile: 408x594px) */}
+              <div className="bg-[#0F172A] border border-[#2D3548] rounded-[24px] p-4 sm:p-6 space-y-4">
+                <h2 className="text-lg sm:text-xl font-semibold font-['Clash_Display',sans-serif] text-white">
+                  Cover Art
+                </h2>
 
-                  <input
-                    type="file"
-                    ref={coverInputRef}
-                    onChange={handleCoverChange}
-                    accept="image/*"
-                    className="hidden"
-                  />
+                <input
+                  type="file"
+                  ref={coverInputRef}
+                  onChange={handleCoverChange}
+                  accept="image/*"
+                  className="hidden"
+                />
 
-                  <div className="flex flex-col sm:flex-row items-center gap-5">
-                    {/* Image Preview Container (214x214) */}
-                    <div 
+                <div className="flex flex-col sm:flex-row items-center gap-5">
+                  {/* Image Container (Mobile: 376x376 on stacked, 192x192 on desktop) */}
+                  <div 
+                    onClick={() => coverInputRef.current?.click()}
+                    className="w-full sm:w-48 h-64 sm:h-48 rounded-xl bg-[#192134] border border-[#2D3548] flex items-center justify-center overflow-hidden shrink-0 cursor-pointer hover:border-[#8A2BE2]/50 transition-colors relative"
+                  >
+                    {coverPreview ? (
+                      <img src={coverPreview} alt="Cover Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-zinc-500 p-4 text-center">
+                        <Disc size={40} className="text-zinc-600 mb-2" />
+                        <span className="text-xs font-['Space_Grotesk',sans-serif]">Click to upload</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex flex-col gap-3 w-full sm:w-auto flex-1">
+                    <button
+                      type="button"
                       onClick={() => coverInputRef.current?.click()}
-                      className="w-40 h-40 sm:w-48 sm:h-48 rounded-xl bg-[#192134] border border-[#2D3548] flex items-center justify-center overflow-hidden shrink-0 cursor-pointer hover:border-[#8A2BE2]/50 transition-colors relative"
+                      className="h-14 px-6 bg-[#8A2BE2] hover:bg-[#7823c9] text-white rounded-lg text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] transition-all cursor-pointer flex items-center justify-center gap-2"
                     >
-                      {coverPreview ? (
-                        <img src={coverPreview} alt="Cover Preview" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="flex flex-col items-center justify-center text-zinc-500 p-4 text-center">
-                          <Disc size={36} className="text-zinc-600 mb-2" />
-                          <span className="text-xs font-['Space_Grotesk',sans-serif]">Click to upload</span>
-                        </div>
-                      )}
-                    </div>
+                      <UploadIcon size={18} />
+                      <span>Upload</span>
+                    </button>
 
-                    {/* Buttons */}
-                    <div className="flex flex-col gap-3 w-full sm:w-auto flex-1">
+                    {coverPreview && (
                       <button
                         type="button"
-                        onClick={() => coverInputRef.current?.click()}
-                        className="h-14 px-6 bg-[#8A2BE2] hover:bg-[#7823c9] text-white rounded-lg text-base font-bold font-['Space_Grotesk',sans-serif] transition-all cursor-pointer flex items-center justify-center gap-2"
+                        onClick={() => { setCoverFile(null); setCoverPreview(null); }}
+                        className="h-12 px-6 text-[#FF0044] hover:bg-[#FF0044]/10 rounded-lg text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] transition-all cursor-pointer text-center"
                       >
-                        <UploadIcon size={18} />
-                        <span>Upload</span>
+                        Remove
                       </button>
-
-                      {coverPreview && (
-                        <button
-                          type="button"
-                          onClick={() => { setCoverFile(null); setCoverPreview(null); }}
-                          className="h-12 px-6 text-[#FF0044] hover:bg-[#FF0044]/10 rounded-lg text-base font-bold font-['Space_Grotesk',sans-serif] transition-all cursor-pointer"
-                        >
-                          Remove
-                        </button>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
-
-                {/* CARD 3: VISIBILITY SETTINGS (Cols 8 to 12) */}
-                <div className="sm:col-span-5 bg-[#0F172A] border border-[#2D3548] rounded-[24px] p-6 space-y-4 flex flex-col justify-between">
-                  <h2 className="text-xl font-semibold font-['Clash_Display',sans-serif] text-white">
-                    Visibility Settings
-                  </h2>
-
-                  <div className="space-y-3">
-                    {/* Public Option */}
-                    <label 
-                      onClick={() => setIsPublic(true)}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-[#192134] border border-[#2D3548] cursor-pointer hover:border-[#8A2BE2]/50 transition-all"
-                    >
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        isPublic ? 'border-[#8A2BE2]' : 'border-[#959595]'
-                      }`}>
-                        {isPublic && <div className="w-2.5 h-2.5 rounded-full bg-[#8A2BE2]" />}
-                      </div>
-                      <span className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
-                        Public
-                      </span>
-                    </label>
-
-                    {/* Private Option */}
-                    <label 
-                      onClick={() => setIsPublic(false)}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-[#192134] border border-[#2D3548] cursor-pointer hover:border-[#8A2BE2]/50 transition-all"
-                    >
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        !isPublic ? 'border-[#8A2BE2]' : 'border-[#959595]'
-                      }`}>
-                        {!isPublic && <div className="w-2.5 h-2.5 rounded-full bg-[#8A2BE2]" />}
-                      </div>
-                      <span className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
-                        Private
-                      </span>
-                    </label>
-                  </div>
-                </div>
-
               </div>
 
-              {/* CARD 4: TRACK DETAILS (Figma Metadata Section) */}
-              <div className="bg-[#0F172A] border border-[#2D3548] rounded-[24px] p-6 space-y-5">
-                <h2 className="text-xl font-semibold font-['Clash_Display',sans-serif] text-white">
+              {/* CARD 3: VISIBILITY SETTINGS */}
+              <div className="bg-[#0F172A] border border-[#2D3548] rounded-[24px] p-4 sm:p-6 space-y-4">
+                <h2 className="text-lg sm:text-xl font-semibold font-['Clash_Display',sans-serif] text-white">
+                  Visibility Settings
+                </h2>
+
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  {/* Public Option */}
+                  <label 
+                    onClick={() => setIsPublic(true)}
+                    className="flex items-center gap-3 p-3.5 rounded-xl bg-[#192134] border border-[#2D3548] cursor-pointer hover:border-[#8A2BE2]/50 transition-all"
+                  >
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                      isPublic ? 'border-[#8A2BE2]' : 'border-[#959595]'
+                    }`}>
+                      {isPublic && <div className="w-2.5 h-2.5 rounded-full bg-[#8A2BE2]" />}
+                    </div>
+                    <span className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                      Public
+                    </span>
+                  </label>
+
+                  {/* Private Option */}
+                  <label 
+                    onClick={() => setIsPublic(false)}
+                    className="flex items-center gap-3 p-3.5 rounded-xl bg-[#192134] border border-[#2D3548] cursor-pointer hover:border-[#8A2BE2]/50 transition-all"
+                  >
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                      !isPublic ? 'border-[#8A2BE2]' : 'border-[#959595]'
+                    }`}>
+                      {!isPublic && <div className="w-2.5 h-2.5 rounded-full bg-[#8A2BE2]" />}
+                    </div>
+                    <span className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                      Private
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {/* CARD 4: TRACK DETAILS (Figma Mobile: 408x454px) */}
+              <div className="bg-[#0F172A] border border-[#2D3548] rounded-[24px] p-4 sm:p-6 space-y-4 sm:space-y-5">
+                <h2 className="text-lg sm:text-xl font-semibold font-['Clash_Display',sans-serif] text-white">
                   Track Details
                 </h2>
 
                 {/* Title */}
                 <div className="space-y-2">
-                  <label className="block text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                  <label className="block text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
                     Title
                   </label>
                   <input
@@ -488,13 +481,13 @@ export default function UploadPage() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Title"
-                    className="w-full h-14 bg-transparent border-2 border-[#606060] focus:border-[#8A2BE2] rounded-lg px-4 text-base font-['Space_Grotesk',sans-serif] text-white placeholder-[#606060] focus:outline-none transition-colors"
+                    className="w-full h-14 bg-transparent border-2 border-[#606060] focus:border-[#8A2BE2] rounded-lg px-4 text-sm sm:text-base font-['Space_Grotesk',sans-serif] text-white placeholder-[#606060] focus:outline-none transition-colors"
                   />
                 </div>
 
                 {/* Description */}
                 <div className="space-y-2">
-                  <label className="block text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                  <label className="block text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
                     Description (Optional)
                   </label>
                   <textarea
@@ -502,13 +495,13 @@ export default function UploadPage() {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Write a short description"
-                    className="w-full bg-transparent border-2 border-[#606060] focus:border-[#8A2BE2] rounded-lg p-4 text-base font-['Space_Grotesk',sans-serif] text-white placeholder-[#606060] focus:outline-none transition-colors"
+                    className="w-full bg-transparent border-2 border-[#606060] focus:border-[#8A2BE2] rounded-lg p-4 text-sm sm:text-base font-['Space_Grotesk',sans-serif] text-white placeholder-[#606060] focus:outline-none transition-colors"
                   />
                 </div>
 
                 {/* Explicit Content Toggle */}
-                <div className="flex items-center justify-between pt-2">
-                  <span className="text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-sm sm:text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
                     Explicit Content
                   </span>
                   <button
@@ -526,22 +519,49 @@ export default function UploadPage() {
                 </div>
               </div>
 
-              {/* CARD 5: GENRE & TAGS */}
-              <div className="bg-[#0F172A] border border-[#2D3548] rounded-[24px] p-6 space-y-5">
-                <h2 className="text-xl font-semibold font-['Clash_Display',sans-serif] text-white">
+              {/* CARD 5: CATEGORY (Figma Mobile: 408x110px) */}
+              <div className="bg-[#0F172A] border border-[#2D3548] rounded-[24px] p-4 sm:p-6 space-y-3 sm:space-y-4">
+                <h2 className="text-lg sm:text-xl font-semibold font-['Clash_Display',sans-serif] text-white">
+                  Category
+                </h2>
+
+                <div className="flex flex-wrap gap-2.5 sm:gap-3">
+                  {CATEGORIES.map((cat) => {
+                    const active = category.toLowerCase() === cat.toLowerCase();
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setCategory(cat)}
+                        className={`flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-full text-xs sm:text-base font-bold font-['Space_Grotesk',sans-serif] transition-all cursor-pointer text-center ${
+                          active
+                            ? 'bg-[#8A2BE2]/10 border-2 border-[#4E0AA6] text-white shadow-[0_0_12px_rgba(138,43,226,0.3)]'
+                            : 'bg-[#192134] border border-[#2D3548] text-[#CACACA] hover:text-white'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* CARD 6: GENRE & TAGS (Figma Mobile: 408x450px) */}
+              <div className="bg-[#0F172A] border border-[#2D3548] rounded-[24px] p-4 sm:p-6 space-y-4 sm:space-y-5">
+                <h2 className="text-lg sm:text-xl font-semibold font-['Clash_Display',sans-serif] text-white">
                   Genre &amp; Tags
                 </h2>
 
                 {/* Genre Select */}
                 <div className="space-y-2">
-                  <label className="block text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                  <label className="block text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
                     Genre
                   </label>
                   <div className="relative">
                     <select
                       value={genre}
                       onChange={(e) => setGenre(e.target.value)}
-                      className="w-full h-14 bg-[#192134] border-2 border-[#606060] focus:border-[#8A2BE2] rounded-lg px-4 pr-10 text-base font-['Space_Grotesk',sans-serif] text-white placeholder-[#606060] focus:outline-none appearance-none cursor-pointer"
+                      className="w-full h-14 bg-[#192134] border-2 border-[#606060] focus:border-[#8A2BE2] rounded-lg px-4 pr-10 text-sm sm:text-base font-['Space_Grotesk',sans-serif] text-white placeholder-[#606060] focus:outline-none appearance-none cursor-pointer"
                     >
                       <option value="">Select a genre</option>
                       {GENRES.map((g) => (
@@ -556,7 +576,7 @@ export default function UploadPage() {
 
                 {/* Tags */}
                 <div className="space-y-2">
-                  <label className="block text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                  <label className="block text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
                     Tags (Optional)
                   </label>
                   <input
@@ -565,11 +585,11 @@ export default function UploadPage() {
                     onChange={(e) => setTagInput(e.target.value)}
                     onKeyDown={handleAddTag}
                     placeholder="Choose your tags (press Enter)"
-                    className="w-full h-14 bg-transparent border-2 border-[#606060] focus:border-[#8A2BE2] rounded-lg px-4 text-base font-['Space_Grotesk',sans-serif] text-white placeholder-[#606060] focus:outline-none transition-colors"
+                    className="w-full h-14 bg-transparent border-2 border-[#606060] focus:border-[#8A2BE2] rounded-lg px-4 text-sm sm:text-base font-['Space_Grotesk',sans-serif] text-white placeholder-[#606060] focus:outline-none transition-colors"
                   />
 
-                  {/* Tags Container */}
-                  <div className="bg-[#192134] border border-[#2D3548] rounded-xl p-4 min-h-[90px] flex flex-wrap items-center gap-2">
+                  {/* Tags Box */}
+                  <div className="bg-[#192134] border border-[#2D3548] rounded-xl p-4 min-h-[100px] sm:min-h-[144px] flex flex-wrap items-center gap-2">
                     {tags.length > 0 ? (
                       tags.map((t) => (
                         <span
@@ -580,14 +600,14 @@ export default function UploadPage() {
                           <button
                             type="button"
                             onClick={() => handleRemoveTag(t)}
-                            className="hover:text-[#FF0044]"
+                            className="hover:text-[#FF0044] cursor-pointer"
                           >
                             ×
                           </button>
                         </span>
                       ))
                     ) : (
-                      <p className="w-full text-center text-sm font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">
+                      <p className="w-full text-center text-xs sm:text-sm font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">
                         No Tags Added Yet
                       </p>
                     )}
@@ -595,43 +615,16 @@ export default function UploadPage() {
                 </div>
               </div>
 
-              {/* CARD 6: CATEGORY */}
-              <div className="bg-[#0F172A] border border-[#2D3548] rounded-[24px] p-6 space-y-4">
-                <h2 className="text-xl font-semibold font-['Clash_Display',sans-serif] text-white">
-                  Category
-                </h2>
-
-                <div className="flex flex-wrap gap-3">
-                  {CATEGORIES.map((cat) => {
-                    const active = category.toLowerCase() === cat.toLowerCase();
-                    return (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => setCategory(cat)}
-                        className={`px-5 py-2.5 rounded-full text-base font-bold font-['Space_Grotesk',sans-serif] transition-all cursor-pointer ${
-                          active
-                            ? 'bg-[#8A2BE2]/10 border-2 border-[#8A2BE2] text-white shadow-[0_0_12px_rgba(138,43,226,0.3)]'
-                            : 'bg-[#192134] border border-[#2D3548] text-[#CACACA] hover:text-white'
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* CARD 7: ADVANCED DETAILS (Optional) */}
-              <div className="bg-[#0F172A] border border-[#2D3548] rounded-[24px] p-6 space-y-5">
-                <h2 className="text-xl font-semibold font-['Clash_Display',sans-serif] text-white">
+              {/* CARD 7: ADVANCED DETAILS (Figma Mobile: 408x394px) */}
+              <div className="bg-[#0F172A] border border-[#2D3548] rounded-[24px] p-4 sm:p-6 space-y-4 sm:space-y-5">
+                <h2 className="text-lg sm:text-xl font-semibold font-['Clash_Display',sans-serif] text-white">
                   Advanced Details (Optional)
                 </h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* BPM */}
                   <div className="space-y-2">
-                    <label className="block text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                    <label className="block text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
                       BPM (for producers)
                     </label>
                     <input
@@ -639,20 +632,20 @@ export default function UploadPage() {
                       value={bpm}
                       onChange={(e) => setBpm(e.target.value)}
                       placeholder="0-300"
-                      className="w-full h-14 bg-transparent border-2 border-[#606060] focus:border-[#8A2BE2] rounded-lg px-4 text-base font-['Space_Grotesk',sans-serif] text-white placeholder-[#606060] focus:outline-none"
+                      className="w-full h-14 bg-transparent border-2 border-[#606060] focus:border-[#8A2BE2] rounded-lg px-4 text-sm sm:text-base font-['Space_Grotesk',sans-serif] text-white placeholder-[#606060] focus:outline-none"
                     />
                   </div>
 
                   {/* Key */}
                   <div className="space-y-2">
-                    <label className="block text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                    <label className="block text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
                       Key
                     </label>
                     <div className="relative">
                       <select
                         value={key}
                         onChange={(e) => setKey(e.target.value)}
-                        className="w-full h-14 bg-[#192134] border-2 border-[#606060] focus:border-[#8A2BE2] rounded-lg px-4 pr-10 text-base font-['Space_Grotesk',sans-serif] text-white placeholder-[#606060] focus:outline-none appearance-none cursor-pointer"
+                        className="w-full h-14 bg-[#192134] border-2 border-[#606060] focus:border-[#8A2BE2] rounded-lg px-4 pr-10 text-sm sm:text-base font-['Space_Grotesk',sans-serif] text-white placeholder-[#606060] focus:outline-none appearance-none cursor-pointer"
                       >
                         <option value="">Select a key</option>
                         {KEYS.map((k) => (
@@ -668,7 +661,7 @@ export default function UploadPage() {
 
                 {/* ISRC */}
                 <div className="space-y-2">
-                  <label className="block text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                  <label className="block text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
                     ISRC (if available)
                   </label>
                   <input
@@ -676,7 +669,7 @@ export default function UploadPage() {
                     value={isrc}
                     onChange={(e) => setIsrc(e.target.value)}
                     placeholder="AB-123-456-7890"
-                    className="w-full h-14 bg-transparent border-2 border-[#606060] focus:border-[#8A2BE2] rounded-lg px-4 text-base font-['Space_Grotesk',sans-serif] text-white placeholder-[#606060] focus:outline-none"
+                    className="w-full h-14 bg-transparent border-2 border-[#606060] focus:border-[#8A2BE2] rounded-lg px-4 text-sm sm:text-base font-['Space_Grotesk',sans-serif] text-white placeholder-[#606060] focus:outline-none"
                   />
                 </div>
               </div>
@@ -684,22 +677,22 @@ export default function UploadPage() {
             </div>
 
             {/* ───────────────────────────────────────────────────────────────── */}
-            {/* RIGHT COLUMN (Cols 8 to 12): Licensing Card (Figma width 448px)     */}
+            {/* RIGHT COLUMN (Desktop Cols 8 to 12 / Mobile: 408x702px Licensing)   */}
             {/* ───────────────────────────────────────────────────────────────── */}
             <div className="lg:col-span-5 space-y-6">
 
-              <div className="bg-[#0F172A]/80 border border-[#555D70] rounded-[24px] p-6 space-y-6">
-                <h2 className="text-xl font-semibold font-['Clash_Display',sans-serif] text-white">
+              <div className="bg-[#0F172A]/90 border border-[#555D70] rounded-[24px] p-4 sm:p-6 space-y-5 sm:space-y-6">
+                <h2 className="text-lg sm:text-xl font-semibold font-['Clash_Display',sans-serif] text-white">
                   Licensing
                 </h2>
 
-                {/* Usage Rights */}
-                <div className="bg-[#0F172A] border border-[#2D3548] rounded-xl p-5 space-y-4">
-                  <h3 className="text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                {/* Usage Rights Box */}
+                <div className="bg-[#0F172A] border border-[#2D3548] rounded-xl p-4 sm:p-5 space-y-3 sm:space-y-4">
+                  <h3 className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
                     Usage Rights
                   </h3>
 
-                  <div className="space-y-3">
+                  <div className="space-y-2.5 sm:space-y-3">
                     {[
                       'Personal Use',
                       'Remix Allowed',
@@ -713,12 +706,12 @@ export default function UploadPage() {
                           onClick={() => toggleUsageRight(right)}
                           className="flex items-center gap-3 cursor-pointer select-none"
                         >
-                          <div className={`w-6 h-6 rounded-md border flex items-center justify-center transition-colors ${
+                          <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-md border flex items-center justify-center transition-colors shrink-0 ${
                             checked ? 'bg-[#8A2BE2] border-[#8A2BE2] text-white' : 'border-[#959595] bg-transparent'
                           }`}>
                             {checked && <Check size={16} strokeWidth={3} />}
                           </div>
-                          <span className="text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
+                          <span className="text-xs sm:text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
                             {right}
                           </span>
                         </label>
@@ -727,30 +720,30 @@ export default function UploadPage() {
                   </div>
                 </div>
 
-                {/* Payment Model */}
-                <div className="bg-[#0F172A] border border-[#2D3548] rounded-xl p-5 space-y-5">
-                  <h3 className="text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                {/* Payment Model Box */}
+                <div className="bg-[#0F172A] border border-[#2D3548] rounded-xl p-4 sm:p-5 space-y-4 sm:space-y-5">
+                  <h3 className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
                     Payment Model
                   </h3>
 
                   {/* Option 1: Fixed Price */}
-                  <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center justify-between gap-3">
                     <label 
                       onClick={() => setPaymentModel('fixed')}
-                      className="flex items-center gap-3 cursor-pointer"
+                      className="flex items-center gap-2.5 sm:gap-3 cursor-pointer"
                     >
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
                         paymentModel === 'fixed' ? 'border-[#8A2BE2]' : 'border-[#959595]'
                       }`}>
                         {paymentModel === 'fixed' && <div className="w-2.5 h-2.5 rounded-full bg-[#8A2BE2]" />}
                       </div>
-                      <span className="text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
+                      <span className="text-xs sm:text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
                         Fixed License Price
                       </span>
                     </label>
 
-                    <div className="flex items-center border-2 border-[#606060] rounded-lg px-3 py-1.5 bg-[#192134] w-28">
-                      <span className="text-white font-bold mr-1">$</span>
+                    <div className="flex items-center border-2 border-[#606060] rounded-lg px-2.5 sm:px-3 py-1 bg-[#192134] w-24 sm:w-28">
+                      <span className="text-white font-bold mr-1 text-sm">$</span>
                       <input
                         type="number"
                         step="any"
@@ -758,37 +751,37 @@ export default function UploadPage() {
                         value={licensePrice}
                         onChange={(e) => setLicensePrice(e.target.value)}
                         placeholder="0.00"
-                        className="w-full bg-transparent text-sm font-['Space_Grotesk',sans-serif] text-white focus:outline-none disabled:opacity-50"
+                        className="w-full bg-transparent text-xs sm:text-sm font-['Space_Grotesk',sans-serif] text-white focus:outline-none disabled:opacity-50"
                       />
                     </div>
                   </div>
 
                   {/* Option 2: Royalty */}
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center justify-between gap-3">
                       <label 
                         onClick={() => setPaymentModel('royalty')}
-                        className="flex items-center gap-3 cursor-pointer"
+                        className="flex items-center gap-2.5 sm:gap-3 cursor-pointer"
                       >
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
                           paymentModel === 'royalty' ? 'border-[#8A2BE2]' : 'border-[#959595]'
                         }`}>
                           {paymentModel === 'royalty' && <div className="w-2.5 h-2.5 rounded-full bg-[#8A2BE2]" />}
                         </div>
-                        <span className="text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
+                        <span className="text-xs sm:text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
                           Royalty
                         </span>
                       </label>
 
-                      <div className="flex items-center border-2 border-[#606060] rounded-lg px-3 py-1.5 bg-[#192134] w-28">
-                        <span className="text-white font-bold mr-1">%</span>
+                      <div className="flex items-center border-2 border-[#606060] rounded-lg px-2.5 sm:px-3 py-1 bg-[#192134] w-24 sm:w-28">
+                        <span className="text-white font-bold mr-1 text-sm">%</span>
                         <input
                           type="number"
                           disabled={paymentModel !== 'royalty'}
                           value={royaltyPercentage}
                           onChange={(e) => setRoyaltyPercentage(Number(e.target.value))}
                           placeholder="10"
-                          className="w-full bg-transparent text-sm font-['Space_Grotesk',sans-serif] text-white focus:outline-none disabled:opacity-50"
+                          className="w-full bg-transparent text-xs sm:text-sm font-['Space_Grotesk',sans-serif] text-white focus:outline-none disabled:opacity-50"
                         />
                       </div>
                     </div>
@@ -804,7 +797,7 @@ export default function UploadPage() {
                           onChange={(e) => setRoyaltyPercentage(Number(e.target.value))}
                           className="w-full accent-[#8A2BE2] cursor-pointer"
                         />
-                        <div className="flex justify-between text-xs text-zinc-400 font-['Space_Grotesk',sans-serif]">
+                        <div className="flex justify-between text-[11px] sm:text-xs text-zinc-400 font-['Space_Grotesk',sans-serif]">
                           <span>1%</span>
                           <span className="text-[#8A2BE2] font-bold">{royaltyPercentage}% Royalty</span>
                           <span>50%</span>
@@ -816,27 +809,27 @@ export default function UploadPage() {
                   {/* Option 3: No License Fee */}
                   <label 
                     onClick={() => setPaymentModel('none')}
-                    className="flex items-center gap-3 cursor-pointer pt-1"
+                    className="flex items-center gap-2.5 sm:gap-3 cursor-pointer pt-1"
                   >
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
                       paymentModel === 'none' ? 'border-[#8A2BE2]' : 'border-[#959595]'
                     }`}>
                       {paymentModel === 'none' && <div className="w-2.5 h-2.5 rounded-full bg-[#8A2BE2]" />}
                     </div>
-                    <span className="text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
+                    <span className="text-xs sm:text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
                       No License Fee
                     </span>
                   </label>
                 </div>
 
-                {/* Additional Settings */}
-                <div className="bg-[#0F172A] border border-[#2D3548] rounded-xl p-5 space-y-4">
-                  <h3 className="text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                {/* Additional Settings Box */}
+                <div className="bg-[#0F172A] border border-[#2D3548] rounded-xl p-4 sm:p-5 space-y-3 sm:space-y-4">
+                  <h3 className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
                     Additional Settings
                   </h3>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
+                    <span className="text-xs sm:text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
                       Credit Required
                     </span>
                     <button
@@ -853,7 +846,7 @@ export default function UploadPage() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
+                    <span className="text-xs sm:text-base font-normal font-['Space_Grotesk',sans-serif] text-white">
                       Allow Derivatives
                     </span>
                     <button
@@ -873,14 +866,14 @@ export default function UploadPage() {
                 {/* Consent Checkbox */}
                 <label 
                   onClick={() => setAgreedToTerms(prev => !prev)}
-                  className="flex items-start gap-3 cursor-pointer pt-2"
+                  className="flex items-start gap-2.5 sm:gap-3 cursor-pointer pt-2"
                 >
-                  <div className={`w-6 h-6 rounded-md border mt-0.5 flex items-center justify-center shrink-0 transition-colors ${
+                  <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-md border mt-0.5 flex items-center justify-center shrink-0 transition-colors ${
                     agreedToTerms ? 'bg-[#8A2BE2] border-[#8A2BE2] text-white' : 'border-[#959595] bg-transparent'
                   }`}>
                     {agreedToTerms && <Check size={16} strokeWidth={3} />}
                   </div>
-                  <span className="text-sm font-normal font-['Space_Grotesk',sans-serif] text-white leading-snug">
+                  <span className="text-xs sm:text-sm font-normal font-['Space_Grotesk',sans-serif] text-white leading-snug">
                     I confirm I own the rights to this audio and agree to Groovely’s Terms &amp; Conditions
                   </span>
                 </label>
@@ -895,12 +888,12 @@ export default function UploadPage() {
         {/* ========================================================================= */}
         {/* FIXED BOTTOM ACTION BAR (Figma: height 88px, #0F172A, border-top)         */}
         {/* ========================================================================= */}
-        <footer className="h-[88px] bg-[#0F172A] border-t border-[#2D3548] px-6 sm:px-10 flex items-center justify-end gap-4 shrink-0 z-30">
+        <footer className="h-[88px] bg-[#0F172A] border-t border-[#232B3E] px-4 sm:px-10 flex items-center justify-end gap-3 sm:gap-4 shrink-0 z-30">
           <button
             type="button"
             onClick={() => handleNext(true)}
             disabled={isUploading}
-            className="h-14 px-8 bg-[#192134] hover:bg-[#232B3E] text-white rounded-lg text-base font-bold font-['Space_Grotesk',sans-serif] transition-all cursor-pointer"
+            className="h-12 sm:h-14 px-5 sm:px-8 bg-[#192134] hover:bg-[#232B3E] text-white rounded-lg text-xs sm:text-base font-bold font-['Space_Grotesk',sans-serif] transition-all cursor-pointer"
           >
             Save As Draft
           </button>
@@ -909,7 +902,7 @@ export default function UploadPage() {
             type="button"
             onClick={() => handleNext(false)}
             disabled={isUploading}
-            className="h-14 px-10 bg-[#8A2BE2] hover:bg-[#7823c9] disabled:opacity-50 text-white rounded-lg text-base font-bold font-['Space_Grotesk',sans-serif] shadow-[0_0_20px_rgba(138,43,226,0.4)] transition-all cursor-pointer flex items-center justify-center gap-2"
+            className="h-12 sm:h-14 px-6 sm:px-10 bg-[#8A2BE2] hover:bg-[#7823c9] disabled:opacity-50 text-white rounded-lg text-xs sm:text-base font-bold font-['Space_Grotesk',sans-serif] shadow-[0_0_20px_rgba(138,43,226,0.4)] transition-all cursor-pointer flex items-center justify-center gap-2"
           >
             {isUploading ? (
               <>
