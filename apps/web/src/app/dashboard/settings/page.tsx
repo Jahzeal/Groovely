@@ -13,11 +13,15 @@ import {
   Loader2,
   AlertCircle,
   Check,
-  User as UserIcon
+  User as UserIcon,
+  ArrowUpRight,
+  Wallet
 } from 'lucide-react';
 import { Twitter, Instagram, Polygon } from '@/components/ui/SocialIcons';
 import { apiFetch, resolveIpfsUrl } from '@/lib/api';
-import { useAccount, useDisconnect } from 'wagmi';
+import { useAccount, useDisconnect, useBalance, useSendTransaction, useWriteContract, useReadContract } from 'wagmi';
+import { parseEther, parseUnits, formatUnits } from 'viem';
+import { USDC_ADDRESS, ERC20_ABI } from '@/lib/contracts';
 import { usePrivy, useLogout } from '@privy-io/react-auth';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -28,6 +32,29 @@ export default function SettingsPage() {
   const { logout } = useLogout();
   const { address: activeAddress } = useAccount();
   const { disconnect } = useDisconnect();
+
+  // Balances & On-Chain Transfers
+  const { data: polBalanceData, refetch: refetchPolBalance } = useBalance({
+    address: activeAddress,
+  });
+  const { data: rawUsdcBalance, refetch: refetchUsdcBalance } = useReadContract({
+    address: USDC_ADDRESS,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: activeAddress ? [activeAddress] : undefined,
+    query: {
+      enabled: !!activeAddress,
+    },
+  });
+
+  const { sendTransactionAsync, isPending: isSendingTx } = useSendTransaction();
+  const { writeContractAsync, isPending: isWritingContract } = useWriteContract();
+
+  // Withdraw & Transfer state
+  const [withdrawToken, setWithdrawToken] = useState<'USDC' | 'POL'>('USDC');
+  const [recipient, setRecipient] = useState('');
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [isTransferring, setIsTransferring] = useState(false);
 
   // Form State
   const [displayName, setDisplayName] = useState('');
@@ -148,6 +175,54 @@ export default function SettingsPage() {
       toast.error(err.message || 'Failed to save changes');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleTransferFunds = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeAddress) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
+    if (!recipient || !recipient.startsWith('0x') || recipient.length !== 42) {
+      toast.error('Please enter a valid recipient address (0x...)');
+      return;
+    }
+    const numAmount = parseFloat(withdrawAmount);
+    if (!numAmount || numAmount <= 0) {
+      toast.error('Please enter a valid amount greater than 0');
+      return;
+    }
+
+    setIsTransferring(true);
+    const loadId = toast.loading(`Sending ${withdrawAmount} ${withdrawToken}...`);
+    try {
+      if (withdrawToken === 'USDC') {
+        const amountRaw = parseUnits(withdrawAmount.trim(), 6);
+        await writeContractAsync({
+          address: USDC_ADDRESS,
+          abi: ERC20_ABI,
+          functionName: 'transfer',
+          args: [recipient as `0x${string}`, amountRaw],
+        });
+      } else {
+        const amountRaw = parseEther(withdrawAmount.trim());
+        await sendTransactionAsync({
+          to: recipient as `0x${string}`,
+          value: amountRaw,
+        });
+      }
+
+      toast.success(`Successfully sent ${withdrawAmount} ${withdrawToken}!`, { id: loadId });
+      setWithdrawAmount('');
+      setRecipient('');
+      refetchPolBalance();
+      refetchUsdcBalance();
+    } catch (err: any) {
+      console.error('Transfer error:', err);
+      toast.error(err.message || 'Transfer failed. Check balance and gas fees.', { id: loadId });
+    } finally {
+      setIsTransferring(false);
     }
   };
 
@@ -446,7 +521,7 @@ export default function SettingsPage() {
                     </div>
                   </div>
 
-                  {/* Frame 212: Disconnect Wallet Button */}
+                  {/* Disconnect Wallet Button */}
                   <button
                     type="button"
                     onClick={handleDisconnect}
@@ -454,6 +529,112 @@ export default function SettingsPage() {
                   >
                     Disconnect Wallet
                   </button>
+
+                  {/* =================================================================== */}
+                  {/* ON-CHAIN WITHDRAW / TRANSFER FUNDS CARD                             */}
+                  {/* =================================================================== */}
+                  <div className="bg-[#0F172A] border border-[#2D3548] rounded-xl p-6 space-y-5 mt-6">
+                    <div className="flex items-center justify-between pb-3 border-b border-[#232B3E]">
+                      <div className="flex items-center gap-2">
+                        <Wallet size={20} className="text-[#8A2BE2]" />
+                        <h3 className="text-lg font-bold font-['Clash_Display',sans-serif] text-white">
+                          Withdraw / Transfer Funds
+                        </h3>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setWithdrawToken('USDC')}
+                          className={`px-3 py-1 rounded-md text-xs font-bold font-['Space_Grotesk',sans-serif] transition-colors ${
+                            withdrawToken === 'USDC' ? 'bg-[#8A2BE2] text-white' : 'bg-[#192134] text-[#CACACA] hover:text-white'
+                          }`}
+                        >
+                          USDC
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setWithdrawToken('POL')}
+                          className={`px-3 py-1 rounded-md text-xs font-bold font-['Space_Grotesk',sans-serif] transition-colors ${
+                            withdrawToken === 'POL' ? 'bg-[#8A2BE2] text-white' : 'bg-[#192134] text-[#CACACA] hover:text-white'
+                          }`}
+                        >
+                          POL
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs sm:text-sm font-['Space_Grotesk',sans-serif]">
+                      <span className="text-[#CACACA]">Available Balance</span>
+                      <span className="text-[#00FF88] font-bold font-['JetBrains_Mono',monospace]">
+                        {withdrawToken === 'USDC'
+                          ? (rawUsdcBalance !== undefined ? `${parseFloat(formatUnits(rawUsdcBalance, 6)).toFixed(2)} USDC` : '0.00 USDC')
+                          : (polBalanceData ? `${parseFloat(formatUnits(polBalanceData.value, polBalanceData.decimals)).toFixed(4)} POL` : '0.0000 POL')}
+                      </span>
+                    </div>
+
+                    <form onSubmit={handleTransferFunds} className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs sm:text-sm font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">
+                          Recipient Wallet Address
+                        </label>
+                        <input
+                          type="text"
+                          value={recipient}
+                          onChange={(e) => setRecipient(e.target.value)}
+                          placeholder="0x..."
+                          className="w-full h-12 bg-[#192134] border border-[#232B3E] focus:border-[#8A2BE2] rounded-lg px-4 text-xs sm:text-sm font-['JetBrains_Mono',monospace] text-white placeholder-zinc-500 focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs sm:text-sm font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">
+                          Amount ({withdrawToken})
+                        </label>
+                        <div className="relative flex items-center">
+                          <input
+                            type="number"
+                            step="any"
+                            value={withdrawAmount}
+                            onChange={(e) => setWithdrawAmount(e.target.value)}
+                            placeholder="0.00"
+                            className="w-full h-12 bg-[#192134] border border-[#232B3E] focus:border-[#8A2BE2] rounded-lg pl-4 pr-16 text-sm font-['Space_Grotesk',sans-serif] text-white placeholder-zinc-500 focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (withdrawToken === 'USDC' && rawUsdcBalance !== undefined) {
+                                setWithdrawAmount(formatUnits(rawUsdcBalance, 6));
+                              } else if (withdrawToken === 'POL' && polBalanceData) {
+                                const maxVal = Math.max(0, Number(formatUnits(polBalanceData.value, polBalanceData.decimals)) - 0.01);
+                                setWithdrawAmount(maxVal.toString());
+                              }
+                            }}
+                            className="absolute right-2 text-xs font-bold font-['Space_Grotesk',sans-serif] text-[#8A2BE2] hover:text-[#a855f7] px-2 py-1 bg-[#232B3E] rounded"
+                          >
+                            MAX
+                          </button>
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isTransferring || isSendingTx || isWritingContract}
+                        className="w-full h-12 bg-[#8A2BE2] hover:bg-[#7823c9] disabled:opacity-50 text-white rounded-lg text-sm font-bold font-['Space_Grotesk',sans-serif] shadow-[0_0_20px_rgba(138,43,226,0.3)] transition-all cursor-pointer flex items-center justify-center gap-2"
+                      >
+                        {(isTransferring || isSendingTx || isWritingContract) ? (
+                          <>
+                            <Loader2 size={16} className="animate-spin" />
+                            <span>Processing on-chain...</span>
+                          </>
+                        ) : (
+                          <>
+                            <ArrowUpRight size={16} />
+                            <span>Transfer / Withdraw {withdrawToken}</span>
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  </div>
                 </section>
 
                 {/* Line 15 Divider */}

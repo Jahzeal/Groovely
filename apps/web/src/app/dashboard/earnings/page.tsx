@@ -18,6 +18,7 @@ import { Twitter, Instagram } from '@/components/ui/SocialIcons';
 import { apiFetch, resolveIpfsUrl } from '@/lib/api';
 import { usePrivy } from '@privy-io/react-auth';
 import { useAccount } from 'wagmi';
+import Link from 'next/link';
 
 interface TransactionItem {
   id: number | string;
@@ -282,13 +283,13 @@ export default function EarningsPage() {
                   <span className="text-2xl sm:text-3xl font-bold font-['Clash_Display',sans-serif]">$</span>
                 </div>
 
-                <button 
-                  onClick={() => alert('Withdrawal feature coming soon!')}
+                <Link 
+                  href="/dashboard/settings"
                   className="flex items-center gap-2 bg-[#8A2BE2] hover:bg-[#7823c9] text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-bold font-['Space_Grotesk',sans-serif] shadow-[0_0_20px_rgba(138,43,226,0.4)] transition-all cursor-pointer"
                 >
-                  <span>Withdraw</span>
+                  <span>Withdraw / Transfer</span>
                   <ArrowUpRight size={16} />
-                </button>
+                </Link>
               </div>
 
               <div className="mt-4">
