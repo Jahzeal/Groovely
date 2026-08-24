@@ -1,6 +1,6 @@
 import toast from 'react-hot-toast';
 
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://groovely-ttyi.onrender.com';
 
 export async function apiFetch(endpoint: string, options: RequestInit & { skipAuthRedirect?: boolean } = {}) {
   const token = typeof window !== 'undefined'

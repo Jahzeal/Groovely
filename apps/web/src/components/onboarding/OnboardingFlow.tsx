@@ -189,22 +189,22 @@ export const OnboardingFlow = () => {
 
         if (userEmail) {
           // 1. Try Google signup with wallet attached
-          const signupRes = await fetch('/api/auth/signup/google', {
+          const signupRes = await apiFetch('/api/auth/signup/google', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: userEmail, role: payloadRole, walletAddress: walletAddr }),
+            skipAuthRedirect: true,
           });
 
-          if (signupRes.ok) {
+          if (signupRes && signupRes.ok) {
             authData = await signupRes.json();
           } else {
             // 2. If already exists, login with Google + wallet
-            const loginRes = await fetch('/api/auth/login/google', {
+            const loginRes = await apiFetch('/api/auth/login/google', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ email: userEmail, walletAddress: walletAddr }),
+              skipAuthRedirect: true,
             });
-            if (loginRes.ok) {
+            if (loginRes && loginRes.ok) {
               authData = await loginRes.json();
             }
           }
@@ -212,21 +212,21 @@ export const OnboardingFlow = () => {
 
         if (!authData && walletAddr) {
           // Fallback to wallet signup/login
-          const signupRes = await fetch('/api/auth/signup/wallet', {
+          const signupRes = await apiFetch('/api/auth/signup/wallet', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ walletAddress: walletAddr, role: payloadRole }),
+            skipAuthRedirect: true,
           });
 
-          if (signupRes.ok) {
+          if (signupRes && signupRes.ok) {
             authData = await signupRes.json();
           } else {
-            const loginRes = await fetch('/api/auth/login/wallet', {
+            const loginRes = await apiFetch('/api/auth/login/wallet', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ walletAddress: walletAddr }),
+              skipAuthRedirect: true,
             });
-            if (loginRes.ok) {
+            if (loginRes && loginRes.ok) {
               authData = await loginRes.json();
             }
           }

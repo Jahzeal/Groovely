@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_API_URL || 'https://groovely-ttyi.onrender.com';
 

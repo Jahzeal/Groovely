@@ -12,6 +12,7 @@ import { WalletCard } from '@/components/onboarding/WalletCard';
 import { MetaMaskIcon, WalletConnectIcon, PhantomIcon } from '@/components/onboarding/OnboardingFlow';
 import { Google as GoogleIcon } from '@/components/ui/SocialIcons';
 import toast from 'react-hot-toast';
+import { apiFetch } from '@/lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -46,23 +47,23 @@ export default function LoginPage() {
         let authData: any = null;
 
         if (userEmail) {
-          const loginRes = await fetch('/api/auth/login/google', {
+          const loginRes = await apiFetch('/api/auth/login/google', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: userEmail, walletAddress: walletAddr || undefined }),
+            skipAuthRedirect: true,
           });
-          if (loginRes.ok) {
+          if (loginRes && loginRes.ok) {
             authData = await loginRes.json();
           }
         }
 
         if (!authData && walletAddr) {
-          const loginRes = await fetch('/api/auth/login/wallet', {
+          const loginRes = await apiFetch('/api/auth/login/wallet', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ walletAddress: walletAddr }),
+            skipAuthRedirect: true,
           });
-          if (loginRes.ok) {
+          if (loginRes && loginRes.ok) {
             authData = await loginRes.json();
           }
         }
@@ -165,12 +166,13 @@ export default function LoginPage() {
 
       // 3. Authenticate with backend
       console.log('Authenticating with backend...');
-      const connectRes = await fetch(`/api/auth/login/wallet`, {
+      const connectRes = await apiFetch(`/api/auth/login/wallet`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ walletAddress: walletAddr }),
+        skipAuthRedirect: true,
       });
 
+      if (!connectRes) throw new Error('Could not connect to authentication server');
       const authData = await connectRes.json();
       
       if (!connectRes.ok) {
