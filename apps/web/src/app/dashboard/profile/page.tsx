@@ -12,13 +12,14 @@ import {
   Headphones, 
   Play, 
   Pause, 
-  Menu,
-  X,
-  Disc,
-  Send,
-  Loader2,
-  Upload,
-  User as UserIcon
+  Menu, 
+  X, 
+  Disc, 
+  Send, 
+  Loader2, 
+  Upload, 
+  User as UserIcon,
+  Music
 } from 'lucide-react';
 import { Twitter, Instagram, YouTube, OpenSea } from '@/components/ui/SocialIcons';
 import { apiFetch, resolveIpfsUrl } from '@/lib/api';
@@ -33,8 +34,8 @@ interface DiscographyItem {
   title: string;
   artist: string;
   plays: string | number;
-  cover_url: string;
-  audio_url?: string;
+  cover_url?: string | null;
+  audio_url?: string | null;
 }
 
 function formatNumber(num: number | string | undefined | null): string {
@@ -66,7 +67,7 @@ export default function ProfilePage() {
   const activeAddress = address || user?.wallet?.address;
   const abbrev = activeAddress
     ? `${activeAddress.slice(0, 5)}...${activeAddress.slice(-3)}`
-    : '0xc...y69';
+    : '0x00...000';
 
   useEffect(() => {
     async function loadProfile() {
@@ -77,7 +78,7 @@ export default function ProfilePage() {
 
         const endpoint = storedRole === 'fan' ? '/api/fan/profile' : '/api/creator/profile';
         const res = await apiFetch(endpoint);
-        let currentDisplayName = 'You';
+        let currentDisplayName = '';
 
         if (res?.ok) {
           const json = await res.json();
@@ -95,10 +96,10 @@ export default function ProfilePage() {
             const mapped: DiscographyItem[] = list.map((item: any, idx: number) => ({
               id: item.id || idx + 1,
               title: item.title || 'Untitled Track',
-              artist: item.artist_name || currentDisplayName,
+              artist: item.artist_name || currentDisplayName || 'You',
               plays: item.streams ? Number(item.streams).toLocaleString() : '0',
-              cover_url: resolveIpfsUrl(item.cover_url) || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=600&q=80',
-              audio_url: resolveIpfsUrl(item.audio_url)
+              cover_url: item.cover_url ? resolveIpfsUrl(item.cover_url) : null,
+              audio_url: item.audio_url ? resolveIpfsUrl(item.audio_url) : null
             }));
             setDiscography(mapped);
           }
@@ -119,20 +120,19 @@ export default function ProfilePage() {
     }
   };
 
-  const displayName = profile?.display_name || user?.email?.address?.split('@')[0] || (activeAddress ? `${activeAddress.slice(0, 6)}...` : 'User');
+  const displayName = profile?.display_name || user?.email?.address?.split('@')[0] || (activeAddress ? `${activeAddress.slice(0, 6)}...${activeAddress.slice(-4)}` : 'Groovely Member');
+  
   const username = profile?.username 
     ? `@${profile.username.replace(/^@/, '')}` 
-    : (profile?.display_name ? `@${profile.display_name.toLowerCase().replace(/[^a-z0-9]/g, '')}` : '@user');
+    : (user?.email?.address ? `@${user.email.address.split('@')[0]}` : (activeAddress ? `@${activeAddress.slice(2, 8).toLowerCase()}` : '@groovely'));
   
   const creatorType = Array.isArray(profile?.creator_type) && profile.creator_type.length > 0 
     ? profile.creator_type[0] 
-    : (typeof profile?.creator_type === 'string' ? profile.creator_type : (role === 'fan' ? 'Music Fan' : 'Musician'));
+    : (typeof profile?.creator_type === 'string' ? profile.creator_type : (role === 'fan' ? 'Music Fan' : 'Creator'));
   
   const bio = profile?.bio;
 
-  const avatarUrl = profile?.avatar_url
-    ? resolveIpfsUrl(profile.avatar_url)
-    : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80';
+  const rawAvatar = profile?.avatar_url ? resolveIpfsUrl(profile.avatar_url) : null;
 
   const stats = {
     allTimePlays: formatNumber(profile?.stats?.all_time_plays ?? profile?.stats?.total_plays ?? 0),
@@ -281,15 +281,20 @@ export default function ProfilePage() {
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-4 sm:gap-6">
                     {/* Ellipse 9: 100x100 Avatar */}
-                    <div className="w-[100px] h-[100px] rounded-full overflow-hidden shrink-0 border-2 border-[#2D3548] shadow-lg bg-[#0F172A]">
-                      <img
-                        src={avatarUrl}
-                        alt={displayName}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLElement).style.display = 'none';
-                        }}
-                      />
+                    <div className="w-[100px] h-[100px] rounded-full overflow-hidden shrink-0 border-2 border-[#2D3548] shadow-lg bg-[#0F172A] flex items-center justify-center">
+                      {rawAvatar ? (
+                        <img
+                          src={rawAvatar}
+                          alt={displayName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-[#8A2BE2] to-[#232B3E] flex items-center justify-center text-white">
+                          <span className="text-3xl font-bold font-['Clash_Display',sans-serif] uppercase">
+                            {displayName.charAt(0)}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Frame 205: Info */}
@@ -510,12 +515,18 @@ export default function ProfilePage() {
                             key={item.id}
                             className="group relative bg-[#0F172A] rounded-xl overflow-hidden h-[250px] border border-[#232B3E]/40 hover:border-[#8A2BE2]/50 transition-all duration-300 shadow-md"
                           >
-                            {/* Full Background Artwork with Figma Gradient Overlay */}
-                            <img
-                              src={item.cover_url}
-                              alt={item.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            />
+                            {/* Artwork or fallback gradient card */}
+                            {item.cover_url ? (
+                              <img
+                                src={item.cover_url}
+                                alt={item.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-[#192134] via-[#0F172A] to-[#232B3E] flex items-center justify-center text-[#697184]">
+                                <Music size={48} className="text-[#8A2BE2]/50" />
+                              </div>
+                            )}
                             
                             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/40 to-black/90 pointer-events-none" />
 
@@ -526,8 +537,8 @@ export default function ProfilePage() {
                                   id: item.id,
                                   title: item.title,
                                   artist: item.artist,
-                                  image: item.cover_url,
-                                  audioUrl: item.audio_url,
+                                  image: item.cover_url || undefined,
+                                  audioUrl: item.audio_url || undefined,
                                 })
                               }
                               className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 backdrop-blur-[2px] cursor-pointer"
