@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ChevronDown, Bell, ShoppingCart, Copy, LogOut, User, Settings, CheckCheck, ExternalLink } from 'lucide-react';
+import { Search, ChevronDown, Bell, ShoppingCart, Copy, LogOut, User, Settings, CheckCheck, ExternalLink, Menu } from 'lucide-react';
 import { useCart } from './CartContext';
 import { handleLogout } from '@/lib/api';
 import { useLogout, usePrivy } from '@privy-io/react-auth';
@@ -101,29 +101,45 @@ export const MarketTopBar = () => {
     }
   };
 
+  const toggleMobileSidebar = () => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('toggle_mobile_sidebar'));
+    }
+  };
+
   return (
-    <header className="flex items-center justify-between px-10 py-5 bg-[#050510]/50 backdrop-blur-md border-b border-white/5 sticky top-0 z-40">
-      {/* Search + Sort */}
-      <div className="flex items-center gap-4 flex-1 max-w-2xl">
+    <header className="flex flex-col md:flex-row items-stretch md:items-center justify-between px-4 sm:px-6 md:px-10 py-3 sm:py-5 bg-[#050510]/80 backdrop-blur-md border-b border-white/5 sticky top-0 z-40 gap-3 md:gap-4">
+      {/* Top row on mobile / Left side on desktop: Hamburger + Search + Right Icons */}
+      <div className="flex items-center justify-between gap-3 w-full md:w-auto md:flex-1 md:max-w-2xl">
+        {/* Mobile Hamburger Button */}
+        <button
+          onClick={toggleMobileSidebar}
+          className="md:hidden p-2 rounded-xl bg-[#0F0F1A] border border-white/10 text-white hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
+          aria-label="Open menu"
+        >
+          <Menu size={20} />
+        </button>
+
+        {/* Search Bar */}
         <div className="relative flex-1 group">
-          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-600 group-focus-within:text-accent-purple transition-colors">
-            <Search size={17} />
+          <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-zinc-600 group-focus-within:text-accent-purple transition-colors">
+            <Search size={16} />
           </div>
-           <input
+          <input
             type="text"
             placeholder="Search beats, podcasts, samples..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleSearch}
-            className="w-full bg-[#0F0F1A] border border-white/5 rounded-xl py-3 pl-11 pr-4 text-sm font-medium focus:outline-none focus:border-accent-purple/50 transition-all placeholder-zinc-600"
+            className="w-full bg-[#0F0F1A] border border-white/5 rounded-xl py-2.5 sm:py-3 pl-10 pr-4 text-xs sm:text-sm font-medium focus:outline-none focus:border-accent-purple/50 transition-all placeholder-zinc-600 text-white"
           />
         </div>
 
-        {/* Sort Dropdown */}
-        <div className="relative">
+        {/* Sort Dropdown (hidden on small mobile or compact) */}
+        <div className="relative hidden sm:block">
           <button
             onClick={() => setSortOpen(!sortOpen)}
-            className="flex items-center gap-2 bg-[#0F0F1A] border border-white/5 rounded-xl px-5 py-3 text-sm font-bold text-zinc-400 hover:text-white hover:border-white/10 transition-all whitespace-nowrap"
+            className="flex items-center gap-2 bg-[#0F0F1A] border border-white/5 rounded-xl px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-zinc-400 hover:text-white hover:border-white/10 transition-all whitespace-nowrap"
           >
             {sortLabel}
             <ChevronDown size={14} className={`transition-transform ${sortOpen ? 'rotate-180' : ''}`} />
@@ -144,50 +160,50 @@ export const MarketTopBar = () => {
         </div>
       </div>
 
-      {/* Right side */}
-      <div className="flex items-center gap-5 ml-8">
+      {/* Right side: Auth / Notifications / Cart / Wallet */}
+      <div className="flex items-center justify-end gap-3 sm:gap-4 md:ml-6 shrink-0">
         {!isAuthenticated ? (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link href="/login">
-              <button className="text-zinc-400 hover:text-white font-black text-[10px] uppercase tracking-widest px-5 py-3 transition-all">
+              <button className="text-zinc-400 hover:text-white font-black text-[10px] uppercase tracking-widest px-3 sm:px-5 py-2 sm:py-3 transition-all">
                 Log In
               </button>
             </Link>
             <Link href="/onboarding">
-              <button className="bg-accent-purple hover:bg-opacity-90 text-white font-black text-[10px] uppercase tracking-widest px-6 py-3 rounded-xl transition-all shadow-[0_0_15px_rgba(157,0,255,0.3)]">
+              <button className="bg-accent-purple hover:bg-opacity-90 text-white font-black text-[10px] uppercase tracking-widest px-4 sm:px-6 py-2 sm:py-3 rounded-xl transition-all shadow-[0_0_15px_rgba(157,0,255,0.3)]">
                 Sign Up
               </button>
             </Link>
           </div>
         ) : (
           <>
-            <button className="text-zinc-500 hover:text-white transition-colors relative">
-              <Bell size={21} strokeWidth={2} />
-              <div className="absolute -top-1 -right-1 w-2 h-2 bg-accent-purple rounded-full shadow-[0_0_8px_rgba(157,0,255,0.7)]" />
+            <button className="text-zinc-500 hover:text-white transition-colors relative p-1">
+              <Bell size={20} strokeWidth={2} />
+              <div className="absolute top-0 right-0 w-2 h-2 bg-accent-purple rounded-full shadow-[0_0_8px_rgba(157,0,255,0.7)]" />
             </button>
 
             <button 
               onClick={openCart}
-              className="text-zinc-500 hover:text-white transition-colors relative"
+              className="text-zinc-500 hover:text-white transition-colors relative p-1 cursor-pointer"
             >
-              <ShoppingCart size={21} strokeWidth={2} />
-              <div className="absolute -top-1 -right-1 w-2 h-2 bg-accent-purple rounded-full shadow-[0_0_8px_rgba(157,0,255,0.7)]" />
+              <ShoppingCart size={20} strokeWidth={2} />
+              <div className="absolute top-0 right-0 w-2 h-2 bg-accent-purple rounded-full shadow-[0_0_8px_rgba(157,0,255,0.7)]" />
             </button>
 
             {/* Wallet Dropdown */}
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen((o) => !o)}
-                className="flex items-center gap-3 bg-[#0F0F1A] border border-white/5 rounded-xl px-4 py-2 hover:bg-white/5 cursor-pointer transition-all"
+                className="flex items-center gap-2 sm:gap-3 bg-[#0F0F1A] border border-white/5 rounded-xl px-3 sm:px-4 py-2 hover:bg-white/5 cursor-pointer transition-all"
               >
-                <div className="w-8 h-8 rounded-lg overflow-hidden border border-white/10">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg overflow-hidden border border-white/10 shrink-0">
                   <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="Wallet" className="w-full h-full object-contain" />
                 </div>
-                <div className="flex flex-col items-start leading-none text-left">
+                <div className="flex flex-col items-start leading-none text-left max-w-[90px] sm:max-w-none">
                   <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">
                     {role ?? 'wallet'}
                   </span>
-                  <span className="text-sm font-black tracking-tight text-white/90">{abbrev}</span>
+                  <span className="text-xs sm:text-sm font-black tracking-tight text-white/90 truncate">{abbrev}</span>
                 </div>
                 <ChevronDown
                   size={13}

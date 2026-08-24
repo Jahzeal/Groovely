@@ -182,17 +182,17 @@ function MarketplaceContent() {
           <GenreBar />
 
           {/* Main scrollable area */}
-          <main className="flex-1 overflow-y-auto pb-24">
-            <div className="p-8 pt-4">
+          <main className="flex-1 overflow-y-auto pb-28 sm:pb-24">
+            <div className="p-4 sm:p-6 md:p-8 pt-4">
               {/* Featured + Trending two-column layout */}
-              <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 mb-4">
+              <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6 mb-6 sm:mb-8">
                 <FeaturedCarousel />
                 <TrendingPanel />
               </div>
 
               {/* For You section */}
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-lg font-black uppercase tracking-widest text-white">For You</h2>
+                <h2 className="text-base sm:text-lg font-black uppercase tracking-widest text-white">For You</h2>
                 <button className="text-accent-purple text-xs font-bold uppercase tracking-widest hover:underline transition-all">
                   See All
                 </button>
@@ -203,7 +203,7 @@ function MarketplaceContent() {
                   <Loader2 className="w-8 h-8 text-accent-cyan animate-spin" />
                 </div>
               ) : filterTracks(forYou).length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 mb-16">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 mb-10 sm:mb-16">
                   {filterTracks(forYou).map((track, i) => (
                     <TrackCard 
                       key={track.id || i} 
@@ -221,8 +221,8 @@ function MarketplaceContent() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12 bg-white/5 rounded-2xl border border-white/5 mb-16">
-                  <p className="text-zinc-500 font-medium">
+                <div className="text-center py-12 bg-white/5 rounded-2xl border border-white/5 mb-10 sm:mb-16">
+                  <p className="text-zinc-500 font-medium text-xs sm:text-sm">
                     {searchQuery ? `No results found for "${searchQuery}"` : 'Explore the marketplace to get personalized recommendations!'}
                   </p>
                 </div>
@@ -230,7 +230,7 @@ function MarketplaceContent() {
 
               {/* Explore All section */}
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-lg font-black uppercase tracking-widest text-white">Explore Marketplace</h2>
+                <h2 className="text-base sm:text-lg font-black uppercase tracking-widest text-white">Explore Marketplace</h2>
                 <div className="flex items-center gap-4">
                    <button className="text-zinc-500 text-[10px] font-black uppercase tracking-widest hover:text-white transition-colors">Filters</button>
                    <div className="w-px h-3 bg-white/10" />
@@ -245,7 +245,7 @@ function MarketplaceContent() {
                   <Loader2 className="w-10 h-10 text-accent-purple animate-spin" />
                 </div>
               ) : filterTracks(allTracks).length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 mb-16">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 mb-10 sm:mb-16">
                   {filterTracks(allTracks).map((track, i) => (
                     <TrackCard 
                       key={track.id || i} 
@@ -263,8 +263,8 @@ function MarketplaceContent() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-20 bg-white/5 rounded-3xl border border-white/5 border-dashed mb-16">
-                  <p className="text-zinc-500 font-medium">
+                <div className="text-center py-16 sm:py-20 bg-white/5 rounded-3xl border border-white/5 border-dashed mb-10 sm:mb-16">
+                  <p className="text-zinc-500 font-medium text-xs sm:text-sm">
                     {searchQuery ? `No results found for "${searchQuery}"` : 'No tracks found in the marketplace yet.'}
                   </p>
                 </div>
@@ -272,7 +272,7 @@ function MarketplaceContent() {
 
               {/* Music Category section */}
               <div className="mb-4">
-                <h2 className="text-lg font-black uppercase tracking-widest text-white">Music</h2>
+                <h2 className="text-base sm:text-lg font-black uppercase tracking-widest text-white">Music</h2>
               </div>
 
               {isLoadingMusic ? (
@@ -280,7 +280,7 @@ function MarketplaceContent() {
                   <Loader2 className="w-10 h-10 text-accent-cyan animate-spin" />
                 </div>
               ) : musicTracks.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 mb-16">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 mb-10 sm:mb-16">
                   {musicTracks.map((track, i) => (
                     <TrackCard 
                       key={track.id || i} 
@@ -298,14 +298,14 @@ function MarketplaceContent() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-16 bg-white/5 rounded-3xl border border-white/5 mb-16">
-                  <p className="text-zinc-500 font-medium">New music tracks arriving soon.</p>
+                <div className="text-center py-12 sm:py-16 bg-white/5 rounded-3xl border border-white/5 mb-10 sm:mb-16">
+                  <p className="text-zinc-500 font-medium text-xs sm:text-sm">New music tracks arriving soon.</p>
                 </div>
               )}
 
               {/* Podcast Category section */}
               <div className="mb-4">
-                <h2 className="text-lg font-black uppercase tracking-widest text-white">Podcasts</h2>
+                <h2 className="text-base sm:text-lg font-black uppercase tracking-widest text-white">Podcasts</h2>
               </div>
 
               {isLoadingPodcast ? (
@@ -313,7 +313,7 @@ function MarketplaceContent() {
                   <Loader2 className="w-10 h-10 text-accent-purple animate-spin" />
                 </div>
               ) : podcastTracks.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 mb-16">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 mb-10 sm:mb-16">
                   {podcastTracks.map((track, i) => (
                     <TrackCard 
                       key={track.id || i} 
@@ -331,14 +331,14 @@ function MarketplaceContent() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-16 bg-white/5 rounded-3xl border border-white/5 mb-16">
-                  <p className="text-zinc-500 font-medium">Stay tuned for new podcast episodes.</p>
+                <div className="text-center py-12 sm:py-16 bg-white/5 rounded-3xl border border-white/5 mb-10 sm:mb-16">
+                  <p className="text-zinc-500 font-medium text-xs sm:text-sm">Stay tuned for new podcast episodes.</p>
                 </div>
               )}
 
               {/* Skit Category section */}
               <div className="mb-4">
-                <h2 className="text-lg font-black uppercase tracking-widest text-white">Skits</h2>
+                <h2 className="text-base sm:text-lg font-black uppercase tracking-widest text-white">Skits</h2>
               </div>
 
               {isLoadingSkit ? (
@@ -346,7 +346,7 @@ function MarketplaceContent() {
                   <Loader2 className="w-10 h-10 text-accent-cyan animate-spin" />
                 </div>
               ) : skitTracks.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 mb-16">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 mb-10 sm:mb-16">
                   {skitTracks.map((track, i) => (
                     <TrackCard 
                       key={track.id || i} 
@@ -364,14 +364,14 @@ function MarketplaceContent() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-16 bg-white/5 rounded-3xl border border-white/5 mb-16">
-                  <p className="text-zinc-500 font-medium">Laughter is coming! Check back for new skits.</p>
+                <div className="text-center py-12 sm:py-16 bg-white/5 rounded-3xl border border-white/5 mb-10 sm:mb-16">
+                  <p className="text-zinc-500 font-medium text-xs sm:text-sm">Laughter is coming! Check back for new skits.</p>
                 </div>
               )}
 
               {/* Beats Category section */}
               <div className="mb-4">
-                <h2 className="text-lg font-black uppercase tracking-widest text-white">Beats</h2>
+                <h2 className="text-base sm:text-lg font-black uppercase tracking-widest text-white">Beats</h2>
               </div>
 
               {isLoadingBeats ? (
@@ -379,7 +379,7 @@ function MarketplaceContent() {
                   <Loader2 className="w-10 h-10 text-accent-purple animate-spin" />
                 </div>
               ) : beatsTracks.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 mb-24">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 mb-20 sm:mb-24">
                   {beatsTracks.map((track, i) => (
                     <TrackCard 
                       key={track.id || i} 
@@ -397,8 +397,8 @@ function MarketplaceContent() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-16 bg-white/5 rounded-3xl border border-white/5 mb-24">
-                  <p className="text-zinc-500 font-medium">New beats are being cooked up. Stay tuned!</p>
+                <div className="text-center py-12 sm:py-16 bg-white/5 rounded-3xl border border-white/5 mb-20 sm:mb-24">
+                  <p className="text-zinc-500 font-medium text-xs sm:text-sm">New beats are being cooked up. Stay tuned!</p>
                 </div>
               )}
 

@@ -2,7 +2,7 @@ import React from 'react';
 
 export const ExploreHero = () => {
   return (
-    <div className="relative w-full h-[320px] rounded-2xl overflow-hidden mb-8 group cursor-pointer">
+    <div className="relative w-full h-[200px] sm:h-[260px] md:h-[320px] rounded-2xl overflow-hidden mb-6 sm:mb-8 group cursor-pointer">
       <img
         src="https://images.unsplash.com/photo-1542204165-65bf26472b9b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80"
         alt="Tales of Glass and Ironwood"
@@ -14,11 +14,11 @@ export const ExploreHero = () => {
       <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-transparent to-transparent opacity-70" />
 
       {/* Content positioning */}
-      <div className="absolute bottom-10 left-10">
-        <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-2">
+      <div className="absolute bottom-6 left-6 md:bottom-10 md:left-10">
+        <h1 className="text-2xl sm:text-3xl md:text-5xl font-black text-white tracking-tight mb-1 sm:mb-2">
           Tales of Glass and Ironwood
         </h1>
-        <p className="text-lg md:text-xl font-bold text-zinc-300">
+        <p className="text-sm sm:text-base md:text-xl font-bold text-zinc-300">
           Texas Dolly
         </p>
       </div>

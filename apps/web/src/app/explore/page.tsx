@@ -158,14 +158,14 @@ export default function ExplorePage() {
           <MarketTopBar />
           <ExploreNav />
 
-          <main className="flex-1 overflow-y-auto pb-24">
-            <div className="p-8 pt-4">
+          <main className="flex-1 overflow-y-auto pb-28 sm:pb-24">
+            <div className="p-4 sm:p-6 md:p-8 pt-4">
               <ExploreHero />
 
               {/* Trending Now */}
-              <div className="mb-12">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-black text-white tracking-tight">Trending Now</h2>
+              <div className="mb-8 sm:mb-12">
+                <div className="flex items-center justify-between mb-4 sm:mb-6">
+                  <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">Trending Now</h2>
                   <button className="text-xs font-bold text-accent-purple uppercase tracking-widest hover:text-white transition-colors">View All</button>
                 </div>
                 
@@ -174,7 +174,7 @@ export default function ExplorePage() {
                     <Loader2 className="w-8 h-8 text-accent-purple animate-spin" />
                   </div>
                 ) : trending.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
                     {trending.map((track, i) => (
                       <ExploreCard 
                         key={track.id || i} 
@@ -190,26 +190,26 @@ export default function ExplorePage() {
                   </div>
                 ) : (
                   <div className="text-center py-12 bg-white/5 rounded-2xl border border-white/5">
-                    <p className="text-zinc-500 font-medium">No trending tracks found at the moment.</p>
+                    <p className="text-zinc-500 font-medium text-xs sm:text-sm">No trending tracks found at the moment.</p>
                   </div>
                 )}
               </div>
 
               {/* Creators */}
-              <div className="mb-12">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-black text-white tracking-tight">Creators</h2>
+              <div className="mb-8 sm:mb-12">
+                <div className="flex items-center justify-between mb-4 sm:mb-6">
+                  <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">Creators</h2>
                   <button className="text-xs font-bold text-accent-purple uppercase tracking-widest hover:text-white transition-colors">Discover More</button>
                 </div>
                 
                 {isLoadingCreators ? (
-                  <div className="flex items-center gap-6 overflow-x-auto no-scrollbar pb-4">
+                  <div className="flex items-center gap-4 sm:gap-6 overflow-x-auto no-scrollbar pb-4">
                     {[1, 2, 3, 4, 5].map((i) => (
-                      <div key={i} className="min-w-[140px] h-[200px] bg-white/5 rounded-full animate-pulse" />
+                      <div key={i} className="min-w-[120px] sm:min-w-[140px] h-[180px] sm:h-[200px] bg-white/5 rounded-full animate-pulse" />
                     ))}
                   </div>
                 ) : creators.length > 0 ? (
-                  <div className="flex items-center gap-10 overflow-x-auto no-scrollbar pb-6 px-2">
+                  <div className="flex items-center gap-6 sm:gap-10 overflow-x-auto no-scrollbar pb-6 px-1">
                     {creators.map((creator, i) => (
                       <div key={creator.id || i} className="shrink-0">
                         <CreatorCard 
@@ -225,15 +225,15 @@ export default function ExplorePage() {
                   </div>
                 ) : (
                   <div className="text-center py-10 bg-white/5 rounded-2xl border border-white/5">
-                    <p className="text-zinc-500 font-medium">No creators featured today.</p>
+                    <p className="text-zinc-500 font-medium text-xs sm:text-sm">No creators featured today.</p>
                   </div>
                 )}
               </div>
 
               {/* Recommended For You */}
-              <div className="mb-12">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-black text-white tracking-tight">Recommended For You</h2>
+              <div className="mb-8 sm:mb-12">
+                <div className="flex items-center justify-between mb-4 sm:mb-6">
+                  <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">Recommended For You</h2>
                   <button className="text-xs font-bold text-accent-purple uppercase tracking-widest hover:text-white transition-colors">See More</button>
                 </div>
                 
@@ -242,7 +242,7 @@ export default function ExplorePage() {
                     <Loader2 className="w-8 h-8 text-accent-purple animate-spin" />
                   </div>
                 ) : recommended.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
                     {recommended.map((track, i) => (
                       <ExploreCard 
                         key={track.id || i} 
