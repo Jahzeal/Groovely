@@ -12,7 +12,11 @@ async function bootstrap() {
   // Enable CORS
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
   const extracted = clientUrl.match(/https?:\/\/[^\s,]+/g) || ['http://localhost:3000'];
-  const allowedOrigins = Array.from(new Set(extracted.map(item => item.replace(/\/+$/, '').trim())));
+  const allowedOrigins = Array.from(new Set([
+    ...extracted.map(item => item.replace(/\/+$/, '').trim()),
+    'https://www.groovelinetwork.com',
+    'https://groovelinetwork.com',
+  ]));
   console.log('[CORS] Allowed origins:', allowedOrigins);
 
   app.enableCors({
@@ -21,18 +25,25 @@ async function bootstrap() {
       if (!origin) {
         return callback(null, true);
       }
-      // Always allow localhost origins in any environment
-      if (origin.startsWith('http://localhost:') || origin === 'http://localhost') {
+      const normalized = origin.replace(/\/+$/, '').trim();
+      // Allow localhost
+      if (normalized.startsWith('http://localhost:') || normalized === 'http://localhost') {
         return callback(null, true);
       }
-      // Check against allowed origins list
-      if (allowedOrigins.includes(origin)) {
+      // Allow Groovely domains and Vercel preview deploys
+      if (
+        normalized.endsWith('.groovelinetwork.com') ||
+        normalized === 'https://groovelinetwork.com' ||
+        normalized.endsWith('.vercel.app') ||
+        allowedOrigins.includes(normalized)
+      ) {
         return callback(null, true);
       }
-      // Reject and log the blocked origin for easy debugging
-      console.error(`[CORS] Blocked origin: "${origin}" | Allowed: ${JSON.stringify(allowedOrigins)}`);
-      return callback(new Error(`Not allowed by CORS`));
+      console.warn(`[CORS] Refused origin: "${origin}" | Allowed: ${JSON.stringify(allowedOrigins)}`);
+      return callback(null, false);
     },
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'Origin', 'X-Requested-With', 'X-HTTP-Method-Override'],
     credentials: true,
   });
 
