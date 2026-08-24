@@ -501,17 +501,22 @@ export const OnboardingFlow = () => {
       </nav>
 
       {/* Main Content */}
-      <main className="flex-1 flex items-start justify-center px-4 pt-2 pb-12 relative z-10 w-full">
-        <div className={`w-full ${step === 4 ? 'max-w-[900px] p-6 md:p-8' : 'max-w-[640px] p-8 sm:p-10'} bg-black/40 backdrop-blur-2xl rounded-[40px] border border-white/5 shadow-2xl relative overflow-hidden mb-12 transition-all duration-500`}>
+      <main className="flex-1 flex flex-col items-center justify-center px-4 pt-2 pb-12 relative z-10 w-full">
+        <div className={`w-full ${
+          step === 4 
+            ? 'max-w-[900px] p-6 md:p-8 rounded-[40px] bg-black/40 border border-white/5' 
+            : step === 2 
+              ? 'max-w-[664px] p-6 sm:p-10 md:p-12 rounded-[16px] bg-[#0F172A] border border-[#232B3E]' 
+              : 'max-w-[640px] p-8 sm:p-10 rounded-[40px] bg-black/40 border border-white/5'
+        } backdrop-blur-2xl shadow-2xl relative overflow-hidden mb-6 transition-all duration-500`}>
           {/* Subtle Background Inner Glow */}
           <div className="absolute -top-24 -right-24 w-64 h-64 bg-accent-purple/5 blur-[80px] rounded-full pointer-events-none" />
 
-
-          {/* Back Button */}
+          {/* Back Button (Figma Frame 28: Left arrow + Back in Space Grotesk 700 16px) */}
           {step < 4 && (
             <button
               onClick={handleBack}
-              className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors mb-6 text-sm font-bold uppercase tracking-widest"
+              className="flex items-center gap-2 text-white hover:text-[#8A2BE2] transition-colors mb-6 font-['Space_Grotesk',sans-serif] font-bold text-[16px] cursor-pointer"
             >
               <svg
                 width="18"
@@ -580,9 +585,9 @@ export const OnboardingFlow = () => {
 
           {step === 2 && (
             <>
-              {/* Header */}
-              <div className="flex flex-col items-center mb-8">
-                {/* Progress Bar */}
+              {/* Header (Figma: Progress Bar 200px + Title Clash Display 28px + Subtitle Space Grotesk 16px) */}
+              <div className="flex flex-col items-center mb-6 sm:mb-8">
+                {/* Progress Bar (Figma: width 200px, 3 circles with active fill to Step 2) */}
                 <div className="relative w-[200px] h-6 flex items-center justify-between mb-6">
                   {/* Background track */}
                   <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-[#D9D9D9] rounded-full" />
@@ -600,10 +605,10 @@ export const OnboardingFlow = () => {
                   </div>
                 </div>
 
-                <h1 className="font-['Clash_Display',sans-serif] font-bold text-[28px] leading-[42px] text-white text-center mb-2">
+                <h1 className="font-['Clash_Display',sans-serif] font-bold text-[24px] sm:text-[28px] leading-[36px] sm:leading-[42px] text-white text-center mb-2">
                   Connect your wallet to Groovely
                 </h1>
-                <p className="font-['Space_Grotesk',sans-serif] font-bold text-[16px] leading-[24px] text-[#CACACA] text-center">
+                <p className="font-['Space_Grotesk',sans-serif] font-bold text-[15px] sm:text-[16px] leading-[24px] text-[#CACACA] text-center">
                   Choose a wallet to connect to Groovely
                 </p>
                 {error && (
@@ -613,61 +618,61 @@ export const OnboardingFlow = () => {
                 )}
               </div>
 
-              {/* Wallet Stack (Figma Frame 5: 3 stacked rows, height 98px each) */}
-              <div className="flex flex-col gap-6 mb-6">
-                {/* MetaMask */}
+              {/* Wallet Selection: Desktop = 3 Side-by-Side Columns (162px × 146px), Mobile = 3 Stacked Rows (98px) */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
+                {/* MetaMask (Figma Frame 2) */}
                 <div
                   onClick={() => setWallet('metamask')}
-                  className={`w-full h-[98px] p-6 rounded-[12px] border-2 cursor-pointer flex items-center gap-6 transition-all duration-300 ${
+                  className={`w-full h-[98px] md:h-[146px] p-4 sm:p-6 rounded-[12px] border-2 cursor-pointer flex flex-row md:flex-col items-center justify-start md:justify-center gap-4 sm:gap-6 md:gap-4 transition-all duration-300 ${
                     wallet === 'metamask'
                       ? 'border-[#8A2BE2] bg-[#8A2BE2]/10 shadow-[0_0_20px_rgba(138,43,226,0.25)]'
-                      : 'border-[#232B3E] bg-[#0F172A]/80 hover:border-[#8A2BE2]/50'
+                      : 'border-[#232B3E] bg-[#0F172A] hover:border-[#8A2BE2]/50'
                   }`}
                 >
                   <div className="w-[52px] h-[50px] flex items-center justify-center shrink-0">
                     <MetaMaskIcon />
                   </div>
-                  <span className="font-['Space_Grotesk',sans-serif] font-bold text-[16px] leading-[24px] text-white">
+                  <span className="font-['Space_Grotesk',sans-serif] font-bold text-[16px] leading-[24px] text-white text-center">
                     MetaMask
                   </span>
                 </div>
 
-                {/* WalletConnect */}
+                {/* WalletConnect (Figma Frame 3) */}
                 <div
                   onClick={() => setWallet('walletconnect')}
-                  className={`w-full h-[98px] p-6 rounded-[12px] border-2 cursor-pointer flex items-center gap-6 transition-all duration-300 ${
+                  className={`w-full h-[98px] md:h-[146px] p-4 sm:p-6 rounded-[12px] border-2 cursor-pointer flex flex-row md:flex-col items-center justify-start md:justify-center gap-4 sm:gap-6 md:gap-4 transition-all duration-300 ${
                     wallet === 'walletconnect'
                       ? 'border-[#8A2BE2] bg-[#8A2BE2]/10 shadow-[0_0_20px_rgba(138,43,226,0.25)]'
-                      : 'border-[#232B3E] bg-[#0F172A]/80 hover:border-[#8A2BE2]/50'
+                      : 'border-[#232B3E] bg-[#0F172A] hover:border-[#8A2BE2]/50'
                   }`}
                 >
                   <div className="w-[50px] h-[50px] rounded-full overflow-hidden flex items-center justify-center shrink-0">
                     <WalletConnectIcon />
                   </div>
-                  <span className="font-['Space_Grotesk',sans-serif] font-bold text-[16px] leading-[24px] text-white">
+                  <span className="font-['Space_Grotesk',sans-serif] font-bold text-[16px] leading-[24px] text-white text-center">
                     WalletConnect
                   </span>
                 </div>
 
-                {/* Phantom */}
+                {/* Phantom (Figma Frame 4) */}
                 <div
                   onClick={() => setWallet('phantom')}
-                  className={`w-full h-[98px] p-6 rounded-[12px] border-2 cursor-pointer flex items-center gap-6 transition-all duration-300 ${
+                  className={`w-full h-[98px] md:h-[146px] p-4 sm:p-6 rounded-[12px] border-2 cursor-pointer flex flex-row md:flex-col items-center justify-start md:justify-center gap-4 sm:gap-6 md:gap-4 transition-all duration-300 ${
                     wallet === 'phantom'
                       ? 'border-[#8A2BE2] bg-[#8A2BE2]/10 shadow-[0_0_20px_rgba(138,43,226,0.25)]'
-                      : 'border-[#232B3E] bg-[#0F172A]/80 hover:border-[#8A2BE2]/50'
+                      : 'border-[#232B3E] bg-[#0F172A] hover:border-[#8A2BE2]/50'
                   }`}
                 >
                   <div className="w-[58px] h-[50px] flex items-center justify-center shrink-0">
                     <PhantomIcon />
                   </div>
-                  <span className="font-['Space_Grotesk',sans-serif] font-bold text-[16px] leading-[24px] text-white">
+                  <span className="font-['Space_Grotesk',sans-serif] font-bold text-[16px] leading-[24px] text-white text-center">
                     Phantom
                   </span>
                 </div>
               </div>
 
-              {/* Action Buttons & Google Social */}
+              {/* Action Buttons & Google Social (Figma Frame 27) */}
               <div className="space-y-4">
                 {/* Connect Action Button (Figma: height 56px, bg #8A2BE2, border-radius 8px, font Space Grotesk 700 16px) */}
                 <button
