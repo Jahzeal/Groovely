@@ -14,6 +14,7 @@ import {
   Loader2,
   Music
 } from 'lucide-react';
+import { WalletMenu } from '@/components/dashboard/WalletMenu';
 import { Twitter, Instagram } from '@/components/ui/SocialIcons';
 import { apiFetch, resolveIpfsUrl } from '@/lib/api';
 import { usePrivy } from '@privy-io/react-auth';
@@ -191,16 +192,7 @@ export default function EarningsPage() {
                 <span className="absolute top-0 right-0 w-2 h-2 bg-[#8A2BE2] rounded-full shadow-[0_0_6px_rgba(138,43,226,0.8)]" />
               </button>
 
-              <div className="flex items-center gap-1 bg-[#0F172A] border border-[#2D3548] rounded-full px-2 py-1">
-                <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-[#FF5C16]/10 p-0.5">
-                  <img
-                    src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg"
-                    alt="Wallet"
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-                <ChevronDown size={14} className="text-white/70" />
-              </div>
+              <WalletMenu compact />
             </div>
           </div>
 
@@ -252,18 +244,7 @@ export default function EarningsPage() {
 
             <div className="w-px h-8 bg-[#232B3E] mx-1" />
 
-            <div className="flex items-center gap-2 bg-transparent px-2 py-1 rounded-lg">
-              <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 flex items-center justify-center bg-[#FF5C16]/10 p-0.5">
-                <img
-                  src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg"
-                  alt="Wallet"
-                  className="w-full h-full object-contain"
-                />
-              </div>
-              <span className="text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
-                {abbrev}
-              </span>
-            </div>
+            <WalletMenu />
           </div>
         </header>
 
