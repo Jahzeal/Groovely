@@ -420,28 +420,28 @@ export default function MintPage() {
         {/* ========================================================================= */}
         {/* STEP BREADCRUMB BAR (Figma Step Indicator - height: 64px)                 */}
         {/* ========================================================================= */}
-        <div className="flex items-center px-6 sm:px-8 py-4 bg-[#192134] border-b border-[#232B3E] shrink-0 gap-6 overflow-x-auto no-scrollbar">
+        <div className="flex items-center px-3 sm:px-8 py-3 sm:py-4 bg-[#192134] border-b border-[#232B3E] shrink-0 gap-2 sm:gap-6 overflow-x-auto no-scrollbar">
           {/* Step 1: Completed */}
-          <Link href="/dashboard/upload" className="flex items-center gap-3 shrink-0 hover:opacity-80 transition-opacity">
-            <div className="w-8 h-8 rounded-full bg-[#8A2BE2] flex items-center justify-center text-white font-bold font-['Space_Grotesk',sans-serif] text-sm shadow-[0_0_10px_rgba(138,43,226,0.5)]">
-              <Check size={16} strokeWidth={3} />
+          <Link href="/dashboard/upload" className="flex items-center gap-1.5 sm:gap-3 shrink-0 hover:opacity-80 transition-opacity">
+            <div className="w-5 h-5 sm:w-8 sm:h-8 rounded-full bg-[#8A2BE2] flex items-center justify-center text-white font-bold font-['Space_Grotesk',sans-serif] text-[11px] sm:text-sm shadow-[0_0_10px_rgba(138,43,226,0.5)] shrink-0">
+              <Check size={12} strokeWidth={3} className="sm:w-4 sm:h-4" />
             </div>
-            <span className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-[#8A2BE2] whitespace-nowrap">
+            <span className="text-[11px] sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-[#8A2BE2] whitespace-nowrap">
               Upload Audio, Add Metadata &amp; Licensing
             </span>
           </Link>
 
           {/* Chevron Separator */}
           <div className="text-[#8A2BE2] shrink-0">
-            <ChevronLeft size={18} className="rotate-180" />
+            <ChevronLeft size={13} className="rotate-180 sm:w-[18px] sm:h-[18px]" />
           </div>
 
           {/* Step 2: Active */}
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="w-8 h-8 rounded-full bg-[#8A2BE2] flex items-center justify-center text-white font-bold font-['Space_Grotesk',sans-serif] text-sm shadow-[0_0_10px_rgba(138,43,226,0.5)]">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            <div className="w-5 h-5 sm:w-8 sm:h-8 rounded-full bg-[#8A2BE2] flex items-center justify-center text-white font-bold font-['Space_Grotesk',sans-serif] text-[11px] sm:text-sm shadow-[0_0_10px_rgba(138,43,226,0.5)] shrink-0">
               2
             </div>
-            <span className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-[#8A2BE2] whitespace-nowrap">
+            <span className="text-[11px] sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-[#8A2BE2] whitespace-nowrap">
               Mint Track
             </span>
           </div>

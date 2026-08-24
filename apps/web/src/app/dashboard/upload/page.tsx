@@ -255,28 +255,28 @@ export default function UploadPage() {
         {/* ========================================================================= */}
         {/* STEP BREADCRUMB BAR (Figma Step 1 & 2 - height: 64px, scrollable on mobile)*/}
         {/* ========================================================================= */}
-        <div className="flex items-center px-4 sm:px-8 py-4 bg-[#192134] border-b border-[#232B3E] shrink-0 gap-4 sm:gap-6 overflow-x-auto no-scrollbar">
+        <div className="flex items-center px-3 sm:px-8 py-3 sm:py-4 bg-[#192134] border-b border-[#232B3E] shrink-0 gap-2 sm:gap-6 overflow-x-auto no-scrollbar">
           {/* Step 1: Active */}
-          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-            <div className="w-8 h-8 rounded-full bg-[#8A2BE2] flex items-center justify-center text-white font-bold font-['Space_Grotesk',sans-serif] text-sm shadow-[0_0_10px_rgba(138,43,226,0.5)]">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            <div className="w-5 h-5 sm:w-8 sm:h-8 rounded-full bg-[#8A2BE2] flex items-center justify-center text-white font-bold font-['Space_Grotesk',sans-serif] text-[11px] sm:text-sm shadow-[0_0_10px_rgba(138,43,226,0.5)] shrink-0">
               1
             </div>
-            <span className="text-xs sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-[#8A2BE2] whitespace-nowrap">
+            <span className="text-[11px] sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-[#8A2BE2] whitespace-nowrap">
               Upload Audio, Add Metadata &amp; Licensing
             </span>
           </div>
 
           {/* Chevron Separator */}
           <div className="text-[#B0B0B0] shrink-0">
-            <ChevronLeft size={18} className="rotate-180" />
+            <ChevronLeft size={13} className="rotate-180 sm:w-[18px] sm:h-[18px]" />
           </div>
 
           {/* Step 2: Inactive */}
-          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 opacity-70">
-            <div className="w-8 h-8 rounded-full border border-[#B0B0B0] flex items-center justify-center text-[#B0B0B0] font-normal font-['Space_Grotesk',sans-serif] text-sm">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 opacity-70">
+            <div className="w-5 h-5 sm:w-8 sm:h-8 rounded-full border border-[#B0B0B0] flex items-center justify-center text-[#B0B0B0] font-normal font-['Space_Grotesk',sans-serif] text-[11px] sm:text-sm shrink-0">
               2
             </div>
-            <span className="text-xs sm:text-base font-normal font-['Space_Grotesk',sans-serif] text-[#B0B0B0] whitespace-nowrap">
+            <span className="text-[11px] sm:text-base font-normal font-['Space_Grotesk',sans-serif] text-[#B0B0B0] whitespace-nowrap">
               Mint Track
             </span>
           </div>
