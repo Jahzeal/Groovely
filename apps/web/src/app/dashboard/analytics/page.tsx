@@ -7,6 +7,7 @@ import {
   Bell, 
   ChevronRight, 
   ChevronLeft, 
+  ChevronDown,
   Radio, 
   Wallet, 
   UploadCloud, 
@@ -14,6 +15,8 @@ import {
   Pause, 
   MoreVertical, 
   Plus, 
+  Menu,
+  X,
   Disc,
   Send,
   Loader2
@@ -40,10 +43,11 @@ interface TrackItem {
 export default function AnalyticsPage() {
   const { user } = usePrivy();
   const { address } = useAccount();
-  const { playTrack, currentTrack, isPlaying } = useMusicPlayer();
+  const { playTrack } = useMusicPlayer();
 
   const [activeChartTab, setActiveChartTab] = useState<'Plays' | '$ Earnings' | 'Listeners'>('Plays');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const [stats, setStats] = useState({
@@ -147,19 +151,25 @@ export default function AnalyticsPage() {
     loadData();
   }, []);
 
-  const chartPoints = [
-    { label: '511' },
-    { label: '510' },
-    { label: '509' },
-    { label: '507' },
-    { label: '506' },
-    { label: '504' },
-    { label: '503' },
-    { label: '502' },
-    { label: '501' },
-    { label: '508' },
-    { label: '505' },
-    { label: '500' },
+  const toggleMobileSidebar = () => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('toggle_mobile_sidebar'));
+    }
+  };
+
+  const chartPointsMobile = [
+    { label: '512' },
+    { label: '513' },
+    { label: '514' },
+    { label: '515' },
+    { label: '516' },
+    { label: '517' },
+    { label: '522' },
+    { label: '518' },
+    { label: '519' },
+    { label: '520' },
+    { label: '521' },
+    { label: '523' },
   ];
 
   const getStatusBadge = (status: string) => {
@@ -205,15 +215,79 @@ export default function AnalyticsPage() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#192134] text-white font-sans selection:bg-[#8A2BE2] selection:text-white">
-      {/* Left Sidebar */}
+      {/* Universal Drawer Sidebar */}
       <Sidebar activePage="analytics" />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#192134]">
         
         {/* ========================================================================= */}
-        {/* TOP BAR (Figma Frame 25) - Height: 80px                                   */}
+        {/* MOBILE TOP BAR (Figma Frame 315) - Visible on < md                         */}
         {/* ========================================================================= */}
-        <header className="flex items-center justify-between px-8 py-4 h-20 bg-[#0F172A]/10 border-b border-[#232B3E] backdrop-blur-[25px] sticky top-0 z-30">
+        <div className="md:hidden flex flex-col bg-white/[0.01] border-b border-[#2D3548] backdrop-blur-[50px] sticky top-0 z-30 px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            {/* Left: Hamburger + "Analytics" Title */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleMobileSidebar}
+                className="p-1 text-white hover:opacity-80 transition-opacity cursor-pointer"
+                aria-label="Open menu"
+              >
+                <Menu size={24} />
+              </button>
+              <h1 className="text-xl font-bold font-['Clash_Display',sans-serif] text-white tracking-tight">
+                Analytics
+              </h1>
+            </div>
+
+            {/* Right: Search + Notification + Wallet Symbol & Arrow */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowMobileSearch(prev => !prev)}
+                className="text-white hover:opacity-80 transition-opacity p-1"
+                aria-label="Search"
+              >
+                {showMobileSearch ? <X size={20} /> : <Search size={20} />}
+              </button>
+
+              <button className="text-white hover:opacity-80 transition-opacity p-1 relative">
+                <Bell size={20} />
+                <span className="absolute top-0 right-0 w-2 h-2 bg-[#8A2BE2] rounded-full shadow-[0_0_6px_rgba(138,43,226,0.8)]" />
+              </button>
+
+              <div className="flex items-center gap-1 bg-[#0F172A] border border-[#2D3548] rounded-full px-2 py-1">
+                <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-[#FF5C16]/10 p-0.5">
+                  <img
+                    src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg"
+                    alt="Wallet"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <ChevronDown size={14} className="text-white/70" />
+              </div>
+            </div>
+          </div>
+
+          {showMobileSearch && (
+            <div className="mt-3 relative animate-in fade-in slide-in-from-top-1 duration-200">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-zinc-400">
+                <Search size={14} />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search tracks or content..."
+                autoFocus
+                className="w-full bg-[#0F172A] border border-[#2D3548] rounded-lg py-2 pl-9 pr-3 text-xs text-white placeholder-zinc-400 focus:outline-none focus:border-[#8A2BE2]"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* ========================================================================= */}
+        {/* DESKTOP TOP BAR (Figma Frame 25) - Visible on md+                         */}
+        {/* ========================================================================= */}
+        <header className="hidden md:flex items-center justify-between px-8 py-4 h-20 bg-[#0F172A]/10 border-b border-[#232B3E] backdrop-blur-[25px] sticky top-0 z-30">
           <div className="flex items-center gap-6 flex-1">
             <h1 className="text-2xl font-bold font-['Clash_Display',sans-serif] text-white tracking-tight shrink-0">
               Analytics
@@ -259,8 +333,8 @@ export default function AnalyticsPage() {
         {/* ========================================================================= */}
         {/* MAIN SCROLLABLE CONTENT                                                   */}
         {/* ========================================================================= */}
-        <main className="flex-1 overflow-y-auto pb-28 px-4 sm:px-8 md:px-10 pt-6 md:pt-8 bg-[#192134]">
-          <div className="max-w-[1200px] mx-auto space-y-6">
+        <main className="flex-1 overflow-y-auto pb-28 px-4 sm:px-8 md:px-10 pt-4 md:pt-8 bg-[#192134]">
+          <div className="max-w-[1200px] mx-auto space-y-4 sm:space-y-6">
 
             {/* ===================================================================== */}
             {/* TOP 3 METRIC CARDS ROW (Figma Frame 200: Streams, Earnings, Uploads)   */}
@@ -268,10 +342,10 @@ export default function AnalyticsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               
               {/* Streams Card */}
-              <div className="bg-[#0F172A] rounded-xl p-4 flex flex-col justify-between h-[228px] border border-[#232B3E]/40 hover:border-[#8A2BE2]/40 transition-colors">
+              <div className="bg-[#0F172A] rounded-xl p-4 sm:p-6 flex flex-col justify-between min-h-[204px] sm:h-[228px] border border-[#232B3E]/40 hover:border-[#8A2BE2]/40 transition-colors">
                 <div className="flex items-start justify-between">
-                  <div className="w-16 h-16 rounded-full bg-[#192134] flex items-center justify-center text-[#697184]">
-                    <Radio size={32} />
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#192134] flex items-center justify-center text-[#697184]">
+                    <Radio size={28} className="sm:w-8 sm:h-8" />
                   </div>
                   <button className="text-[#CACACA] hover:text-white transition-colors">
                     <MoreVertical size={20} />
@@ -279,13 +353,13 @@ export default function AnalyticsPage() {
                 </div>
 
                 <div>
-                  <p className="text-base font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">Streams</p>
-                  <p className="text-4xl font-bold font-['Clash_Display',sans-serif] text-white my-1">
+                  <p className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">Streams</p>
+                  <p className="text-2xl sm:text-4xl font-bold font-['Clash_Display',sans-serif] text-white my-1">
                     {Number(stats.streams).toLocaleString()}
                   </p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">This Month</span>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-['Space_Grotesk',sans-serif] bg-[rgba(0,255,136,0.1)] text-[#40FFA6]">
+                    <span className="text-[11px] sm:text-xs font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">This Month</span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-['Space_Grotesk',sans-serif] bg-[rgba(0,255,136,0.1)] text-[#40FFA6]">
                       +{stats.streamsChange}%
                     </span>
                   </div>
@@ -293,10 +367,10 @@ export default function AnalyticsPage() {
               </div>
 
               {/* Earnings Card */}
-              <div className="bg-[#0F172A] rounded-xl p-4 flex flex-col justify-between h-[228px] border border-[#232B3E]/40 hover:border-[#8A2BE2]/40 transition-colors">
+              <div className="bg-[#0F172A] rounded-xl p-4 sm:p-6 flex flex-col justify-between min-h-[204px] sm:h-[228px] border border-[#232B3E]/40 hover:border-[#8A2BE2]/40 transition-colors">
                 <div className="flex items-start justify-between">
-                  <div className="w-16 h-16 rounded-full bg-[#192134] flex items-center justify-center text-[#697184]">
-                    <Wallet size={32} />
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#192134] flex items-center justify-center text-[#697184]">
+                    <Wallet size={28} className="sm:w-8 sm:h-8" />
                   </div>
                   <button className="text-[#CACACA] hover:text-white transition-colors">
                     <MoreVertical size={20} />
@@ -304,13 +378,13 @@ export default function AnalyticsPage() {
                 </div>
 
                 <div>
-                  <p className="text-base font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">Earnings</p>
-                  <p className="text-4xl font-bold font-['Clash_Display',sans-serif] text-white my-1">
+                  <p className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">Earnings</p>
+                  <p className="text-2xl sm:text-4xl font-bold font-['Clash_Display',sans-serif] text-white my-1">
                     ${Number(stats.earnings).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">This Month</span>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-['Space_Grotesk',sans-serif] bg-[rgba(0,255,136,0.1)] text-[#40FFA6]">
+                    <span className="text-[11px] sm:text-xs font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">This Month</span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-['Space_Grotesk',sans-serif] bg-[rgba(0,255,136,0.1)] text-[#40FFA6]">
                       +{stats.earningsChange}%
                     </span>
                   </div>
@@ -318,10 +392,10 @@ export default function AnalyticsPage() {
               </div>
 
               {/* Uploads Card */}
-              <div className="bg-[#0F172A] rounded-xl p-4 flex flex-col justify-between h-[228px] border border-[#232B3E]/40 hover:border-[#8A2BE2]/40 transition-colors">
+              <div className="bg-[#0F172A] rounded-xl p-4 sm:p-6 flex flex-col justify-between min-h-[204px] sm:h-[228px] border border-[#232B3E]/40 hover:border-[#8A2BE2]/40 transition-colors">
                 <div className="flex items-start justify-between">
-                  <div className="w-16 h-16 rounded-full bg-[#192134] flex items-center justify-center text-[#697184]">
-                    <UploadCloud size={32} />
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#192134] flex items-center justify-center text-[#697184]">
+                    <UploadCloud size={28} className="sm:w-8 sm:h-8" />
                   </div>
                   <button className="text-[#CACACA] hover:text-white transition-colors">
                     <MoreVertical size={20} />
@@ -329,13 +403,13 @@ export default function AnalyticsPage() {
                 </div>
 
                 <div>
-                  <p className="text-base font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">Uploads</p>
-                  <p className="text-4xl font-bold font-['Clash_Display',sans-serif] text-white my-1">
+                  <p className="text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">Uploads</p>
+                  <p className="text-2xl sm:text-4xl font-bold font-['Clash_Display',sans-serif] text-white my-1">
                     {stats.uploads}
                   </p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">This Month</span>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-['Space_Grotesk',sans-serif] bg-[rgba(255,51,102,0.1)] text-[#FA003E]">
+                    <span className="text-[11px] sm:text-xs font-bold font-['Space_Grotesk',sans-serif] text-[#CACACA]">This Month</span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-['Space_Grotesk',sans-serif] bg-[rgba(255,51,102,0.1)] text-[#FA003E]">
                       {stats.uploadsChange}%
                     </span>
                   </div>
@@ -345,22 +419,22 @@ export default function AnalyticsPage() {
             </div>
 
             {/* ===================================================================== */}
-            {/* PERFORMANCE CHART SECTION (Figma Frame 195 - Height: 428px)           */}
+            {/* PERFORMANCE CHART SECTION (Figma Frame 195)                           */}
             {/* ===================================================================== */}
             <div className="bg-[#0F172A] rounded-xl p-4 sm:p-6 border border-[#232B3E]/40">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                <h2 className="text-xl font-bold font-['Clash_Display',sans-serif] text-white">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <h2 className="text-lg sm:text-xl font-bold font-['Clash_Display',sans-serif] text-white">
                   Performance Chart
                 </h2>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   {(['Plays', '$ Earnings', 'Listeners'] as const).map((tab) => {
                     const isActive = activeChartTab === tab;
                     return (
                       <button
                         key={tab}
                         onClick={() => setActiveChartTab(tab)}
-                        className={`px-4 py-2 rounded-lg text-sm font-bold font-['Space_Grotesk',sans-serif] transition-all cursor-pointer ${
+                        className={`px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-bold font-['Space_Grotesk',sans-serif] transition-all cursor-pointer ${
                           isActive
                             ? 'bg-[rgba(138,43,226,0.1)] border-2 border-[#4E0AA6] text-[#CACACA] shadow-[0_0_12px_rgba(138,43,226,0.3)]'
                             : 'bg-[#192134] text-[#CACACA] hover:text-white border-2 border-transparent'
@@ -374,7 +448,7 @@ export default function AnalyticsPage() {
               </div>
 
               {/* Chart Canvas Box */}
-              <div className="bg-[#192134] rounded-xl p-4 sm:p-6 h-[300px] sm:h-[332px] flex flex-col justify-between relative overflow-hidden">
+              <div className="bg-[#192134] rounded-xl p-3 sm:p-6 h-[260px] sm:h-[332px] flex flex-col justify-between relative overflow-hidden">
                 <div className="relative flex-1 w-full flex items-end">
                   <svg className="w-full h-[85%] overflow-visible" viewBox="0 0 1000 200" preserveAspectRatio="none">
                     <line x1="0" y1="0" x2="1000" y2="0" stroke="#2D3548" strokeDasharray="3 3" strokeWidth="1" />
@@ -406,7 +480,7 @@ export default function AnalyticsPage() {
                     <circle cx="800" cy="30" r="5" fill="#8A2BE2" stroke="#FFFFFF" strokeWidth="2" />
                   </svg>
 
-                  <div className="absolute left-0 top-0 bottom-6 flex flex-col justify-between text-[10px] font-['Inter',sans-serif] text-[#A3A3A3] pointer-events-none">
+                  <div className="absolute left-0 top-0 bottom-6 flex flex-col justify-between text-[9px] sm:text-[10px] font-['Inter',sans-serif] text-[#A3A3A3] pointer-events-none">
                     <span>1 500</span>
                     <span>1 000</span>
                     <span>500</span>
@@ -414,8 +488,8 @@ export default function AnalyticsPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-between pl-8 pr-2 pt-2 border-t border-[#232B3E] text-[10px] font-['Inter',sans-serif] text-[#A3A3A3]">
-                  {chartPoints.map(p => (
+                <div className="flex justify-between pl-6 sm:pl-8 pr-1 sm:pr-2 pt-2 border-t border-[#232B3E] text-[8px] sm:text-[10px] font-['Inter',sans-serif] text-[#A3A3A3]">
+                  {chartPointsMobile.map(p => (
                     <span key={p.label}>{p.label}</span>
                   ))}
                 </div>
@@ -427,38 +501,38 @@ export default function AnalyticsPage() {
             {/* ===================================================================== */}
             <div className="bg-[#0F172A] rounded-xl p-4 sm:p-6 border border-[#232B3E]/40">
               
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#232B3E]">
-                <h2 className="text-xl font-bold font-['Clash_Display',sans-serif] text-white">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 sm:pb-4 border-b border-[#232B3E]">
+                <h2 className="text-lg sm:text-xl font-bold font-['Clash_Display',sans-serif] text-white">
                   Tracks Performance
                 </h2>
 
                 <Link
                   href="/dashboard/upload"
-                  className="inline-flex items-center justify-center gap-2 bg-[#8A2BE2] hover:bg-[#7823c9] text-white px-5 py-2.5 rounded-lg text-sm font-bold font-['Space_Grotesk',sans-serif] shadow-[0_0_15px_rgba(138,43,226,0.3)] transition-all cursor-pointer self-start sm:self-auto"
+                  className="inline-flex items-center justify-center gap-2 bg-[#8A2BE2] hover:bg-[#7823c9] text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-bold font-['Space_Grotesk',sans-serif] shadow-[0_0_15px_rgba(138,43,226,0.3)] transition-all cursor-pointer self-start sm:self-auto"
                 >
-                  <Plus size={18} />
+                  <Plus size={16} />
                   <span>Upload & Mint</span>
                 </Link>
               </div>
 
-              <div className="overflow-x-auto mt-4">
-                <table className="w-full text-left border-collapse min-w-[750px]">
+              <div className="overflow-x-auto mt-4 no-scrollbar">
+                <table className="w-full text-left border-collapse min-w-[650px] sm:min-w-[750px]">
                   <thead>
-                    <tr className="bg-[#192134] border-b border-[#232B3E] text-[#CACACA] text-sm font-bold font-['Space_Grotesk',sans-serif]">
-                      <th className="py-3 px-4 rounded-l-lg">Track</th>
-                      <th className="py-3 px-4">Content</th>
-                      <th className="py-3 px-4 text-right">Streams</th>
-                      <th className="py-3 px-4 text-right">Earnings</th>
-                      <th className="py-3 px-4 text-center">Status</th>
-                      <th className="py-3 px-4 text-center rounded-r-lg">Actions</th>
+                    <tr className="bg-[#192134] border-b border-[#232B3E] text-[#CACACA] text-xs sm:text-sm font-bold font-['Space_Grotesk',sans-serif]">
+                      <th className="py-3 px-3 sm:px-4 rounded-l-lg">Track</th>
+                      <th className="py-3 px-3 sm:px-4">Content</th>
+                      <th className="py-3 px-3 sm:px-4 text-right">Streams</th>
+                      <th className="py-3 px-3 sm:px-4 text-right">Earnings</th>
+                      <th className="py-3 px-3 sm:px-4 text-center">Status</th>
+                      <th className="py-3 px-3 sm:px-4 text-center rounded-r-lg">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#192134]">
                     {filteredTracks.map((t) => (
                       <tr key={t.id} className="bg-[#232B3E] hover:bg-[#2c364e] transition-colors">
                         
-                        {/* Track 40x40 Thumbnail + Title */}
-                        <td className="py-3 px-4 flex items-center gap-3">
+                        {/* Track Thumbnail + Title */}
+                        <td className="py-3 px-3 sm:px-4 flex items-center gap-3">
                           <div className="w-10 h-10 rounded overflow-hidden shrink-0 bg-[#192134] shadow-sm">
                             <img
                               src={resolveIpfsUrl(t.cover_url) || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=150&q=80'}
@@ -466,36 +540,36 @@ export default function AnalyticsPage() {
                               className="w-full h-full object-cover"
                             />
                           </div>
-                          <span className="text-sm font-bold font-['Space_Grotesk',sans-serif] text-white truncate max-w-xs">
+                          <span className="text-xs sm:text-sm font-bold font-['Space_Grotesk',sans-serif] text-white truncate max-w-[180px] sm:max-w-xs">
                             {t.title}
                           </span>
                         </td>
 
                         {/* Content Pill */}
-                        <td className="py-3 px-4">
-                          <span className="bg-[rgba(15,23,42,0.5)] text-[#CACACA] text-xs font-['Space_Grotesk',sans-serif] px-3 py-1 rounded-full">
+                        <td className="py-3 px-3 sm:px-4">
+                          <span className="bg-[rgba(15,23,42,0.5)] text-[#CACACA] text-[11px] sm:text-xs font-['Space_Grotesk',sans-serif] px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full">
                             {t.category}
                           </span>
                         </td>
 
                         {/* Streams */}
-                        <td className="py-3 px-4 text-right text-sm font-normal font-['Space_Grotesk',sans-serif] text-white">
+                        <td className="py-3 px-3 sm:px-4 text-right text-xs sm:text-sm font-normal font-['Space_Grotesk',sans-serif] text-white">
                           {t.streams.toLocaleString()}
                         </td>
 
                         {/* Earnings */}
-                        <td className="py-3 px-4 text-right text-sm font-normal font-['Space_Grotesk',sans-serif] text-white">
+                        <td className="py-3 px-3 sm:px-4 text-right text-xs sm:text-sm font-normal font-['Space_Grotesk',sans-serif] text-white">
                           ${t.earnings === 0 ? '0' : t.earnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
 
                         {/* Status Badge */}
-                        <td className="py-3 px-4 text-center">
+                        <td className="py-3 px-3 sm:px-4 text-center">
                           {getStatusBadge(t.status)}
                         </td>
 
                         {/* Actions */}
-                        <td className="py-3 px-4 text-center">
-                          <div className="flex items-center justify-center gap-2">
+                        <td className="py-3 px-3 sm:px-4 text-center">
+                          <div className="flex items-center justify-center gap-1 sm:gap-2">
                             <button
                               onClick={() =>
                                 playTrack({
@@ -506,13 +580,13 @@ export default function AnalyticsPage() {
                                   audioUrl: resolveIpfsUrl(t.audio_url),
                                 })
                               }
-                              className="p-1.5 text-zinc-400 hover:text-white transition-colors"
+                              className="p-1 text-zinc-400 hover:text-white transition-colors"
                               title="Play"
                             >
-                              <Play size={16} />
+                              <Play size={15} />
                             </button>
-                            <button className="p-1.5 text-zinc-400 hover:text-white transition-colors">
-                              <MoreVertical size={16} />
+                            <button className="p-1 text-zinc-400 hover:text-white transition-colors">
+                              <MoreVertical size={15} />
                             </button>
                           </div>
                         </td>
@@ -524,7 +598,7 @@ export default function AnalyticsPage() {
               </div>
 
               {/* Table Pagination */}
-              <div className="flex items-center justify-center gap-4 mt-4 pt-3 text-sm font-['Space_Grotesk',sans-serif] text-[#CACACA]">
+              <div className="flex items-center justify-center gap-4 mt-4 pt-3 text-xs sm:text-sm font-['Space_Grotesk',sans-serif] text-[#CACACA]">
                 <span>Page 1 of 2</span>
                 <button className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer">
                   <ChevronLeft size={16} />
@@ -542,16 +616,16 @@ export default function AnalyticsPage() {
             {/* ===================================================================== */}
             <div className="bg-[#0F172A] rounded-xl p-4 sm:p-6 border border-[#232B3E]/40">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold font-['Clash_Display',sans-serif] text-white">
+                <h2 className="text-lg sm:text-xl font-bold font-['Clash_Display',sans-serif] text-white">
                   Top Tracks
                 </h2>
               </div>
 
-              <div className="bg-[#192134] rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-[#192134] rounded-xl p-3 sm:p-4 grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
                 
                 {/* Most Streams */}
                 <div className="bg-[#0F172A] rounded-lg p-3 flex items-center gap-3 border border-[#232B3E]/40">
-                  <div className="w-16 h-16 rounded overflow-hidden shrink-0 bg-[#192134]">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded overflow-hidden shrink-0 bg-[#192134]">
                     <img
                       src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=150&q=80"
                       alt="Top stream"
@@ -559,10 +633,10 @@ export default function AnalyticsPage() {
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold font-['Space_Grotesk',sans-serif] text-white truncate">
+                    <p className="text-xs sm:text-sm font-bold font-['Space_Grotesk',sans-serif] text-white truncate">
                       Late Nights, Loose Thoughts — Ep. 01
                     </p>
-                    <span className="inline-block bg-[#192134] text-white text-[11px] font-['Space_Grotesk',sans-serif] px-2.5 py-0.5 rounded-full mt-1">
+                    <span className="inline-block bg-[#192134] text-white text-[10px] sm:text-[11px] font-['Space_Grotesk',sans-serif] px-2.5 py-0.5 rounded-full mt-1">
                       Most Streams
                     </span>
                   </div>
@@ -570,7 +644,7 @@ export default function AnalyticsPage() {
 
                 {/* Most Earnings */}
                 <div className="bg-[#0F172A] rounded-lg p-3 flex items-center gap-3 border border-[#232B3E]/40">
-                  <div className="w-16 h-16 rounded overflow-hidden shrink-0 bg-[#192134]">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded overflow-hidden shrink-0 bg-[#192134]">
                     <img
                       src="https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=150&q=80"
                       alt="Top earning"
@@ -578,10 +652,10 @@ export default function AnalyticsPage() {
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold font-['Space_Grotesk',sans-serif] text-white truncate">
+                    <p className="text-xs sm:text-sm font-bold font-['Space_Grotesk',sans-serif] text-white truncate">
                       Late Nights, Loose Thoughts — Ep. 01
                     </p>
-                    <span className="inline-block bg-[#192134] text-white text-[11px] font-['Space_Grotesk',sans-serif] px-2.5 py-0.5 rounded-full mt-1">
+                    <span className="inline-block bg-[#192134] text-white text-[10px] sm:text-[11px] font-['Space_Grotesk',sans-serif] px-2.5 py-0.5 rounded-full mt-1">
                       Most Earnings
                     </span>
                   </div>
@@ -589,7 +663,7 @@ export default function AnalyticsPage() {
 
                 {/* Best Track */}
                 <div className="bg-[#0F172A] rounded-lg p-3 flex items-center gap-3 border border-[#232B3E]/40">
-                  <div className="w-16 h-16 rounded overflow-hidden shrink-0 bg-[#192134]">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded overflow-hidden shrink-0 bg-[#192134]">
                     <img
                       src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=150&q=80"
                       alt="Best track"
@@ -597,10 +671,10 @@ export default function AnalyticsPage() {
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold font-['Space_Grotesk',sans-serif] text-white truncate">
+                    <p className="text-xs sm:text-sm font-bold font-['Space_Grotesk',sans-serif] text-white truncate">
                       Late Nights, Loose Thoughts — Ep. 01
                     </p>
-                    <span className="inline-block bg-[#192134] text-white text-[11px] font-['Space_Grotesk',sans-serif] px-2.5 py-0.5 rounded-full mt-1">
+                    <span className="inline-block bg-[#192134] text-white text-[10px] sm:text-[11px] font-['Space_Grotesk',sans-serif] px-2.5 py-0.5 rounded-full mt-1">
                       Best Track
                     </span>
                   </div>
@@ -609,7 +683,7 @@ export default function AnalyticsPage() {
               </div>
 
               {/* Pagination */}
-              <div className="flex items-center justify-center gap-4 mt-4 text-sm font-['Space_Grotesk',sans-serif] text-[#CACACA]">
+              <div className="flex items-center justify-center gap-4 mt-4 text-xs sm:text-sm font-['Space_Grotesk',sans-serif] text-[#CACACA]">
                 <span>Page 1 of 2</span>
                 <button className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer">
                   <ChevronLeft size={16} />
@@ -623,19 +697,23 @@ export default function AnalyticsPage() {
             </div>
 
             {/* ===================================================================== */}
-            {/* FOOTER (Figma Text input container)                                   */}
+            {/* FOOTER (Mobile Frame 310 & 309 / Desktop Text Container)              */}
             {/* ===================================================================== */}
-            <footer className="mt-14 pt-6 border-t border-[#232B3E] flex flex-col md:flex-row justify-between items-center gap-4 text-[#CACACA]">
-              <div className="flex flex-wrap items-center justify-center gap-x-2.5 text-sm font-['Space_Grotesk',sans-serif]">
-                <a href="#" className="hover:text-white transition-colors">About Groovely</a>
-                <span className="w-1 h-1 bg-[#CACACA] rounded-full" />
-                <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-                <span className="w-1 h-1 bg-[#CACACA] rounded-full" />
-                <a href="#" className="hover:text-white transition-colors">Terms of Use</a>
-                <span className="w-1 h-1 bg-[#CACACA] rounded-full" />
-                <a href="#" className="hover:text-white transition-colors">Docs/Developer API</a>
-                <span className="w-1 h-1 bg-[#CACACA] rounded-full" />
-                <a href="#" className="hover:text-white transition-colors">Feedback</a>
+            <footer className="mt-10 sm:mt-14 pt-6 border-t border-[#2D3548] flex flex-col md:flex-row justify-between items-center gap-4 text-[#CACACA]">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-y-1.5 gap-x-2 text-[10px] sm:text-sm font-['Space_Grotesk',sans-serif]">
+                <div className="flex items-center gap-2">
+                  <a href="#" className="hover:text-white transition-colors">About Groovely</a>
+                  <span className="w-1 h-1 bg-[#CACACA] rounded-full" />
+                  <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+                  <span className="w-1 h-1 bg-[#CACACA] rounded-full" />
+                  <a href="#" className="hover:text-white transition-colors">Terms of Use</a>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="hidden sm:inline-block w-1 h-1 bg-[#CACACA] rounded-full" />
+                  <a href="#" className="hover:text-white transition-colors">Docs/Developer API</a>
+                  <span className="w-1 h-1 bg-[#CACACA] rounded-full" />
+                  <a href="#" className="hover:text-white transition-colors">Feedback</a>
+                </div>
               </div>
 
               <div className="flex items-center gap-4 text-[#CACACA]">
