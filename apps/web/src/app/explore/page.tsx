@@ -215,8 +215,9 @@ export default function ExplorePage() {
                         <CreatorCard 
                           id={creator.id}
                           name={creator.displayName || creator.display_name || creator.name || 'Unknown'}
+                          username={creator.username}
                           role={creator.creatorType || creator.creator_type || creator.role || 'Creator'}
-                          image={creator.profileUrl || creator.profile_url || creator.image || 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'}
+                          image={creator.avatar_url || creator.avatarUrl || creator.profileUrl || creator.profile_url || creator.image}
                           isFollowing={creator.isFollowing || creator.is_following}
                           onFollow={(id) => handleFollow(id, !!(creator.isFollowing || creator.is_following))}
                         />

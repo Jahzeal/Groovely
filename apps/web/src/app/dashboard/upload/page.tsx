@@ -54,6 +54,11 @@ const KEYS = [
 export default function UploadPage() {
   const router = useRouter();
 
+  // Edit Mode State
+  const [editId, setEditId] = useState<string | null>(null);
+  const [existingAudioUrl, setExistingAudioUrl] = useState<string | null>(null);
+  const [isLoadingTrack, setIsLoadingTrack] = useState(false);
+
   // Form State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -91,6 +96,53 @@ export default function UploadPage() {
 
   const audioInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+
+  // Load existing track data when in edit mode
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('editId') || params.get('id');
+    if (id) {
+      setEditId(id);
+      setIsLoadingTrack(true);
+      apiFetch(`/api/creator/tracks/${id}`)
+        .then(res => (res && res.ok ? res.json() : null))
+        .then(json => {
+          if (!json) return;
+          const t = json.track || json.data || json;
+          if (t.title) setTitle(t.title);
+          if (t.description) setDescription(t.description);
+          if (t.category) {
+            const cap = t.category.charAt(0).toUpperCase() + t.category.slice(1);
+            setCategory(CATEGORIES.includes(cap) ? cap : 'Music');
+          }
+          if (t.genre) setGenre(t.genre);
+          if (t.tags && Array.isArray(t.tags)) setTags(t.tags);
+          if (t.bpm) setBpm(String(t.bpm));
+          if (t.key) setKey(t.key);
+          if (t.isrc) setIsrc(t.isrc);
+          if (t.usage_rights && Array.isArray(t.usage_rights)) setUsageRights(t.usage_rights);
+          if (t.payment_model) setPaymentModel(t.payment_model);
+          if (t.license_price !== undefined && t.license_price !== null) setLicensePrice(String(t.license_price));
+          if (t.royalty_percentage !== undefined && t.royalty_percentage !== null) setRoyaltyPercentage(Number(t.royalty_percentage));
+          if (t.visibility) setIsPublic(t.visibility === 'public');
+          if (t.explicit !== undefined) setExplicit(Boolean(t.explicit));
+          if (t.cover_url) {
+            const url = t.cover_url.startsWith('ipfs://') ? `https://gateway.pinata.cloud/ipfs/${t.cover_url.slice(7)}` : t.cover_url;
+            setCoverPreview(url);
+          }
+          if (t.audio_url) {
+            setExistingAudioUrl(t.audio_url);
+            setAgreedToTerms(true);
+          }
+        })
+        .catch(err => {
+          console.error('Failed to load track for edit:', err);
+          toast.error('Failed to load track details');
+        })
+        .finally(() => setIsLoadingTrack(false));
+    }
+  }, []);
 
   const handleAudioChange = (e: React.ChangeEvent<HTMLInputElement> | React.DragEvent) => {
     let file: File | null = null;
@@ -156,7 +208,7 @@ export default function UploadPage() {
   };
 
   const handleNext = async (isDraft = false) => {
-    if (!audioFile) {
+    if (!audioFile && !existingAudioUrl) {
       toast.error('Please upload an audio file');
       return;
     }
@@ -170,25 +222,71 @@ export default function UploadPage() {
     }
 
     setIsUploading(true);
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('description', description || '');
-    formData.append('audio', audioFile);
-    if (coverFile) formData.append('cover', coverFile);
-    formData.append('visibility', isPublic ? 'public' : 'private');
-    formData.append('explicit', String(explicit));
-    formData.append('category', category.toLowerCase());
-    formData.append('genre', genre || 'Other');
-    formData.append('tags', JSON.stringify(tags));
-    if (bpm) formData.append('bpm', bpm);
-    if (key) formData.append('key', key);
-    if (isrc) formData.append('isrc', isrc);
-    formData.append('usage_rights', JSON.stringify(usageRights));
-    formData.append('payment_model', paymentModel);
-    formData.append('license_price', licensePrice || '0.00');
-    formData.append('royalty_percentage', String(royaltyPercentage));
 
     try {
+      if (editId && !audioFile && !coverFile) {
+        // Direct metadata PATCH update
+        const res = await apiFetch(`/api/creator/tracks/${editId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title,
+            description: description || '',
+            visibility: isPublic ? 'public' : 'private',
+            explicit,
+            category: category.toLowerCase(),
+            genre: genre || 'Other',
+            tags,
+            bpm: bpm ? parseInt(bpm) : null,
+            key: key || null,
+            isrc: isrc || null,
+            usage_rights: usageRights,
+            payment_model: paymentModel,
+            license_price: parseFloat(licensePrice || '0.00'),
+            royalty_percentage: Number(royaltyPercentage) || 10,
+          }),
+        });
+
+        if (!res || !res.ok) {
+          const json = await res?.json().catch(() => ({}));
+          throw new Error(json?.message || 'Failed to update track');
+        }
+
+        // Store track data for minting step
+        localStorage.setItem('pending_track_id', editId);
+        localStorage.setItem('pending_track_title', title);
+        localStorage.setItem('pending_track_cover', coverPreview || '');
+        localStorage.setItem('pending_track_genre', genre);
+        localStorage.setItem('pending_track_tags', JSON.stringify(tags));
+        localStorage.setItem('pending_track_rights', JSON.stringify(usageRights));
+        localStorage.setItem('pending_track_payment', paymentModel);
+        localStorage.setItem('pending_track_price', licensePrice);
+        localStorage.setItem('pending_track_royalty', String(royaltyPercentage));
+
+        toast.success(isDraft ? 'Track changes saved!' : 'Track updated successfully!');
+        router.push(`/dashboard/upload/mint?id=${editId}`);
+        return;
+      }
+
+      // New upload or replacement audio/cover
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('description', description || '');
+      if (audioFile) formData.append('audio', audioFile);
+      if (coverFile) formData.append('cover', coverFile);
+      formData.append('visibility', isPublic ? 'public' : 'private');
+      formData.append('explicit', String(explicit));
+      formData.append('category', category.toLowerCase());
+      formData.append('genre', genre || 'Other');
+      formData.append('tags', JSON.stringify(tags));
+      if (bpm) formData.append('bpm', bpm);
+      if (key) formData.append('key', key);
+      if (isrc) formData.append('isrc', isrc);
+      formData.append('usage_rights', JSON.stringify(usageRights));
+      formData.append('payment_model', paymentModel);
+      formData.append('license_price', licensePrice || '0.00');
+      formData.append('royalty_percentage', String(royaltyPercentage));
+
       const res = await apiFetch('/api/creator/tracks', {
         method: 'POST',
         body: formData,
@@ -201,8 +299,10 @@ export default function UploadPage() {
         throw new Error(json.message || json.error || 'Failed to upload track');
       }
 
+      const targetId = json.data?.id || json.id;
+
       // Store track data for minting step
-      localStorage.setItem('pending_track_id', json.data?.id || json.id);
+      localStorage.setItem('pending_track_id', targetId);
       localStorage.setItem('pending_track_title', json.data?.title || title);
       localStorage.setItem('pending_track_cover', json.data?.cover_url || coverPreview || '');
       localStorage.setItem('pending_track_genre', genre);
@@ -213,7 +313,7 @@ export default function UploadPage() {
       localStorage.setItem('pending_track_royalty', String(royaltyPercentage));
 
       toast.success(isDraft ? 'Track saved as draft!' : 'Track uploaded successfully!');
-      router.push('/dashboard/upload/mint');
+      router.push(`/dashboard/upload/mint?id=${targetId}`);
     } catch (error: any) {
       toast.error(error.message || 'Upload failed');
     } finally {
@@ -361,6 +461,20 @@ export default function UploadPage() {
                       >
                         <Trash2 size={18} />
                       </button>
+                    </div>
+                  ) : existingAudioUrl ? (
+                    <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-[#00FF88]/15 border border-[#00FF88]/30 flex items-center justify-center text-[#00FF88] shrink-0">
+                        <CheckCircle2 size={22} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs sm:text-sm font-bold font-['Space_Grotesk',sans-serif] text-[#00FF88] truncate">
+                          Existing Track Audio Loaded
+                        </p>
+                        <p className="text-[11px] sm:text-xs font-['Space_Grotesk',sans-serif] text-[#CACACA]">
+                          Upload a new file only if you want to replace it
+                        </p>
+                      </div>
                     </div>
                   ) : (
                     <div className="w-full text-center py-2">
