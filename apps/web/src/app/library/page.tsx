@@ -35,6 +35,7 @@ interface Track {
   cover_url?: string;
   audio_url?: string;
   status?: string;
+  type?: 'played' | 'saved' | 'purchased' | 'uploaded' | string;
   category?: string;
   uploader_id?: number;
   purchased?: boolean;
@@ -147,10 +148,19 @@ export default function LibraryPage() {
     }));
 
   const getStatusBadge = (track: Track) => {
-    if (track.purchased || activeTab === 'Purchased') return 'Purchased';
-    if (track.played || activeTab === 'Played') return 'Played';
-    if (track.saved || activeTab === 'Saved') return 'Saved';
-    return track.status || 'Purchased';
+    if (activeTab === 'Purchased') return 'Purchased';
+    if (activeTab === 'Played') return 'Played';
+    if (activeTab === 'Saved') return 'Saved';
+    if (track.type) {
+      if (track.type === 'purchased') return 'Purchased';
+      if (track.type === 'saved') return 'Saved';
+      if (track.type === 'played') return 'Played';
+      if (track.type === 'uploaded') return 'Uploaded';
+    }
+    if (track.purchased) return 'Purchased';
+    if (track.saved) return 'Saved';
+    if (track.played) return 'Played';
+    return track.status || 'Active';
   };
 
   return (
