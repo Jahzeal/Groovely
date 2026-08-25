@@ -318,11 +318,12 @@ export class ProfileService {
   }
 
   async getPublicProfile(username: string) {
+    const cleanUsername = username ? username.replace(/^@/, '').trim().toLowerCase() : '';
     const result = await this.db.query(
       `SELECT id, display_name, username, bio, creator_type, twitter, instagram, soundcloud, avatar_url, role, wallet 
        FROM users 
-       WHERE username = $1`,
-      [username]
+       WHERE LOWER(REPLACE(username, '@', '')) = $1 OR LOWER(username) = $1`,
+      [cleanUsername]
     );
     const profile = result.rows[0];
     if (!profile) {

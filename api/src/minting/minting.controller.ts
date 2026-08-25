@@ -84,8 +84,7 @@ export class MintingController {
   @Get('creator/invitations')
   @ResponseMessage('Pending invitations retrieved successfully')
   async getPendingInvitations(@Req() req: any) {
-    const invitations = await this.mintingService.getPendingInvitations(req.userId);
-    return { data: invitations };
+    return this.mintingService.getPendingInvitations(req.userId);
   }
 
   @Post('creator/invitations/:id/respond')

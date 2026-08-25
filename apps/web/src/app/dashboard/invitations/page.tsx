@@ -34,7 +34,10 @@ export default function InvitationsPage() {
       const res = await apiFetch('/api/creator/invitations', { skipAuthRedirect: true });
       if (res && res.ok) {
         const json = await res.json();
-        setInvitations(json.data || []);
+        const list = Array.isArray(json.data) 
+          ? json.data 
+          : (Array.isArray(json.data?.data) ? json.data.data : (Array.isArray(json.invitations) ? json.invitations : (Array.isArray(json) ? json : [])));
+        setInvitations(list);
       } else {
         setInvitations([]);
       }
