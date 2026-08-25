@@ -131,44 +131,32 @@ export default function SettingsPage() {
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
-      let uploadedAvatarUrl = undefined;
-
-      if (avatarFile) {
-        const formData = new FormData();
-        formData.append('avatar', avatarFile);
-        const uploadRes = await apiFetch('/api/upload/avatar', {
-          method: 'POST',
-          body: formData,
-        });
-        if (uploadRes?.ok) {
-          const upJson = await uploadRes.json();
-          uploadedAvatarUrl = upJson.data?.url || upJson.url;
-        }
-      }
-
       const endpoint = role === 'fan' ? '/api/fan/profile' : '/api/creator/profile';
-      const bodyPayload = role === 'fan' 
-        ? {
-            displayName,
-            username,
-            avatarUrl: uploadedAvatarUrl,
-          }
-        : {
-            displayName,
-            username,
-            bio,
-            creatorTypes,
-            avatarUrl: uploadedAvatarUrl,
-          };
+      const formData = new FormData();
+      if (avatarFile) {
+        formData.append('avatar', avatarFile);
+      }
+      formData.append('displayName', displayName || '');
+      formData.append('username', username ? username.replace(/^@/, '') : '');
+      if (role !== 'fan') {
+        formData.append('bio', bio || '');
+        formData.append('creatorTypes', JSON.stringify(creatorTypes));
+      }
 
       const res = await apiFetch(endpoint, {
         method: 'PATCH',
-        body: JSON.stringify(bodyPayload),
+        body: formData,
       });
 
       if (!res?.ok) {
         const errJson = await res?.json().catch(() => ({}));
         throw new Error(errJson.message || 'Failed to save profile');
+      }
+
+      const data = await res.json();
+      const updated = data.data || data;
+      if (updated?.avatar_url) {
+        setAvatarPreview(resolveIpfsUrl(updated.avatar_url));
       }
 
       toast.success('Profile changes saved!');

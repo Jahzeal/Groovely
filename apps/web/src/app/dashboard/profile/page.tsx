@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { 
@@ -19,7 +19,8 @@ import {
   Loader2, 
   Upload, 
   User as UserIcon,
-  Music
+  Music,
+  Camera
 } from 'lucide-react';
 import { Twitter, Instagram, YouTube, OpenSea } from '@/components/ui/SocialIcons';
 import { WalletMenu } from '@/components/dashboard/WalletMenu';
@@ -29,6 +30,7 @@ import { MusicPlayer } from '@/components/marketplace/MusicPlayer';
 import { usePrivy } from '@privy-io/react-auth';
 import { useAccount } from 'wagmi';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 
 interface DiscographyItem {
   id: number | string;
@@ -64,6 +66,8 @@ export default function ProfilePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [discography, setDiscography] = useState<DiscographyItem[]>([]);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const activeAddress = address || user?.wallet?.address;
   const abbrev = activeAddress
@@ -133,12 +137,40 @@ export default function ProfilePage() {
   
   const bio = profile?.bio;
 
-  const rawAvatar = profile?.avatar_url ? resolveIpfsUrl(profile.avatar_url) : null;
+  const avatarSrc = profile?.avatar_url || profile?.avatarUrl || profile?.profile_url || profile?.image;
+  const rawAvatar = avatarSrc ? resolveIpfsUrl(avatarSrc) : null;
 
   const stats = {
     allTimePlays: formatNumber(profile?.stats?.all_time_plays ?? profile?.stats?.total_plays ?? 0),
     followers: formatNumber(profile?.stats?.followers ?? 0),
     monthlyListeners: formatNumber(profile?.stats?.monthly_listeners ?? 0),
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.[0]) return;
+    const file = e.target.files[0];
+    setIsUploadingAvatar(true);
+    try {
+      const endpoint = role === 'fan' ? '/api/fan/profile' : '/api/creator/profile';
+      const formData = new FormData();
+      formData.append('avatar', file);
+      const res = await apiFetch(endpoint, {
+        method: 'PATCH',
+        body: formData,
+      });
+      if (!res?.ok) {
+        const err = await res?.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to upload profile picture');
+      }
+      const data = await res.json();
+      const updated = data.data || data;
+      setProfile((prev: any) => ({ ...prev, avatar_url: updated.avatar_url }));
+      toast.success('Profile picture updated!');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to upload profile picture');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
   };
 
   const filteredDiscography = discography.filter(d =>
@@ -148,6 +180,15 @@ export default function ProfilePage() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#192134] text-white font-sans selection:bg-[#8A2BE2] selection:text-white">
+      {/* Hidden Avatar File Input */}
+      <input
+        type="file"
+        ref={avatarInputRef}
+        onChange={handleAvatarUpload}
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+      />
+
       {/* Universal Drawer Sidebar */}
       <Sidebar activePage="profile" />
 
@@ -261,8 +302,21 @@ export default function ProfilePage() {
                 {/* ===================================================================== */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-4 sm:gap-6">
-                    {/* Ellipse 9: 100x100 Avatar */}
-                    <div className="w-[100px] h-[100px] rounded-full overflow-hidden shrink-0 border-2 border-[#2D3548] shadow-lg bg-[#0F172A] flex items-center justify-center">
+                    {/* Ellipse 9: 100x100 Avatar with Direct Upload Click */}
+                    <div 
+                      onClick={() => avatarInputRef.current?.click()}
+                      className="w-[100px] h-[100px] rounded-full overflow-hidden shrink-0 border-2 border-[#2D3548] hover:border-[#8A2BE2] shadow-lg bg-[#0F172A] flex items-center justify-center relative group cursor-pointer transition-colors"
+                      title="Click to upload profile picture"
+                    >
+                      {isUploadingAvatar ? (
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
+                          <Loader2 size={24} className="text-[#8A2BE2] animate-spin" />
+                        </div>
+                      ) : (
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-10">
+                          <Camera size={22} className="text-white" />
+                        </div>
+                      )}
                       {rawAvatar ? (
                         <img
                           src={rawAvatar}
