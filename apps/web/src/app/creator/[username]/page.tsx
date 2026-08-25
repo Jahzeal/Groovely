@@ -90,15 +90,22 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userna
                       <p className="text-zinc-500 font-bold text-lg">@{profile.username}</p>
                     </div>
 
-                    {profile.creator_type && profile.creator_type.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {profile.creator_type.map((type: string) => (
-                          <span key={type} className="px-4 py-1.5 rounded-full bg-accent-purple/10 border border-accent-purple/20 text-accent-purple text-xs font-black uppercase tracking-widest">
-                            {type}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                    {(() => {
+                      const typesList = Array.isArray(profile.creator_type)
+                        ? profile.creator_type
+                        : typeof profile.creator_type === 'string'
+                          ? profile.creator_type.split(',').map((s: string) => s.trim()).filter(Boolean)
+                          : [];
+                      return typesList.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {typesList.map((type: string) => (
+                            <span key={type} className="px-4 py-1.5 rounded-full bg-accent-purple/10 border border-accent-purple/20 text-accent-purple text-xs font-black uppercase tracking-widest">
+                              {type}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null;
+                    })()}
 
                     <p className="text-zinc-400 max-w-2xl leading-relaxed">
                       {profile.bio || 'This creator hasn\'t added a bio yet.'}

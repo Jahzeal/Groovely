@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Hero } from '@/components/landing/Hero';
 import { FeatureCards } from '@/components/landing/FeatureCards';
 import { JourneySteps } from '@/components/landing/JourneySteps';
@@ -10,6 +10,23 @@ import Link from 'next/link';
 
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState<'creator' | 'fan'>('creator');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('groovely_token') || localStorage.getItem('grooveli_token');
+      if (token) {
+        setIsLoggedIn(true);
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          if (payload.role) setUserRole(payload.role);
+        } catch {}
+      }
+    }
+  }, []);
+
+  const dashboardUrl = userRole === 'fan' ? '/explore' : '/dashboard';
 
   return (
     <div className="min-h-screen bg-[#050510] text-white selection:bg-[#00FFC6] selection:text-black relative font-sans">
@@ -27,26 +44,55 @@ export default function Home() {
           </Link>
           
           {/* Desktop Navigation Links */}
-          <div className="hidden md:flex items-center gap-6">
-            <Link href="/login" className="text-zinc-400 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">
-              Login
-            </Link>
-            <Link href="/onboarding" className="rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-white text-xs font-bold hover:bg-white/10 transition-all uppercase tracking-widest">
-              Sign Up
-            </Link>
-            <Link href="/marketplace" className="rounded-xl bg-[#8B5CF6] hover:bg-[#7c4dff] px-6 py-2.5 text-white text-xs font-bold transition-all uppercase tracking-widest shadow-[0_0_15px_rgba(139,92,246,0.3)]">
-              Explore Groovely
-            </Link>
-          </div>
+          {isLoggedIn ? (
+            <div className="hidden md:flex items-center gap-6">
+              <Link
+                href={dashboardUrl}
+                className="rounded-xl bg-[#8B5CF6] hover:bg-[#7c4dff] px-6 py-2.5 text-white text-xs font-bold transition-all uppercase tracking-widest shadow-[0_0_15px_rgba(139,92,246,0.3)]"
+              >
+                Dashboard
+              </Link>
+              <Link
+                href="/marketplace"
+                className="rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-white text-xs font-bold hover:bg-white/10 transition-all uppercase tracking-widest"
+              >
+                Explore Groovely
+              </Link>
+            </div>
+          ) : (
+            <div className="hidden md:flex items-center gap-6">
+              <Link href="/login" className="text-zinc-400 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">
+                Login
+              </Link>
+              <Link href="/onboarding" className="rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-white text-xs font-bold hover:bg-white/10 transition-all uppercase tracking-widest">
+                Sign Up
+              </Link>
+              <Link href="/marketplace" className="rounded-xl bg-[#8B5CF6] hover:bg-[#7c4dff] px-6 py-2.5 text-white text-xs font-bold transition-all uppercase tracking-widest shadow-[0_0_15px_rgba(139,92,246,0.3)]">
+                Explore Groovely
+              </Link>
+            </div>
+          )}
 
           {/* Mobile Quick Action & Hamburger Toggle */}
           <div className="flex md:hidden items-center gap-3">
-            <Link href="/onboarding" className="rounded-lg bg-[#8B5CF6] px-4 py-2 text-white text-xs font-bold uppercase tracking-wider shadow-md">
-              Sign Up
-            </Link>
+            {isLoggedIn ? (
+              <Link
+                href={dashboardUrl}
+                className="rounded-lg bg-[#8B5CF6] px-4 py-2 text-white text-xs font-bold uppercase tracking-wider shadow-md"
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <Link
+                href="/onboarding"
+                className="rounded-lg bg-[#8B5CF6] px-4 py-2 text-white text-xs font-bold uppercase tracking-wider shadow-md"
+              >
+                Sign Up
+              </Link>
+            )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg bg-white/5 border border-white/10 text-zinc-300 hover:text-white"
+              className="p-2 rounded-lg bg-white/5 border border-white/10 text-zinc-300 hover:text-white cursor-pointer"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? (
@@ -61,27 +107,48 @@ export default function Home() {
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden mt-4 pt-4 border-t border-white/10 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
-            <Link 
-              href="/login" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full py-3 px-4 rounded-xl bg-white/5 border border-white/10 text-center font-bold text-xs uppercase tracking-widest text-zinc-200"
-            >
-              Log In
-            </Link>
-            <Link 
-              href="/onboarding" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full py-3 px-4 rounded-xl bg-[#8B5CF6] text-center font-bold text-xs uppercase tracking-widest text-white shadow-lg"
-            >
-              Sign Up Free
-            </Link>
-            <Link 
-              href="/marketplace" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full py-3 px-4 rounded-xl bg-[#192134] border border-white/10 text-center font-bold text-xs uppercase tracking-widest text-zinc-300"
-            >
-              Explore Groovely
-            </Link>
+            {isLoggedIn ? (
+              <>
+                <Link 
+                  href={dashboardUrl} 
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full py-3 px-4 rounded-xl bg-[#8B5CF6] text-center font-bold text-xs uppercase tracking-widest text-white shadow-lg"
+                >
+                  Dashboard
+                </Link>
+                <Link 
+                  href="/marketplace" 
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full py-3 px-4 rounded-xl bg-[#192134] border border-white/10 text-center font-bold text-xs uppercase tracking-widest text-zinc-300"
+                >
+                  Explore Groovely
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link 
+                  href="/login" 
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full py-3 px-4 rounded-xl bg-white/5 border border-white/10 text-center font-bold text-xs uppercase tracking-widest text-zinc-200"
+                >
+                  Log In
+                </Link>
+                <Link 
+                  href="/onboarding" 
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full py-3 px-4 rounded-xl bg-[#8B5CF6] text-center font-bold text-xs uppercase tracking-widest text-white shadow-lg"
+                >
+                  Sign Up Free
+                </Link>
+                <Link 
+                  href="/marketplace" 
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full py-3 px-4 rounded-xl bg-[#192134] border border-white/10 text-center font-bold text-xs uppercase tracking-widest text-zinc-300"
+                >
+                  Explore Groovely
+                </Link>
+              </>
+            )}
           </div>
         )}
       </nav>
@@ -98,54 +165,47 @@ export default function Home() {
           </span>
         </div>
 
-        {/* Infinite Scrolling Marquee Underneath */}
-        <div className="relative overflow-hidden">
-          {/* Ambient Gradient Edge Fades */}
-          <div className="pointer-events-none absolute inset-y-0 left-0 w-16 sm:w-32 bg-gradient-to-r from-[#050510] to-transparent z-20" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-32 bg-gradient-to-l from-[#050510] to-transparent z-20" />
+        {/* Continuous Marquee Container */}
+        <div className="relative w-full overflow-hidden flex items-center">
+          {/* Subtle gradient fades on edges */}
+          <div className="absolute left-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-r from-[#050510] to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-l from-[#050510] to-transparent z-10 pointer-events-none" />
 
-          <div className="animate-marquee items-center gap-12 sm:gap-20 opacity-50 text-white font-black whitespace-nowrap py-1">
+          {/* Marquee Track (Duplicates content for seamless loop) */}
+          <div className="flex w-max animate-marquee gap-8 sm:gap-16 items-center">
+            {/* First Set */}
             {[
-              "METAMASK", "SPOTIFY", "SOUNDCLOUD", "AUDIUS", "OPENSEA", "LENS PROTOCOL", "UNISWAP",
-              "METAMASK", "SPOTIFY", "SOUNDCLOUD", "AUDIUS", "OPENSEA", "LENS PROTOCOL", "UNISWAP"
-            ].map((brand, i) => (
-              <span key={i} className="text-xs sm:text-base tracking-widest uppercase hover:opacity-100 hover:text-[#00FFC6] transition-all cursor-pointer">
-                {brand}
-              </span>
+              "WARNER MUSIC", "UNIVERSAL", "DECODE LABS", "OPENSEA", "SONY MUSIC", 
+              "SPOTIFY WEB3", "AUDIUS", "SOUND.XYZ", "ROYALTY COLLECTIVE", "DEF JAM"
+            ].map((name, i) => (
+              <div key={`brand-1-${i}`} className="flex items-center gap-2 shrink-0">
+                <span className="text-zinc-400 text-xs sm:text-sm font-black tracking-widest uppercase hover:text-white transition-colors cursor-default select-none">
+                  {name}
+                </span>
+                <span className="text-zinc-700 text-xs ml-4 sm:ml-8 select-none">✦</span>
+              </div>
             ))}
-          </div>
-        </div>
-      </section>
 
-      {/* Features */}
-      <FeatureCards />
-
-      {/* Why Choose Fragment */}
-      <section className="py-20 sm:py-32 px-4 sm:px-6 relative z-10">
-        <div className="max-w-7xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-5xl font-black mb-4 uppercase tracking-tight">Why choose Groovely?</h2>
-          <p className="text-zinc-500 text-sm sm:text-lg mb-16 sm:mb-24 max-w-2xl mx-auto font-medium">The future of audio is decentralized, fair, and fun.</p>
-          <div className="grid md:grid-cols-3 gap-10 sm:gap-20">
+            {/* Second Duplicate Set for Infinite Scroll */}
             {[
-              { color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20', icon: '⊙', title: 'Direct Ownership', desc: 'Your music is yours. Forever. We take zero middleman fees on your hard work.' },
-              { color: 'bg-[#8B5CF6]/10 text-[#8B5CF6] border-[#8B5CF6]/20', icon: '▶', title: 'Instant Payouts', desc: 'No more waiting months for streaming checks. Revenue flows to your wallet in real-time.' },
-              { color: 'bg-red-500/10 text-red-500 border-red-500/20', icon: '♡', title: 'Community First', desc: 'Chat, share, and vibe in real-time listening rooms. Build a superfan base that pays.' }
-            ].map((feature, i) => (
-              <div key={i} className="flex flex-col items-center">
-                <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full ${feature.color} flex items-center justify-center text-2xl sm:text-3xl mb-6 sm:mb-8 border shadow-lg`}>
-                  {feature.icon}
-                </div>
-                <h4 className="text-lg sm:text-xl font-black mb-3 uppercase tracking-tight">{feature.title}</h4>
-                <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed max-w-xs font-medium">
-                  {feature.desc}
-                </p>
+              "WARNER MUSIC", "UNIVERSAL", "DECODE LABS", "OPENSEA", "SONY MUSIC", 
+              "SPOTIFY WEB3", "AUDIUS", "SOUND.XYZ", "ROYALTY COLLECTIVE", "DEF JAM"
+            ].map((name, i) => (
+              <div key={`brand-2-${i}`} className="flex items-center gap-2 shrink-0">
+                <span className="text-zinc-400 text-xs sm:text-sm font-black tracking-widest uppercase hover:text-white transition-colors cursor-default select-none">
+                  {name}
+                </span>
+                <span className="text-zinc-700 text-xs ml-4 sm:ml-8 select-none">✦</span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Steps */}
+      {/* Feature Cards Grid */}
+      <FeatureCards />
+
+      {/* Journey Steps / How it Works */}
       <JourneySteps />
 
       {/* Experience Mockup */}
@@ -169,15 +229,34 @@ export default function Home() {
               Ready to <span className="text-[#8B5CF6]">Groove?</span>
             </h2>
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6">
-              <Link href="/login" className="w-full sm:w-auto rounded-xl border border-white/10 bg-[#192134] px-10 py-4 text-white font-bold text-xs sm:text-sm hover:bg-white/10 transition-all uppercase tracking-widest">
-                Log In
-              </Link>
-              <Link href="/onboarding" className="w-full sm:w-auto rounded-xl bg-[#8B5CF6] hover:bg-[#7c4dff] px-10 py-4 text-white font-bold text-xs sm:text-sm transition-all uppercase tracking-widest shadow-[0_0_25px_rgba(139,92,246,0.4)]">
-                Sign Up Free
-              </Link>
-              <Link href="/marketplace" className="w-full sm:w-auto rounded-xl border border-white/10 bg-white/5 px-10 py-4 text-zinc-300 hover:text-white font-bold text-xs sm:text-sm hover:bg-white/10 transition-all uppercase tracking-widest">
-                Explore Groovely
-              </Link>
+              {isLoggedIn ? (
+                <>
+                  <Link
+                    href={dashboardUrl}
+                    className="w-full sm:w-auto rounded-xl bg-[#8B5CF6] hover:bg-[#7c4dff] px-10 py-4 text-white font-bold text-xs sm:text-sm transition-all uppercase tracking-widest shadow-[0_0_25px_rgba(139,92,246,0.4)]"
+                  >
+                    Go to Dashboard
+                  </Link>
+                  <Link
+                    href="/marketplace"
+                    className="w-full sm:w-auto rounded-xl border border-white/10 bg-white/5 px-10 py-4 text-zinc-300 hover:text-white font-bold text-xs sm:text-sm hover:bg-white/10 transition-all uppercase tracking-widest"
+                  >
+                    Explore Groovely
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/login" className="w-full sm:w-auto rounded-xl border border-white/10 bg-[#192134] px-10 py-4 text-white font-bold text-xs sm:text-sm hover:bg-white/10 transition-all uppercase tracking-widest">
+                    Log In
+                  </Link>
+                  <Link href="/onboarding" className="w-full sm:w-auto rounded-xl bg-[#8B5CF6] hover:bg-[#7c4dff] px-10 py-4 text-white font-bold text-xs sm:text-sm transition-all uppercase tracking-widest shadow-[0_0_25px_rgba(139,92,246,0.4)]">
+                    Sign Up Free
+                  </Link>
+                  <Link href="/marketplace" className="w-full sm:w-auto rounded-xl border border-white/10 bg-white/5 px-10 py-4 text-zinc-300 hover:text-white font-bold text-xs sm:text-sm hover:bg-white/10 transition-all uppercase tracking-widest">
+                    Explore Groovely
+                  </Link>
+                </>
+              )}
             </div>
          </div>
          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-[300px] sm:h-[400px] bg-[#8B5CF6]/5 blur-[120px] -z-10 pointer-events-none" />
@@ -207,4 +286,3 @@ export default function Home() {
     </div>
   );
 }
-

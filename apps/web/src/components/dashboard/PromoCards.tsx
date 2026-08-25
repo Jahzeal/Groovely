@@ -10,7 +10,7 @@ export const PromoCards = () => {
       {/* Tips Card (Figma: height 250px, rounded 12px, linear gradient) */}
       <div className="relative h-[250px] rounded-[12px] overflow-hidden group cursor-pointer border border-[#232B3E] bg-[#0F172A]">
         <img 
-          src="https://images.unsplash.com/photo-1551288049-bbbda50d879e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+          src="/images/dashboard/grow_audience.jpg" 
           alt="Grow Audience" 
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
@@ -28,7 +28,7 @@ export const PromoCards = () => {
       {/* Web3 Card (Figma: height 250px, rounded 12px, linear gradient) */}
       <div className="relative h-[250px] rounded-[12px] overflow-hidden group cursor-pointer border border-[#232B3E] bg-[#0F172A]">
         <img 
-          src="https://images.unsplash.com/photo-1639762681485-074b7f938ba0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+          src="/images/dashboard/how_web3_works.jpg" 
           alt="How Web3 Works" 
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />

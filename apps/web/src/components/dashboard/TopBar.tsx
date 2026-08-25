@@ -8,6 +8,7 @@ import {
   Copy, LogOut, User, Settings, CheckCheck, ExternalLink, Menu, Bell
 } from 'lucide-react';
 import { handleLogout, apiFetch } from '@/lib/api';
+import { WalletMenu } from '@/components/dashboard/WalletMenu';
 import { usePrivy, useLogout } from '@privy-io/react-auth';
 import { useAccount, useBalance, useReadContract } from 'wagmi';
 import { USDC_ADDRESS } from '@/lib/contracts';
@@ -153,81 +154,8 @@ export const TopBar = ({ displayName = 'Creator' }: { displayName?: string }) =>
             {/* Vertical Divider */}
             <div className="w-[1px] h-6 bg-[#232B3E]" />
 
-            {/* Mobile Wallet Trigger */}
-            <div className="relative z-40" ref={dropdownRef}>
-              <button
-                onClick={() => setDropdownOpen((o: boolean) => !o)}
-                className="flex items-center gap-2 cursor-pointer"
-              >
-                <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="Wallet" className="w-6 h-6 object-contain" />
-                </div>
-                <span className="font-['Space_Grotesk',sans-serif] font-bold text-[14px] text-white">
-                  {abbrev}
-                </span>
-              </button>
-
-              {/* Mobile Wallet Dropdown Panel */}
-              {dropdownOpen && (
-                <div className="absolute right-0 mt-3 w-72 bg-[#0F172A] border border-[#232B3E] rounded-2xl shadow-[0_25px_70px_rgba(0,0,0,0.95)] overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-150">
-                  <div className="px-5 py-4 border-b border-[#232B3E] bg-[#192134]/50">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl overflow-hidden border border-white/10 bg-[#1A1A2E] flex items-center justify-center">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="Wallet" className="w-6 h-6 object-contain" />
-                      </div>
-                      <div>
-                        <p className="text-[9px] font-black uppercase tracking-widest text-[#8A2BE2]">{role ?? 'Connected'}</p>
-                        <p className="text-sm font-bold text-white font-mono">{abbrev}</p>
-                      </div>
-                      <div className="ml-auto flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2 py-0.5">
-                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                        <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">Live</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 bg-[#0F172A] rounded-xl px-3 py-2 flex items-center justify-between gap-2 border border-[#232B3E]">
-                      <p className="text-[10px] text-zinc-400 font-mono truncate flex-1">{activeAddress ?? 'Not connected'}</p>
-                      <button onClick={handleCopy} className="text-zinc-400 hover:text-white transition-colors shrink-0">
-                        {copied ? <CheckCheck size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                      </button>
-                    </div>
-
-                    <div className="mt-3 grid grid-cols-2 gap-2 text-left">
-                      <div className="bg-[#0F172A] rounded-xl p-2.5 border border-[#232B3E]">
-                        <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-0.5">POL (Gas)</p>
-                        <p className="text-xs font-black text-white font-mono truncate">
-                          {nativeBalance ? `${parseFloat(formatUnits(nativeBalance.value, nativeBalance.decimals)).toFixed(3)} POL` : '0.000 POL'}
-                        </p>
-                      </div>
-                      <div className="bg-[#0F172A] rounded-xl p-2.5 border border-[#232B3E]">
-                        <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-0.5">USDC</p>
-                        <p className="text-xs font-black text-[#40FFA6] font-mono">
-                          {usdcBalance !== undefined ? `$${(Number(usdcBalance) / 1e6).toFixed(2)}` : '$0.00'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="py-2">
-                    <Link
-                      href="/dashboard/profile"
-                      onClick={() => setDropdownOpen(false)}
-                      className="flex items-center gap-3 px-5 py-2.5 text-xs font-bold text-zinc-300 hover:text-white hover:bg-white/5 transition-all"
-                    >
-                      <User size={14} />
-                      View Profile
-                    </Link>
-                    <button
-                      onClick={handleDisconnect}
-                      className="w-full flex items-center gap-3 px-5 py-2.5 text-xs font-bold text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-all text-left cursor-pointer"
-                    >
-                      <LogOut size={14} />
-                      Disconnect
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Mobile Wallet Trigger with pill background and chevron arrow */}
+            <WalletMenu compact />
           </div>
         </div>
 
@@ -284,95 +212,7 @@ export const TopBar = ({ displayName = 'Creator' }: { displayName?: string }) =>
           </button>
 
           {/* Desktop Wallet Dropdown */}
-          <div className="relative z-40" ref={dropdownRef}>
-            <button
-              onClick={() => setDropdownOpen((o) => !o)}
-              className="flex items-center gap-3 bg-[#0F172A] border border-[#232B3E] rounded-xl px-4 py-2 hover:bg-white/5 cursor-pointer transition-all"
-            >
-              <div className="w-8 h-8 rounded-lg overflow-hidden border border-white/10">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="Wallet" className="w-full h-full object-contain" />
-              </div>
-              <div className="flex flex-col items-start leading-none">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">
-                  {role ?? 'wallet'}
-                </span>
-                <span className="text-sm font-black tracking-tight text-white/90">{abbrev}</span>
-              </div>
-              <ChevronDown
-                size={14}
-                className={`text-zinc-500 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`}
-              />
-            </button>
-
-            {/* Desktop Dropdown Panel */}
-            {dropdownOpen && (
-              <div className="absolute right-0 mt-3 w-72 bg-[#0F172A] border border-[#232B3E] rounded-2xl shadow-[0_25px_70px_rgba(0,0,0,0.95)] overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="px-5 py-4 border-b border-[#232B3E] bg-[#192134]/40">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 bg-[#1A1A2E]">
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="Wallet" className="w-full h-full object-contain p-1" />
-                    </div>
-                    <div>
-                      <p className="text-[9px] font-black uppercase tracking-widest text-[#8A2BE2] mb-0.5">{role ?? 'Connected'}</p>
-                      <p className="text-sm font-bold text-white font-mono">{abbrev}</p>
-                    </div>
-                    <div className="ml-auto flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2.5 py-1">
-                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                      <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Live</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 bg-[#0F172A] rounded-xl px-3 py-2 flex items-center justify-between gap-2 border border-[#232B3E]">
-                    <p className="text-[10px] text-zinc-400 font-mono truncate flex-1">{activeAddress ?? 'Not connected'}</p>
-                    <button onClick={handleCopy} className="text-zinc-400 hover:text-white transition-colors shrink-0" title="Copy address">
-                      {copied ? <CheckCheck size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                    </button>
-                  </div>
-
-                  <div className="mt-3 grid grid-cols-2 gap-2 text-left">
-                    <div className="bg-[#0F172A] rounded-xl p-2.5 border border-[#232B3E]">
-                      <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-0.5">Gas Token (POL)</p>
-                      <p className="text-sm font-black text-white font-mono">
-                        {nativeBalance ? `${parseFloat(formatUnits(nativeBalance.value, nativeBalance.decimals)).toFixed(4)} POL` : '0.0000 POL'}
-                      </p>
-                    </div>
-                    <div className="bg-[#0F172A] rounded-xl p-2.5 border border-[#232B3E]">
-                      <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-0.5">USDC Balance</p>
-                      <p className="text-sm font-black text-[#40FFA6] font-mono">
-                        {usdcBalance !== undefined ? `$${(Number(usdcBalance) / 1e6).toFixed(2)}` : '$0.00'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="py-2">
-                  <Link
-                    href="/dashboard/profile"
-                    onClick={() => setDropdownOpen(false)}
-                    className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-zinc-400 hover:text-white hover:bg-white/5 transition-all"
-                  >
-                    <User size={16} />
-                    View Profile
-                  </Link>
-                  <Link
-                    href="/dashboard/settings"
-                    onClick={() => setDropdownOpen(false)}
-                    className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-zinc-400 hover:text-white hover:bg-white/5 transition-all"
-                  >
-                    <Settings size={16} />
-                    Settings
-                  </Link>
-                  <button
-                    onClick={handleDisconnect}
-                    className="w-full flex items-center gap-3 px-5 py-3 text-sm font-bold text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-all text-left cursor-pointer"
-                  >
-                    <LogOut size={16} />
-                    Disconnect
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          <WalletMenu />
         </div>
       </div>
     </header>
