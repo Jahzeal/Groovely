@@ -57,6 +57,22 @@ export class MintingController {
     return this.mintingService.getSongByTrack(trackId, req.userId);
   }
 
+  @Post('songs/:id/published')
+  @ResponseMessage('Song marked as published successfully')
+  async markSongPublished(
+    @Param('id') id: string,
+    @Body() body: {
+      on_chain_id: string;
+      edition_db_id?: number;
+      on_chain_edition_id?: string;
+      tx_hash: string;
+    },
+  ) {
+    const songId = parseInt(id);
+    if (isNaN(songId)) throw new BadRequestException('Invalid song ID');
+    return this.mintingService.markSongPublished(songId, body);
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   // Contributors
   // ─────────────────────────────────────────────────────────────────────────

@@ -574,7 +574,7 @@ export default function SettingsPage() {
                               if (withdrawToken === 'USDC' && rawUsdcBalance !== undefined) {
                                 setWithdrawAmount(formatUnits(rawUsdcBalance, 6));
                               } else if (withdrawToken === 'POL' && polBalanceData) {
-                                const maxVal = Math.max(0, Number(formatUnits(polBalanceData.value, polBalanceData.decimals)) - 0.01);
+                                const maxVal = Math.max(0, Number(formatUnits(polBalanceData.value, polBalanceData.decimals)) - 0.05);
                                 setWithdrawAmount(maxVal.toString());
                               }
                             }}

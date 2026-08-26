@@ -157,6 +157,51 @@ export class MintingService {
     );
   }
 
+  async markSongPublished(
+    songId: number,
+    data: {
+      on_chain_id: string;
+      edition_db_id?: number;
+      on_chain_edition_id?: string;
+      tx_hash: string;
+    },
+  ) {
+    const onChainSongId = parseInt(data.on_chain_id) || 1;
+    const onChainEditionId = data.on_chain_edition_id ? parseInt(data.on_chain_edition_id) : onChainSongId;
+    const editionDbId = data.edition_db_id;
+
+    await this.db.query('BEGIN');
+    try {
+      await this.db.query(
+        `UPDATE songs SET contract_song_id = $1, status = 'published', updated_at = NOW() WHERE id = $2`,
+        [onChainSongId, songId],
+      );
+
+      if (editionDbId) {
+        await this.db.query(
+          `UPDATE editions SET contract_edition_id = $1, deploy_tx_hash = $2 WHERE id = $3`,
+          [onChainEditionId, data.tx_hash, editionDbId],
+        );
+      } else {
+        await this.db.query(
+          `UPDATE editions SET contract_edition_id = $1, deploy_tx_hash = $2 WHERE song_id = $3`,
+          [onChainEditionId, data.tx_hash, songId],
+        );
+      }
+
+      await this.db.query(
+        `UPDATE tracks SET status = 'active' WHERE id = (SELECT track_id FROM songs WHERE id = $1)`,
+        [songId],
+      );
+
+      await this.db.query('COMMIT');
+      return { success: true, song_id: songId, status: 'published' };
+    } catch (err) {
+      await this.db.query('ROLLBACK');
+      throw err;
+    }
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   // Contributors
   // ─────────────────────────────────────────────────────────────────────────
