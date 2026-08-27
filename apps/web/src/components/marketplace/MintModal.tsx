@@ -109,6 +109,11 @@ export const MintModal: React.FC<MintModalProps> = ({
   };
 
   const handleProceedToPay = () => {
+    if (!authenticated) {
+      const returnUrl = `/marketplace/${trackId}?action=mint`;
+      router.push(`/login?redirect=${encodeURIComponent(returnUrl)}`);
+      return;
+    }
     if (selectedEdition) setUiStep('pay');
   };
 

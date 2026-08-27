@@ -227,6 +227,7 @@ export async function approveUSDC(
     abi: ERC20_ABI,
     functionName: 'approve',
     args: [CONTRACT_ADDRESS, amount],
+    gas: BigInt(100000),
   });
 }
 
@@ -241,6 +242,7 @@ export async function mintEdition(
     abi: GROOVELI_ABI,
     functionName: 'mint',
     args: [BigInt(editionId), BigInt(amount)],
+    gas: BigInt(350000),
   });
 }
 
@@ -256,6 +258,7 @@ export async function createSongOnChain(
     abi: GROOVELI_ABI,
     functionName: 'createSong',
     args: [title, metadataUri, creatorAddress],
+    gas: BigInt(300000),
   });
 }
 
@@ -270,6 +273,7 @@ export async function setContributorsOnChain(
     abi: GROOVELI_ABI,
     functionName: 'setContributors',
     args: [BigInt(songId), contributors],
+    gas: BigInt(300000),
   });
 }
 
@@ -287,6 +291,7 @@ export async function createEditionOnChain(
     abi: GROOVELI_ABI,
     functionName: 'createEdition',
     args: [BigInt(songId), editionType, BigInt(maxSupply), parseUSDC(mintPriceUsdc), metadataUri],
+    gas: BigInt(300000),
   });
 }
 
@@ -314,6 +319,7 @@ export async function publishSongOnChain(
       parseUSDC(mintPriceUsdc),
       editionMetadataUri
     ],
+    gas: BigInt(500000),
   });
 }
 

@@ -57,8 +57,9 @@ export const MarketTopBar = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const activeAddress = wagmiAddress || user?.wallet?.address || walletAddress;
-  const hasAuth = isAuthenticated || privyAuthenticated || wagmiConnected || !!activeAddress;
+  const isUserLoggedIn = isAuthenticated || privyAuthenticated || (wagmiConnected && !!wagmiAddress);
+  const activeAddress = isUserLoggedIn ? (wagmiAddress || user?.wallet?.address || walletAddress) : null;
+  const hasAuth = isUserLoggedIn && !!activeAddress;
 
   const { data: nativeBalance } = useBalance({
     address: activeAddress as `0x${string}`,

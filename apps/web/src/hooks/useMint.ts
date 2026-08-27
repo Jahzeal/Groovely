@@ -296,6 +296,7 @@ export function useMint({
               data: mintCallData,
             },
           ],
+          gas: BigInt(500000),
         });
 
         setTxHash(txHash);
