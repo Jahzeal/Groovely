@@ -14,6 +14,8 @@ export class FanService {
         t.cover_url,
         t.audio_url,
         t.category,
+        t.price as price,
+        t.license_price as license_price,
         u.display_name as artist_name,
         u.username as artist_username,
         COUNT(ts.id) as stream_count
@@ -22,7 +24,7 @@ export class FanService {
        LEFT JOIN track_streams ts ON t.id = ts.track_id AND ts.played_at >= NOW() - INTERVAL '7 days'
        WHERE t.visibility = 'public'
          AND (t.status = 'active' OR t.status = 'published' OR EXISTS (SELECT 1 FROM editions e JOIN songs s ON e.song_id = s.id WHERE s.track_id = t.id AND e.contract_edition_id IS NOT NULL))
-       GROUP BY t.id, t.user_id, u.display_name, u.username
+       GROUP BY t.id, t.user_id, u.display_name, u.username, t.price, t.license_price
        ORDER BY stream_count DESC
        LIMIT $1`,
       [limit]
@@ -39,6 +41,8 @@ export class FanService {
         t.cover_url,
         t.audio_url,
         t.category,
+        t.price as price,
+        t.license_price as license_price,
         t.created_at,
         u.display_name as artist_name,
         u.username as artist_username
@@ -124,6 +128,8 @@ export class FanService {
         t.cover_url,
         t.audio_url,
         t.category,
+        t.price as price,
+        t.license_price as license_price,
         u.display_name as artist_name,
         u.username as artist_username,
         CASE WHEN f.follower_id IS NOT NULL THEN true ELSE false END as follows_artist

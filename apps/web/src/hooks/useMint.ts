@@ -149,163 +149,40 @@ export function useMint({
       try {
         const priceRaw = parseUSDC(mintPriceUsdc);
 
-        // 1. Get raw provider from Privy embedded wallet
-        const rawProvider = await embeddedWallet.getEthereumProvider();
-
-        // 2. Initialize ZeroDev smart account and client
-        const publicClient = createPublicClient({
-          chain: targetChain,
-          transport: http(targetRpcUrl),
-        });
-
-        const entryPointAddress = '0x0000000071727De22E5E9d8BAf0edAc6f37da032';
-
-        const ecdsaValidator = await signerToEcdsaValidator(publicClient, {
-          signer: rawProvider as any,
-          entryPoint: {
-            address: entryPointAddress,
-            version: '0.7',
-          },
-          kernelVersion: KERNEL_V3_1,
-        });
-
-        const account = await createKernelAccount(publicClient, {
-          plugins: {
-            sudo: ecdsaValidator,
-          },
-          entryPoint: {
-            address: entryPointAddress,
-            version: '0.7',
-          },
-          kernelVersion: KERNEL_V3_1,
-        });
-
-        const projectId = process.env.NEXT_PUBLIC_ZERODEV_PROJECT_ID || '';
-
-        const kernelClient = (createKernelAccountClient as any)({
-          account,
-          chain: targetChain,
-          bundlerTransport: http(`https://rpc.zerodev.app/api/v2/bundler/${projectId}`),
-          middleware: {
-            sponsorUserOperation: async ({ userOperation }: any) => {
-              const zerodevPaymaster = (createZeroDevPaymasterClient as any)({
-                chain: targetChain,
-                entryPoint: {
-                  address: entryPointAddress,
-                  version: '0.7',
-                },
-                transport: http(`https://rpc.zerodev.app/api/v2/paymaster/${projectId}`),
-              });
-              
-              return (zerodevPaymaster as any).sponsorUserOperation({
-                userOperation,
-                entryPoint: {
-                  address: entryPointAddress,
-                  version: '0.7',
-                },
-              });
-            },
-          },
-        });
-
-        // 3. Check USDC balance (check both Smart Account and Privy EOA address)
-        const smartBalance = await checkUSDCBalance(config, account.address);
-        const eoaBalance = await checkUSDCBalance(config, address);
-
-        if (smartBalance < priceRaw && eoaBalance < priceRaw) {
+        // Check USDC balance
+        const balance = await checkUSDCBalance(config, address);
+        if (balance < priceRaw) {
           throw new Error(
-            `Insufficient USDC balance. You need at least $${mintPriceUsdc.toFixed(2)} USDC, but your wallet has $${(Number(eoaBalance) / 1e6).toFixed(2)} USDC.`
+            `Insufficient USDC balance. You need at least $${mintPriceUsdc.toFixed(2)} USDC, but your wallet has $${(Number(balance) / 1e6).toFixed(2)} USDC.`
           );
         }
 
-        // If user deposited USDC in their primary Privy wallet address (EOA), execute directly via EOA
-        if (smartBalance < priceRaw && eoaBalance >= priceRaw) {
-          console.log(`[useMint] USDC found in primary wallet (${address}), completing purchase directly.`);
-          
-          const allowance = await checkUSDCAllowance(config, address);
-          if (allowance < priceRaw) {
-            setStep('approving');
-            const maxAllowance = parseUnits('10000', 6);
-            const approveTx = await approveUSDC(config, maxAllowance);
-            await waitForTx(config, approveTx);
-          }
-
-          setStep('approved');
-
-          setStep('minting');
-          const mintTx = await mintEdition(config, contractEditionId, 1);
-          setTxHash(mintTx);
-
-          setStep('confirming');
-          const receipt = await waitForTx(config, mintTx);
-
-          let derivedTokenId = contractEditionId;
-          try {
-            const transferLog = receipt.logs.find(
-              (log) => log.topics[0] === '0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62'
-            );
-            if (transferLog && transferLog.topics[3]) {
-              derivedTokenId = parseInt(transferLog.topics[3], 16);
-            }
-          } catch (_) {}
-
-          setTokenId(derivedTokenId);
-
-          await apiFetch('/api/mint/confirm', {
-            method: 'POST',
-            body: JSON.stringify({
-              edition_id: editionId,
-              tx_hash: mintTx,
-              token_id: derivedTokenId,
-              buyer_wallet: address,
-              license_type: 'standard',
-            }),
-          });
-
-          setStep('success');
-          onSuccess?.({ txHash: mintTx, tokenId: derivedTokenId });
-          return;
+        // Check / Request USDC approval
+        const allowance = await checkUSDCAllowance(config, address);
+        if (allowance > 0n && allowance < priceRaw) {
+          setStep('approving');
+          const resetTx = await approveUSDC(config, 0n);
+          await waitForTx(config, resetTx);
         }
 
-        // 4. Batch Approve + Mint
-        setStep('approving');
-        
-        const approveCallData = encodeFunctionData({
-          abi: ERC20_ABI,
-          functionName: 'approve',
-          args: [CONTRACT_ADDRESS, priceRaw],
-        });
+        if (allowance < priceRaw) {
+          setStep('approving');
+          const maxAllowance = parseUnits('1000000', 6);
+          const approveTx = await approveUSDC(config, maxAllowance);
+          await waitForTx(config, approveTx);
+        }
 
-        const mintCallData = encodeFunctionData({
-          abi: GROOVELI_ABI,
-          functionName: 'mint',
-          args: [BigInt(contractEditionId), BigInt(1)],
-        });
+        setStep('approved');
 
+        // Mint on-chain
         setStep('minting');
-        const txHash = await kernelClient.sendTransaction({
-          calls: [
-            {
-              to: USDC_ADDRESS,
-              value: 0n,
-              data: approveCallData,
-            },
-            {
-              to: CONTRACT_ADDRESS,
-              value: 0n,
-              data: mintCallData,
-            },
-          ],
-          gas: BigInt(500000),
-        });
-
-        setTxHash(txHash);
-        setStep('confirming');
+        const mintTx = await mintEdition(config, contractEditionId, 1);
+        setTxHash(mintTx);
 
         // Wait for confirmation
-        const receipt = await waitForTx(config, txHash);
+        setStep('confirming');
+        const receipt = await waitForTx(config, mintTx);
 
-        // Derive token ID from receipt logs
         let derivedTokenId = contractEditionId;
         try {
           const transferLog = receipt.logs.find(
@@ -314,31 +191,29 @@ export function useMint({
           if (transferLog && transferLog.topics[3]) {
             derivedTokenId = parseInt(transferLog.topics[3], 16);
           }
-        } catch (_) {
-          // fallback
-        }
+        } catch (_) {}
 
         setTokenId(derivedTokenId);
 
-        // 5. Confirm with backend
         await apiFetch('/api/mint/confirm', {
           method: 'POST',
           body: JSON.stringify({
             edition_id: editionId,
-            tx_hash: txHash,
+            tx_hash: mintTx,
             token_id: derivedTokenId,
-            buyer_wallet: account.address,
+            buyer_wallet: address,
             license_type: 'standard',
           }),
         });
 
         setStep('success');
-        onSuccess?.({ txHash, tokenId: derivedTokenId });
-
+        onSuccess?.({ txHash: mintTx, tokenId: derivedTokenId });
+        return;
       } catch (err: any) {
-        console.error('Smart account mint error:', err);
+        console.error('Mint error:', err);
         setErrorMessage(parseMintError(err, mintPriceUsdc));
         setStep('error');
+        return;
       }
       return;
     }

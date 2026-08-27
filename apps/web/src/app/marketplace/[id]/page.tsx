@@ -243,36 +243,59 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           <MarketTopBar />
 
           <main className="flex-1 overflow-y-auto pb-32">
-            <div className="relative h-[450px] w-full overflow-hidden">
+            {/* Spotify / Apple Music Style Crisp Hero Banner */}
+            <div className="relative min-h-[380px] sm:min-h-[420px] w-full overflow-hidden flex items-end p-6 sm:p-10 border-b border-white/5">
+              {/* Ambient Blur Backdrop */}
               <img 
                 src={displayTrack.image} 
-                alt={displayTrack.title} 
-                className="w-full h-full object-cover"
+                alt="" 
+                className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-30 scale-110 pointer-events-none"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#050510] via-[#050510]/40 to-transparent" />
-              <div className="absolute bottom-10 right-10">
-                <button 
-                  onClick={() => playTrack({
-                     id: displayTrack.id,
-                     title: displayTrack.title,
-                     artist: displayTrack.creator,
-                     image: displayTrack.image,
-                     audioUrl: displayTrack.audio_url,
-                     uploaderId: track.user_id || creator.id,
-                     price: displayTrack.price,
-                     licenseTypes: displayTrack.licenses
-                  })}
-                  className="w-20 h-20 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(157,0,255,0.6)] hover:scale-105 transition-all"
-                >
-                  {currentTrack?.id === displayTrack.id && isPlaying ? (
-                    <Pause size={32} fill="white" />
-                  ) : (
-                    <Play size={32} fill="white" className="ml-2" />
-                  )}
-                </button>
-              </div>
-              <div className="absolute bottom-10 left-10">
-                <h1 className="text-6xl font-black tracking-tighter text-white mb-2">{displayTrack.title}</h1>
+              <div className="absolute inset-0 bg-gradient-to-t from-[#050510] via-[#050510]/70 to-black/40" />
+
+              {/* Foreground Content: Crisp 1:1 HD Cover Art Card */}
+              <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-end gap-6 sm:gap-8 w-full max-w-7xl mx-auto">
+                <div className="w-48 h-48 sm:w-60 sm:h-60 rounded-3xl overflow-hidden border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.8)] shrink-0 bg-[#0F0F1A]">
+                  <img 
+                    src={displayTrack.image} 
+                    alt={displayTrack.title} 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                <div className="flex-1 text-center sm:text-left min-w-0">
+                  <span className="inline-block px-3.5 py-1 bg-accent-purple/20 border border-accent-purple/40 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-accent-cyan mb-3">
+                    {displayTrack.fileType || 'WAV'} Track
+                  </span>
+                  <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-white mb-3 truncate leading-none">
+                    {displayTrack.title}
+                  </h1>
+                  <p className="text-sm sm:text-base font-bold text-zinc-400">
+                    by <Link href={`/creator/${creator.username}`} className="text-white hover:text-accent-cyan transition-colors underline font-black">{displayTrack.creator}</Link>
+                  </p>
+                </div>
+
+                <div className="shrink-0 self-center sm:self-end mt-2 sm:mt-0">
+                  <button 
+                    onClick={() => playTrack({
+                       id: displayTrack.id,
+                       title: displayTrack.title,
+                       artist: displayTrack.creator,
+                       image: displayTrack.image,
+                       audioUrl: displayTrack.audio_url,
+                       uploaderId: track.user_id || creator.id,
+                       price: displayTrack.price,
+                       licenseTypes: displayTrack.licenses
+                    })}
+                    className="w-16 h-16 sm:w-20 sm:h-20 bg-accent-purple hover:bg-accent-purple/90 rounded-full flex items-center justify-center shadow-[0_0_35px_rgba(139,92,246,0.6)] hover:scale-105 transition-all cursor-pointer"
+                  >
+                    {currentTrack?.id === displayTrack.id && isPlaying ? (
+                      <Pause size={28} fill="white" className="text-white" />
+                    ) : (
+                      <Play size={28} fill="white" className="text-white ml-1" />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 

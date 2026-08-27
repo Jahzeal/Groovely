@@ -34,7 +34,7 @@ export const PreviewLimitModal: React.FC = () => {
 
   const rawPrice = currentTrack.price;
   const numericPrice = parseFloat(rawPrice ? rawPrice.toString().replace(/[^0-9.]/g, '') : '');
-  const formattedPrice = isNaN(numericPrice) ? (rawPrice ? rawPrice.toString() : '0.00') : numericPrice.toFixed(2);
+  const formattedPrice = isNaN(numericPrice) || numericPrice <= 0 ? '1.00' : numericPrice.toFixed(2);
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">

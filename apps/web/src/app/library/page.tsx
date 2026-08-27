@@ -2,17 +2,17 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Sidebar } from '@/components/dashboard/Sidebar';
-import { 
-  Search, 
-  Play, 
-  MoreVertical, 
-  Music, 
-  Loader2, 
-  Heart, 
-  Pause, 
-  Menu, 
-  Bell, 
-  ChevronDown, 
+import {
+  Search,
+  Play,
+  MoreVertical,
+  Music,
+  Loader2,
+  Heart,
+  Pause,
+  Menu,
+  Bell,
+  ChevronDown,
   X,
   Disc,
   Send
@@ -64,7 +64,7 @@ export default function LibraryPage() {
   const activeAddress = address || user?.wallet?.address;
   const abbrev = activeAddress
     ? `${activeAddress.slice(0, 5)}...${activeAddress.slice(-3)}`
-    : '0xc...y69';
+    : '';
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -73,7 +73,7 @@ export default function LibraryPage() {
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
           setRole(payload.role);
-        } catch (_) {}
+        } catch (_) { }
       }
     }
   }, []);
@@ -127,7 +127,7 @@ export default function LibraryPage() {
   };
 
   const filteredTracks = tracks
-    .filter(t => 
+    .filter(t =>
       t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (t.artist_name || '').toLowerCase().includes(searchQuery.toLowerCase())
     )
@@ -169,7 +169,7 @@ export default function LibraryPage() {
       <Sidebar activePage="library" />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#192134]">
-        
+
         {/* ========================================================================= */}
         {/* MOBILE TOP BAR (Figma Frame 315) - Visible only on mobile (< md)           */}
         {/* ========================================================================= */}
@@ -273,7 +273,7 @@ export default function LibraryPage() {
             {/* TABS (Frame 222) & SORT BUTTON (Frame 223) ROW                        */}
             {/* ===================================================================== */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-              
+
               {/* Tab Filters (Frame 222) */}
               <div className="flex items-center gap-4 sm:gap-6 border-b border-[#2D3548] pb-1 overflow-x-auto no-scrollbar">
                 {TABS.map((tab) => {
@@ -314,9 +314,8 @@ export default function LibraryPage() {
                           setSortBy(opt);
                           setSortDropdownOpen(false);
                         }}
-                        className={`w-full text-left px-3.5 py-2 text-xs font-['Space_Grotesk',sans-serif] transition-colors ${
-                          sortBy === opt ? 'bg-[#8A2BE2]/20 text-white font-bold' : 'text-[#CACACA] hover:bg-white/5 hover:text-white'
-                        }`}
+                        className={`w-full text-left px-3.5 py-2 text-xs font-['Space_Grotesk',sans-serif] transition-colors ${sortBy === opt ? 'bg-[#8A2BE2]/20 text-white font-bold' : 'text-[#CACACA] hover:bg-white/5 hover:text-white'
+                          }`}
                       >
                         {opt}
                       </button>
