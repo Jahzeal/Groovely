@@ -354,7 +354,13 @@ export default function MintPage() {
 
       setTxHash(mintTx);
       const receipt = await waitForTx(config, mintTx);
-      const parsedTokenId = receipt.logs?.[0]?.topics?.[3] ? parseInt(receipt.logs[0].topics[3], 16).toString() : '1';
+      // EditionCreated event topic[0]: 0xdea513584a6187bd083673763b9a1321f417e674a36df7c0e66c4e99368d6d50 (topics[1] is editionId)
+      const editionLog = receipt.logs?.find(
+        (l: any) => l.topics?.[0] === '0xdea513584a6187bd083673763b9a1321f417e674a36df7c0e66c4e99368d6d50'
+      );
+      const parsedTokenId = editionLog?.topics?.[1]
+        ? parseInt(editionLog.topics[1], 16).toString()
+        : (receipt.logs?.[0]?.topics?.[3] ? parseInt(receipt.logs[0].topics[3], 16).toString() : '1');
       setTokenId(parsedTokenId);
 
       // Finalize in Database

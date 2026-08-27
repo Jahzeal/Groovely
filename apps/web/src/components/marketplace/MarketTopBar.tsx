@@ -62,9 +62,13 @@ export const MarketTopBar = () => {
   const isUserLoggedIn = isAuthenticated || privyAuthenticated || (wagmiConnected && !!wagmiAddress);
   const activeAddress = isUserLoggedIn ? (wagmiAddress || user?.wallet?.address || walletAddress) : null;
   const hasAuth = isUserLoggedIn && !!activeAddress;
+  const isValidAddress = Boolean(activeAddress && activeAddress.startsWith('0x') && activeAddress.length === 42);
 
   const { data: nativeBalance } = useBalance({
-    address: activeAddress as `0x${string}`,
+    address: isValidAddress ? (activeAddress as `0x${string}`) : undefined,
+    query: {
+      enabled: isValidAddress,
+    },
   });
 
   const { data: usdcBalance } = useReadContract({
@@ -79,9 +83,9 @@ export const MarketTopBar = () => {
       },
     ] as const,
     functionName: 'balanceOf',
-    args: activeAddress ? [activeAddress as `0x${string}`] : undefined,
+    args: isValidAddress ? [activeAddress as `0x${string}`] : undefined,
     query: {
-      enabled: !!activeAddress,
+      enabled: isValidAddress,
     },
   });
 
@@ -199,7 +203,11 @@ export const MarketTopBar = () => {
             {/* Wallet Dropdown */}
             <div className="relative" ref={dropdownRef}>
               <button
-                onClick={() => setDropdownOpen((o) => !o)}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDropdownOpen((o) => !o);
+                }}
                 className="flex items-center gap-2 sm:gap-3 bg-[#0F0F1A] border border-white/5 rounded-xl px-3 sm:px-4 py-2 hover:bg-white/5 cursor-pointer transition-all"
               >
                 <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg overflow-hidden border border-white/10 shrink-0">
