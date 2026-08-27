@@ -258,9 +258,11 @@ export const MintModal: React.FC<MintModalProps> = ({
                   </div>
                 </div>
               ) : (
-                <button
-                  type="button"
-                  onClick={login}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => login()}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') login(); }}
                   className="w-full flex items-center justify-between bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20 rounded-xl px-4 py-3 mb-6 text-left transition-all cursor-pointer"
                 >
                   <div className="flex items-center gap-2 text-yellow-500 text-xs font-bold">
@@ -268,7 +270,7 @@ export const MintModal: React.FC<MintModalProps> = ({
                     <span>Connect your wallet to continue</span>
                   </div>
                   <span className="text-[10px] font-black uppercase text-yellow-400 bg-yellow-500/20 px-2 py-1 rounded-md">Connect</span>
-                </button>
+                </div>
               )}
 
               {/* Live step indicator */}
