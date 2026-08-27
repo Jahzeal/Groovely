@@ -240,35 +240,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         <Sidebar activePage="market" />
 
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="flex items-center justify-between px-10 py-5 bg-[#050510]/50 backdrop-blur-md border-b border-white/5 sticky top-0 z-40">
-            <div className="flex items-center gap-6 flex-1">
-              <button
-                onClick={() => router.back()}
-                className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors group"
-              >
-                <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-all">
-                  <ChevronLeft size={18} />
-                </div>
-                <span className="text-sm font-bold">Back</span>
-              </button>
-
-              <div className="relative flex-1 max-w-md group">
-                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-600 group-focus-within:text-accent-purple transition-colors">
-                  <Search size={16} />
-                </div>
-                 <input
-                  type="text"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={handleSearch}
-                  className="w-full bg-[#0F0F1A] border border-white/5 rounded-xl py-2.5 pl-11 pr-4 text-xs font-medium focus:outline-none focus:border-accent-purple/50 transition-all placeholder-zinc-600"
-                />
-              </div>
-            </div>
-
-            <HeaderActions />
-          </header>
+          <MarketTopBar />
 
           <main className="flex-1 overflow-y-auto pb-32">
             <div className="relative h-[450px] w-full overflow-hidden">
@@ -440,29 +412,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   );
 }
 
-const HeaderActions = () => {
-  const { openCart } = useCart();
-  return (
-    <div className="flex items-center gap-5 ml-8">
-      <button className="text-zinc-500 hover:text-white transition-colors">
-        <Bell size={20} />
-      </button>
-      <button
-        onClick={openCart}
-        className="text-zinc-500 hover:text-white transition-colors"
-      >
-        <ShoppingCart size={20} />
-      </button>
-      <div className="flex items-center gap-3 bg-[#0F0F1A] border border-white/5 rounded-xl px-4 py-2 hover:bg-white/5 cursor-pointer transition-all">
-        <div className="w-7 h-7 rounded-lg overflow-hidden border border-white/10">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="Wallet" className="w-full h-full object-contain" />
-        </div>
-        <span className="text-[11px] font-black tracking-tight text-white/90">0xc...y69</span>
-        <ChevronDown size={12} className="text-zinc-500" />
-      </div>
-    </div>
-  );
-};
+
 
 const PurchaseSidebar = ({
   track,
