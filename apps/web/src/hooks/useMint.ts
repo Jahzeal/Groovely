@@ -214,7 +214,7 @@ export function useMint({
 
         if (smartBalance < priceRaw && eoaBalance < priceRaw) {
           throw new Error(
-            `Insufficient USDC balance in wallet ${address.slice(0, 6)}…${address.slice(-4)}. You need ${mintPriceUsdc} USDC but have ${(Number(eoaBalance) / 1e6).toFixed(2)} USDC.`
+            `Insufficient USDC balance. You need at least $${mintPriceUsdc.toFixed(2)} USDC, but your wallet has $${(Number(eoaBalance) / 1e6).toFixed(2)} USDC.`
           );
         }
 
@@ -364,7 +364,7 @@ export function useMint({
       const balance = await checkUSDCBalance(config, address);
       if (balance < priceRaw) {
         throw new Error(
-          `Insufficient USDC balance. You need ${mintPriceUsdc} USDC but have ${(Number(balance) / 1e6).toFixed(2)} USDC.`
+          `Insufficient USDC balance. You need at least $${mintPriceUsdc.toFixed(2)} USDC, but your wallet has $${(Number(balance) / 1e6).toFixed(2)} USDC.`
         );
       }
 
