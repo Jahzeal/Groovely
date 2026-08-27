@@ -126,11 +126,15 @@ export const MintModal: React.FC<MintModalProps> = ({
     }
   };
 
-  const isSoldOut = (ed: EditionInfo) =>
-    !ed.active || (ed.maxSupply !== null && ed.maxSupply > 0 && ed.mintedSupply >= ed.maxSupply);
+  const isSoldOut = (ed: EditionInfo) => {
+    const typeLower = (ed.editionType || '').toLowerCase();
+    if (typeLower.includes('open') || ed.maxSupply === null || ed.maxSupply === 0) return false;
+    return !ed.active || (ed.maxSupply > 0 && ed.mintedSupply >= ed.maxSupply);
+  };
 
   const remainingSupply = (ed: EditionInfo) => {
-    if (ed.editionType === 'open' || ed.maxSupply === null || ed.maxSupply === 0 || ed.maxSupply >= 1000000) {
+    const typeLower = (ed.editionType || '').toLowerCase();
+    if (typeLower.includes('open') || ed.maxSupply === null || ed.maxSupply === 0 || ed.maxSupply >= 1000000) {
       return 'Unlimited';
     }
     const remaining = Math.max(0, ed.maxSupply - ed.mintedSupply);

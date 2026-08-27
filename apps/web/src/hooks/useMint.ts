@@ -17,7 +17,7 @@ import {
 } from '@/lib/contracts';
 import { apiFetch } from '@/lib/api';
 import { useWallets } from '@privy-io/react-auth';
-import { createPublicClient, http, encodeFunctionData } from 'viem';
+import { createPublicClient, http, encodeFunctionData, parseUnits } from 'viem';
 import { createKernelAccount, createKernelAccountClient, createZeroDevPaymasterClient } from '@zerodev/sdk';
 import { signerToEcdsaValidator } from '@zerodev/ecdsa-validator';
 import { KERNEL_V3_1 } from '@zerodev/sdk/constants';
@@ -225,7 +225,8 @@ export function useMint({
           const allowance = await checkUSDCAllowance(config, address);
           if (allowance < priceRaw) {
             setStep('approving');
-            const approveTx = await approveUSDC(config, priceRaw);
+            const maxAllowance = parseUnits('10000', 6);
+            const approveTx = await approveUSDC(config, maxAllowance);
             await waitForTx(config, approveTx);
           }
 
@@ -372,7 +373,8 @@ export function useMint({
       const allowance = await checkUSDCAllowance(config, address);
       if (allowance < priceRaw) {
         setStep('approving');
-        const approveTx = await approveUSDC(config, priceRaw);
+        const maxAllowance = parseUnits('10000', 6);
+        const approveTx = await approveUSDC(config, maxAllowance);
         await waitForTx(config, approveTx);
       }
 

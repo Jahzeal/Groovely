@@ -71,12 +71,20 @@ export const PreviewLimitModal: React.FC = () => {
               </div>
             </div>
 
-            {/* Headline */}
-            <div className="flex items-center gap-2 mb-2 px-3.5 py-1 rounded-full bg-accent-cyan/10 border border-accent-cyan/20">
-              <Clock size={13} className="text-accent-cyan" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-cyan">
-                Free Preview Ended
-              </span>
+            {/* Headline & Price Pill */}
+            <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-cyan/10 border border-accent-cyan/20">
+                <Clock size={12} className="text-accent-cyan" />
+                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-accent-cyan">
+                  Free Preview Ended
+                </span>
+              </div>
+              <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-accent-purple/20 border border-accent-purple/40 shadow-[0_0_12px_rgba(139,92,246,0.3)]">
+                <Coins size={12} className="text-accent-purple" />
+                <span className="text-[10px] font-black text-white font-mono">
+                  ${formattedPrice} USDC
+                </span>
+              </div>
             </div>
 
             <h2 className="text-2xl font-black tracking-tight text-white mb-1 leading-tight">
