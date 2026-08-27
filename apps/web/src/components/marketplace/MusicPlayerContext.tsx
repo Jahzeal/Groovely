@@ -113,6 +113,7 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
   useEffect(() => {
     if (typeof window !== 'undefined') {
       audioRef.current = new Audio();
+      audioRef.current.preload = 'auto';
       audioRef.current.volume = volume;
 
       const audio = audioRef.current;
@@ -191,7 +192,9 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const url = resolveIpfsUrl(track.audioUrl) || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
 
     try {
+      audioRef.current.preload = 'auto';
       audioRef.current.src = url;
+      audioRef.current.load();
       setIsPlaying(true);
       const playPromise = audioRef.current.play();
       if (playPromise !== undefined) {

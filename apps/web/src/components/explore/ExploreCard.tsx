@@ -86,7 +86,7 @@ export const ExploreCard = ({ id, title, artist, image, audioUrl, uploaderId, qu
           playTrack({ id: id || title, title, artist, image, audioUrl, uploaderId }, queue);
         }}
         className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-all duration-300
-          ${hovered ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}
+          ${hovered || isThisTrackPlaying ? 'opacity-100 scale-100' : 'opacity-100 sm:opacity-0 scale-100 sm:scale-75 sm:group-hover:opacity-100 sm:group-hover:scale-100'}`}
       >
         {isThisTrackPlaying ? (
           <Pause size={16} fill="white" className="text-white" />

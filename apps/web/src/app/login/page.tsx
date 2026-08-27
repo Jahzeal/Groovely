@@ -199,8 +199,13 @@ export default function LoginPage() {
       localStorage.setItem('groovely_role', user.role ?? '');
       localStorage.setItem('grooveli_role', user.role ?? '');
 
-      // Redirect based on user role
-      if (user.role === 'fan') {
+      // Redirect based on query parameter or user role
+      const searchParams = new URLSearchParams(window.location.search);
+      const redirectParam = searchParams.get('redirect');
+
+      if (redirectParam && redirectParam.startsWith('/')) {
+        router.push(redirectParam);
+      } else if (user.role === 'fan') {
         router.push('/explore');
       } else {
         router.push('/dashboard');

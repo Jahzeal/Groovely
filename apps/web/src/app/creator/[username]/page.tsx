@@ -146,13 +146,28 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userna
                   <h2 className="text-2xl font-black uppercase tracking-widest text-white">Released Tracks</h2>
                 </div>
 
-                {/* This would normally fetch tracks for this user, but for now we'll show a placeholder or empty state if no tracks linked */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {/* We can fetch tracks for this creator here in a real scenario */}
-                  <div className="col-span-full py-20 bg-white/5 border border-white/5 border-dashed rounded-3xl flex flex-col items-center justify-center text-center">
-                    <Headphones size={40} className="text-zinc-800 mb-4" />
-                    <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">Tracks coming soon</p>
-                  </div>
+                  {profile.tracks && profile.tracks.length > 0 ? (
+                    profile.tracks.map((t: any, i: number) => (
+                      <TrackCard
+                        key={t.id || i}
+                        id={t.id}
+                        title={t.title}
+                        creator={profile.display_name}
+                        image={t.cover_url}
+                        audioUrl={t.audio_url}
+                        licenseTypes={t.license_types || ['License']}
+                        price={t.price || '5.00'}
+                        currency={t.currency || 'USD'}
+                        uploaderId={profile.id}
+                      />
+                    ))
+                  ) : (
+                    <div className="col-span-full py-20 bg-white/5 border border-white/5 border-dashed rounded-3xl flex flex-col items-center justify-center text-center">
+                      <Headphones size={40} className="text-zinc-800 mb-4" />
+                      <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs">No tracks released yet</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

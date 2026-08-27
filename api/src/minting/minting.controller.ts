@@ -197,7 +197,8 @@ export class MintingController {
   async isPurchased(@Req() req: any, @Param('id') id: string) {
     const trackId = parseInt(id);
     if (isNaN(trackId)) throw new BadRequestException('Invalid track ID');
-    const purchased = await this.mintingService.isPurchased(req.userId, trackId);
+    const userId = req.userId ? parseInt(String(req.userId)) : null;
+    const purchased = await this.mintingService.isPurchased(userId, trackId);
     return { purchased, trackId };
   }
 

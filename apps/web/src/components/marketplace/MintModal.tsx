@@ -6,6 +6,8 @@ import {
   Library, AlertCircle, Wallet, ChevronRight, Zap,
 } from 'lucide-react';
 import { useAccount } from 'wagmi';
+import { usePrivy } from '@privy-io/react-auth';
+import { useRouter } from 'next/navigation';
 import { useMint, MintStep } from '@/hooks/useMint';
 import { useMusicPlayer } from './MusicPlayerContext';
 import { POLYGONSCAN_BASE } from '@/lib/contracts';
@@ -73,7 +75,9 @@ export const MintModal: React.FC<MintModalProps> = ({
   creatorName,
   editions,
 }) => {
+  const router = useRouter();
   const { address, isConnected } = useAccount();
+  const { authenticated } = usePrivy();
   const { addPurchasedTrack } = useMusicPlayer();
   const [selectedEdition, setSelectedEdition] = useState<EditionInfo | null>(null);
   const [uiStep, setUiStep] = useState<'choose' | 'pay' | 'success'>('choose');
@@ -111,8 +115,11 @@ export const MintModal: React.FC<MintModalProps> = ({
     !ed.active || (ed.maxSupply !== null && ed.maxSupply > 0 && ed.mintedSupply >= ed.maxSupply);
 
   const remainingSupply = (ed: EditionInfo) => {
-    if (ed.maxSupply === null || ed.maxSupply === 0) return '∞';
-    return Math.max(0, ed.maxSupply - ed.mintedSupply).toLocaleString();
+    if (ed.editionType === 'open' || ed.maxSupply === null || ed.maxSupply === 0 || ed.maxSupply >= 1000000) {
+      return 'Unlimited';
+    }
+    const remaining = Math.max(0, ed.maxSupply - ed.mintedSupply);
+    return `${remaining.toLocaleString()} left`;
   };
 
   return (
@@ -185,7 +192,7 @@ export const MintModal: React.FC<MintModalProps> = ({
                             <p className="text-sm font-black text-white">{style.label}</p>
                             <div className="flex items-center gap-2 mt-0.5">
                               <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${style.badge}`}>
-                                {sold ? 'Sold Out' : `${remainingSupply(ed)} left`}
+                                {sold ? 'Sold Out' : remainingSupply(ed)}
                               </span>
                             </div>
                           </div>
@@ -227,9 +234,13 @@ export const MintModal: React.FC<MintModalProps> = ({
                   <span className="text-zinc-400 font-bold">Platform fee</span>
                   <span className="text-zinc-500 font-bold">5% (included)</span>
                 </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-zinc-400 font-bold">Network Gas Fee</span>
+                  <span className="text-accent-cyan/90 font-bold">~0.01 POL (Polygon)</span>
+                </div>
                 <div className="h-px bg-white/5" />
                 <div className="flex justify-between items-center">
-                  <span className="text-white font-black">Total</span>
+                  <span className="text-white font-black">Total Price</span>
                   <span className="text-xl font-black text-accent-cyan">${selectedEdition.mintPriceUsdc.toFixed(2)} USDC</span>
                 </div>
               </div>
@@ -278,19 +289,32 @@ export const MintModal: React.FC<MintModalProps> = ({
                 >
                   Back
                 </button>
-                <button
-                  onClick={executeMint}
-                  disabled={isLoading || !isConnected}
-                  className="flex-[2] py-3.5 bg-accent-purple hover:bg-accent-purple/90 text-white font-black text-sm rounded-2xl transition-all shadow-[0_8px_30px_rgba(139,92,246,0.4)] hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isLoading ? (
-                    <><Loader2 size={16} className="animate-spin" /> Working…</>
-                  ) : errorMessage ? (
-                    <><Zap size={16} /> Try Again</>
-                  ) : (
-                    <><ShoppingCart size={16} /> Confirm Mint</>
-                  )}
-                </button>
+                {!isConnected && !authenticated ? (
+                  <button
+                    onClick={() => {
+                      const returnUrl = `/marketplace/${trackId}?action=mint`;
+                      router.push(`/login?redirect=${encodeURIComponent(returnUrl)}`);
+                    }}
+                    className="flex-[2] py-3.5 bg-accent-purple hover:bg-accent-purple/90 text-white font-black text-sm rounded-2xl transition-all shadow-[0_8px_30px_rgba(139,92,246,0.4)] hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
+                  >
+                    <Wallet size={16} />
+                    Log In / Sign Up to Mint
+                  </button>
+                ) : (
+                  <button
+                    onClick={executeMint}
+                    disabled={isLoading || !isConnected}
+                    className="flex-[2] py-3.5 bg-accent-purple hover:bg-accent-purple/90 text-white font-black text-sm rounded-2xl transition-all shadow-[0_8px_30px_rgba(139,92,246,0.4)] hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isLoading ? (
+                      <><Loader2 size={16} className="animate-spin" /> Working…</>
+                    ) : errorMessage ? (
+                      <><Zap size={16} /> Try Again</>
+                    ) : (
+                      <><ShoppingCart size={16} /> Confirm Mint</>
+                    )}
+                  </button>
+                )}
               </div>
 
               <p className="mt-4 text-[10px] text-zinc-700 text-center leading-relaxed">

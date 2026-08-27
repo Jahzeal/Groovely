@@ -329,7 +329,41 @@ export class ProfileService {
     if (!profile) {
       throw new NotFoundException('Profile not found');
     }
-    return profile;
+
+    // Fetch creator stats
+    const statsRes = await this.db.query(
+      `SELECT 
+        (SELECT COUNT(*)::int FROM track_streams ts JOIN tracks t ON ts.track_id = t.id WHERE t.user_id = $1) as all_time_plays,
+        (SELECT COUNT(*)::int FROM follows WHERE following_id = $1) as followers`,
+      [profile.id]
+    );
+
+    // Fetch published tracks for this creator
+    const tracksRes = await this.db.query(
+      `SELECT 
+        t.id,
+        t.user_id,
+        t.title,
+        t.cover_url,
+        t.audio_url,
+        COALESCE(t.license_price, t.price, '5.00') as price,
+        t.currency,
+        t.usage_rights as license_types,
+        u.display_name as creator,
+        u.username as creator_username
+       FROM tracks t
+       JOIN users u ON t.user_id = u.id
+       WHERE t.user_id = $1 AND t.visibility = 'public'
+         AND EXISTS (SELECT 1 FROM songs s WHERE s.track_id = t.id AND s.status = 'published')
+       ORDER BY t.created_at DESC`,
+      [profile.id]
+    );
+
+    return {
+      ...profile,
+      stats: statsRes.rows[0] || { all_time_plays: 0, followers: 0 },
+      tracks: tracksRes.rows || [],
+    };
   }
 
   async getUserById(userId: number) {

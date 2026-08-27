@@ -147,7 +147,7 @@ export const MusicPlayer = () => {
           <div className="flex items-center gap-2 sm:gap-6">
             <button
               onClick={playPrevious}
-              className="hidden sm:inline-flex text-zinc-400 hover:text-white transition-all hover:scale-110 active:scale-95 disabled:opacity-30 p-1 cursor-pointer"
+              className="inline-flex text-zinc-400 hover:text-white transition-all hover:scale-110 active:scale-95 disabled:opacity-30 p-1 cursor-pointer"
               disabled={isLocked}
               aria-label="Previous track"
             >

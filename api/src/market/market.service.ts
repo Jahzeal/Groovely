@@ -103,6 +103,8 @@ export class MarketService {
         t.bpm,
         t.key,
         t.price,
+        t.license_price,
+        t.royalty_percentage,
         t.currency,
         t.usage_rights as license_types,
         t.created_at,
@@ -128,6 +130,7 @@ export class MarketService {
         t.title,
         t.cover_url,
         t.price,
+        t.license_price,
         t.currency,
         t.usage_rights as license_types
        FROM tracks t
@@ -165,7 +168,9 @@ export class MarketService {
         category: track.category,
         bpm: track.bpm,
         key: track.key,
-        price: track.price,
+        price: track.license_price || track.price || '5.00',
+        license_price: track.license_price,
+        royalty_percentage: track.royalty_percentage,
         currency: track.currency,
         license_types: track.license_types,
         created_at: track.created_at

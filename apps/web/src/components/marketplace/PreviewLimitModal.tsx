@@ -1,7 +1,18 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Lock, ShoppingCart, ArrowLeft, Music2, Zap } from 'lucide-react';
+import { 
+  LockKeyhole, 
+  ShoppingCart, 
+  ArrowLeft, 
+  Music2, 
+  Sparkles,
+  Headphones,
+  Download,
+  ShieldCheck,
+  Coins,
+  Clock
+} from 'lucide-react';
 import { useMusicPlayer } from './MusicPlayerContext';
 import Link from 'next/link';
 
@@ -20,6 +31,10 @@ export const PreviewLimitModal: React.FC = () => {
   }, [previewLimitReached, dismissPreviewLimit]);
 
   if (!previewLimitReached || !currentTrack) return null;
+
+  const rawPrice = currentTrack.price;
+  const numericPrice = parseFloat(rawPrice ? rawPrice.toString().replace(/[^0-9.]/g, '') : '');
+  const formattedPrice = isNaN(numericPrice) || numericPrice <= 0 ? '5.00' : numericPrice.toFixed(2);
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
@@ -51,45 +66,49 @@ export const PreviewLimitModal: React.FC = () => {
               {/* Lock overlay on image */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-12 h-12 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 shadow-xl">
-                  <Lock size={22} className="text-white" strokeWidth={2.5} />
+                  <LockKeyhole size={22} className="text-accent-cyan" strokeWidth={2.5} />
                 </div>
               </div>
             </div>
 
             {/* Headline */}
-            <div className="flex items-center gap-2 mb-2">
-              <Zap size={14} className="text-accent-cyan" fill="currentColor" />
-              <span className="text-[10px] font-black uppercase tracking-[0.25em] text-accent-cyan">
+            <div className="flex items-center gap-2 mb-2 px-3.5 py-1 rounded-full bg-accent-cyan/10 border border-accent-cyan/20">
+              <Clock size={13} className="text-accent-cyan" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-accent-cyan">
                 Free Preview Ended
               </span>
-              <Zap size={14} className="text-accent-cyan" fill="currentColor" />
             </div>
 
             <h2 className="text-2xl font-black tracking-tight text-white mb-1 leading-tight">
               {currentTrack.title}
             </h2>
-            <p className="text-sm font-medium text-zinc-500 mb-6">
-              by {currentTrack.artist} {currentTrack.price ? `• ${currentTrack.price}${typeof currentTrack.price === 'number' || !currentTrack.price.toString().includes('USDC') ? ' USDC' : ''}` : ''}
+            <p className="text-xs font-medium text-zinc-400 mb-3">
+              by <span className="text-white font-bold">{currentTrack.artist}</span>
             </p>
 
-            <p className="text-zinc-400 text-sm leading-relaxed mb-8 max-w-xs">
-              You've listened to your <span className="text-white font-black">40-second free preview</span>.
-              Purchase this track to unlock unlimited listening, downloads, and full licensing rights.
+            {/* Price Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent-purple/10 border border-accent-purple/30 text-white font-black text-xs mb-6 shadow-[0_0_15px_rgba(157,0,255,0.2)]">
+              <Coins size={14} className="text-accent-purple" />
+              <span>Starting at <strong className="text-accent-cyan">${formattedPrice} USDC</strong></span>
+            </div>
+
+            <p className="text-zinc-400 text-xs leading-relaxed mb-6 max-w-xs">
+              You've reached the <span className="text-white font-black">40-second free preview limit</span>.
+              Purchase this track to unlock full access & rights.
             </p>
 
             {/* Perks */}
             <div className="w-full bg-white/[0.03] border border-white/5 rounded-2xl p-4 mb-8 space-y-3">
-              {((currentTrack.licenseTypes && currentTrack.licenseTypes.length > 0)
-                ? currentTrack.licenseTypes.map((right) => ({ icon: '🛡️', label: right }))
-                : [
-                    { icon: '🎵', label: 'Unlimited streaming' },
-                    { icon: '📥', label: 'High-quality download' },
-                    { icon: '⛓️', label: 'On-chain ownership proof' },
-                    { icon: '💰', label: 'Resale & licensing rights' },
-                  ]
-              ).map((perk) => (
-                <div key={perk.label} className="flex items-center gap-3 text-left">
-                  <span className="text-base">{perk.icon}</span>
+              {[
+                { icon: <Headphones size={16} className="text-accent-cyan" />, label: 'Unlimited Full Streaming' },
+                { icon: <Download size={16} className="text-accent-purple" />, label: 'High-Quality Lossless Audio' },
+                { icon: <ShieldCheck size={16} className="text-emerald-400" />, label: 'Verified On-Chain Ownership' },
+                { icon: <Sparkles size={16} className="text-yellow-400" />, label: 'Full Licensing & Resale Rights' },
+              ].map((perk, i) => (
+                <div key={i} className="flex items-center gap-3 text-left">
+                  <div className="w-7 h-7 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center shrink-0">
+                    {perk.icon}
+                  </div>
                   <span className="text-xs font-bold text-zinc-300">{perk.label}</span>
                 </div>
               ))}
@@ -100,10 +119,10 @@ export const PreviewLimitModal: React.FC = () => {
               <Link
                 href={`/marketplace/${currentTrack.id}?action=mint`}
                 onClick={dismissPreviewLimit}
-                className="w-full flex items-center justify-center gap-3 py-4 bg-accent-purple hover:bg-accent-purple/90 text-white font-black text-sm rounded-2xl transition-all shadow-[0_8px_30px_rgba(139,92,246,0.5)] hover:shadow-[0_12px_40px_rgba(139,92,246,0.6)] hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full flex items-center justify-center gap-2 py-4 bg-accent-purple hover:bg-accent-purple/90 text-white font-black text-sm rounded-2xl transition-all shadow-[0_8px_30px_rgba(139,92,246,0.5)] hover:shadow-[0_12px_40px_rgba(139,92,246,0.6)] hover:scale-[1.02] active:scale-[0.98]"
               >
                 <ShoppingCart size={18} />
-                Purchase Track {currentTrack.price ? `• ${currentTrack.price}${typeof currentTrack.price === 'number' || !currentTrack.price.toString().includes('USDC') ? ' USDC' : ''}` : ''}
+                Purchase Track • ${formattedPrice} USDC
               </Link>
 
               <button
@@ -116,7 +135,7 @@ export const PreviewLimitModal: React.FC = () => {
             </div>
 
             {/* Footer note */}
-            <p className="mt-6 text-[10px] font-bold text-zinc-700 uppercase tracking-widest flex items-center gap-2">
+            <p className="mt-6 text-[10px] font-bold text-zinc-600 uppercase tracking-widest flex items-center gap-2">
               <Music2 size={10} />
               Powered by Grooveli Rights Protocol
             </p>

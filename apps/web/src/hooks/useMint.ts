@@ -63,6 +63,34 @@ export interface UseMintOptions {
   onSuccess?: (result: MintResult) => void;
 }
 
+function parseMintError(err: any, mintPriceUsdc: number): string {
+  const msg = err?.shortMessage || err?.details || err?.message || '';
+  const lower = msg.toLowerCase();
+
+  if (lower.includes('user rejected') || lower.includes('user denied') || lower.includes('action rejected') || lower.includes('userrejected')) {
+    return 'Transaction was cancelled in your wallet.';
+  }
+
+  if (lower.includes('exceeds allowance') || lower.includes('allowance')) {
+    return 'USDC token approval was not granted or was insufficient. Please approve the USDC transaction in your wallet when prompted.';
+  }
+
+  if (lower.includes('insufficient funds for gas') || lower.includes('insufficient funds for intrinsic') || (lower.includes('insufficient funds') && !lower.includes('usdc'))) {
+    return 'Insufficient POL in your wallet to cover Polygon network gas fees (~0.02 POL required).';
+  }
+
+  if (lower.includes('insufficient usdc') || lower.includes('exceeds balance') || lower.includes('transfer amount exceeds balance')) {
+    const formattedPrice = typeof mintPriceUsdc === 'number' ? mintPriceUsdc.toFixed(2) : mintPriceUsdc;
+    return `Insufficient USDC balance. You need at least $${formattedPrice} USDC in your wallet to purchase this edition.`;
+  }
+
+  if (lower.includes('json is not a valid request object') || lower.includes('failed to fetch') || lower.includes('network error') || lower.includes('400')) {
+    return 'RPC network connection error. Please ensure your wallet is connected to Polygon Mainnet and try again.';
+  }
+
+  return msg.replace(/^ContractFunctionExecutionError:\s*/i, '').replace(/^Error:\s*/i, '') || 'Something went wrong during the purchase. Please try again.';
+}
+
 export function useMint({
   editionId,
   contractEditionId,
@@ -307,20 +335,7 @@ export function useMint({
 
       } catch (err: any) {
         console.error('Smart account mint error:', err);
-        let msg = err?.shortMessage || err?.message || 'Something went wrong during the purchase.';
-        const lower = msg.toLowerCase();
-        if (lower.includes('user rejected') || lower.includes('userrejected')) {
-          msg = 'Transaction was cancelled in your wallet.';
-        } else if (lower.includes('insufficient funds')) {
-          msg = 'Insufficient POL funds in your wallet to cover gas fees.';
-        } else if (lower.includes('exceeds balance')) {
-          msg = 'Insufficient USDC balance in your wallet to complete the purchase.';
-        } else if (lower.includes('json is not a valid request object') || lower.includes('400')) {
-          msg = 'RPC network error. Please check your wallet connection.';
-        } else {
-          msg = msg.replace(/^ContractFunctionExecutionError:\s*/i, '').replace(/^Error:\s*/i, '');
-        }
-        setErrorMessage(msg);
+        setErrorMessage(parseMintError(err, mintPriceUsdc));
         setStep('error');
       }
       return;
@@ -405,20 +420,7 @@ export function useMint({
 
     } catch (err: any) {
       console.error('Mint error:', err);
-      let msg = err?.shortMessage || err?.message || 'Something went wrong during the purchase.';
-      const lower = msg.toLowerCase();
-      if (lower.includes('user rejected') || lower.includes('userrejected')) {
-        msg = 'Transaction was cancelled in your wallet.';
-      } else if (lower.includes('insufficient funds')) {
-        msg = 'Insufficient POL funds in your wallet to cover gas fees.';
-      } else if (lower.includes('exceeds balance')) {
-        msg = 'Insufficient USDC balance in your wallet to complete the purchase.';
-      } else if (lower.includes('json is not a valid request object') || lower.includes('400')) {
-        msg = 'RPC network error. Please check your wallet connection.';
-      } else {
-        msg = msg.replace(/^ContractFunctionExecutionError:\s*/i, '').replace(/^Error:\s*/i, '');
-      }
-      setErrorMessage(msg);
+      setErrorMessage(parseMintError(err, mintPriceUsdc));
       setStep('error');
     }
   }, [address, config, contractEditionId, editionId, mintPriceUsdc, onSuccess, wallets]);

@@ -152,9 +152,43 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const creator = trackData?.creator;
   const more_from_creator = trackData?.more_from_creator;
 
+  // Build editions list from database or fallback (hook is always called at top level)
+  const editionsList: EditionInfo[] = React.useMemo(() => {
+    if (!trackData) return [];
+    if (trackData.editions && trackData.editions.length > 0) {
+      return trackData.editions.map((e: any) => ({
+        id: e.id,
+        contractEditionId: Number(e.contract_edition_id) || 1, // Fallback to 1 if not yet synced/indexed
+        editionType: e.edition_type === 'open' ? 'fan' : e.edition_type, // map open to fan for UI matching
+        mintPriceUsdc: parseFloat(e.mint_price_usdc) || parseFloat(track?.license_price || '0') || 5,
+        maxSupply: Number(e.max_supply) || 0,
+        mintedSupply: Number(e.minted_supply) || 0,
+        active: e.active !== false,
+      }));
+    }
+
+    const fallbackPrice = parseFloat(track?.license_price || track?.price || '5');
+    return [
+      {
+        id: track?.id || 0,
+        contractEditionId: 1,
+        editionType: 'fan',
+        mintPriceUsdc: isNaN(fallbackPrice) || fallbackPrice <= 0 ? 5 : fallbackPrice,
+        maxSupply: 1000,
+        mintedSupply: 0,
+        active: true,
+      }
+    ];
+  }, [trackData, track]);
+
   // Map backend fields to the UI needs (hook is always called at top level)
   const displayTrack = React.useMemo(() => {
     if (!track || !creator) return null;
+    const startingPriceVal = editionsList.length > 0
+      ? Math.min(...editionsList.map(e => e.mintPriceUsdc))
+      : (parseFloat(track.license_price || track.price || '5.00'));
+    const finalPrice = isNaN(startingPriceVal) || startingPriceVal <= 0 ? '5.00' : startingPriceVal.toFixed(2);
+
     return {
       ...track,
       creator: creator.name || 'Unknown',
@@ -162,46 +196,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       image: resolveIpfsUrl(track.cover_url) || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
       audio_url: resolveIpfsUrl(track.audio_url),
       description: track.description || 'No description provided.',
-      price: track.price || '0.00',
-      priceUsd: (parseFloat(track.price || '0') * 2400).toFixed(2), // Mock conversion
+      price: finalPrice,
+      priceUsd: (parseFloat(finalPrice) * 2400).toFixed(2), // Mock conversion
       bpm: track.bpm || 'N/A',
       key: track.key || 'N/A',
       duration: audioDuration,
       fileType: track.file_type || 'WAV',
       nftId: track.nft_id || 'Not Minted',
-      royalty: track.royalty_percentage ? `${track.royalty_percentage}%` : '0%',
+      royalty: track.royalty_percentage ? `${track.royalty_percentage}%` : '10%',
       licenses: track.license_types || ['Standard License']
     };
-  }, [track, creator, audioDuration]);
-
-  // Build editions list from database or fallback (hook is always called at top level)
-  const editionsList: EditionInfo[] = React.useMemo(() => {
-    if (!trackData || !displayTrack) return [];
-    if (trackData.editions && trackData.editions.length > 0) {
-      return trackData.editions.map((e: any) => ({
-        id: e.id,
-        contractEditionId: Number(e.contract_edition_id) || 1, // Fallback to 1 if not yet synced/indexed
-        editionType: e.edition_type === 'open' ? 'fan' : e.edition_type, // map open to fan for UI matching
-        mintPriceUsdc: parseFloat(e.mint_price_usdc) || parseFloat(displayTrack.price) || 5,
-        maxSupply: Number(e.max_supply) || 0,
-        mintedSupply: Number(e.minted_supply) || 0,
-        active: e.active !== false,
-      }));
-    }
-
-    // Dynamic fallback matching what the creator set up
-    return [
-      {
-        id: displayTrack.id,
-        contractEditionId: 1,
-        editionType: 'fan',
-        mintPriceUsdc: parseFloat(displayTrack.price) || 5,
-        maxSupply: 1000,
-        mintedSupply: 0,
-        active: true,
-      }
-    ];
-  }, [trackData, displayTrack]);
+  }, [track, creator, audioDuration, editionsList]);
 
   if (loading) {
     return (
@@ -524,7 +529,7 @@ const PurchaseSidebar = ({
                 <span className="font-bold text-zinc-400 capitalize">{ed.editionType} Edition</span>
                 <div className="flex items-center gap-3">
                   <span className="text-zinc-600">
-                    {ed.maxSupply === null || ed.maxSupply === 0 || ed.maxSupply >= 1000000 ? 'Unlimited' : `${ed.maxSupply - ed.mintedSupply} left`}
+                    {ed.editionType === 'open' || ed.maxSupply === null || ed.maxSupply === 0 || ed.maxSupply >= 1000000 ? 'Unlimited' : `${ed.maxSupply - ed.mintedSupply} left`}
                   </span>
                   <span className="font-black text-white">${ed.mintPriceUsdc.toFixed(2)}</span>
                 </div>

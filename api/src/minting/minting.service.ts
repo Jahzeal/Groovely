@@ -386,7 +386,7 @@ export class MintingService {
     let buyerUserId = dto.buyer_user_id || null;
     if (!buyerUserId && dto.buyer_wallet) {
       const userRes = await this.db.query(
-        'SELECT id FROM users WHERE LOWER(wallet_address) = LOWER($1)',
+        'SELECT id FROM users WHERE LOWER(wallet) = LOWER($1)',
         [dto.buyer_wallet],
       );
       if (userRes.rows[0]) {
@@ -432,10 +432,11 @@ export class MintingService {
   // Purchase check (for 40s limit enforcement)
   // ─────────────────────────────────────────────────────────────────────────
 
-  async isPurchased(userId: number, trackId: number): Promise<boolean> {
+  async isPurchased(userId: number | null | undefined, trackId: number): Promise<boolean> {
+    if (!userId || isNaN(userId)) return false;
     const result = await this.db.query(
       `SELECT p.id FROM purchases p
-       LEFT JOIN users u ON p.user_id = u.id OR (p.buyer_wallet IS NOT NULL AND LOWER(p.buyer_wallet) = LOWER(u.wallet_address))
+       LEFT JOIN users u ON p.user_id = u.id OR (p.buyer_wallet IS NOT NULL AND LOWER(p.buyer_wallet) = LOWER(u.wallet))
        LEFT JOIN editions e ON p.edition_id = e.id
        LEFT JOIN songs s ON e.song_id = s.id
        WHERE (p.user_id = $1 OR u.id = $1)
@@ -462,7 +463,7 @@ export class MintingService {
        LEFT JOIN songs s ON e.song_id = s.id
        LEFT JOIN tracks t ON (p.track_id = t.id OR s.track_id = t.id)
        LEFT JOIN users u ON t.user_id = u.id
-       LEFT JOIN users buyer ON p.user_id = buyer.id OR (p.buyer_wallet IS NOT NULL AND LOWER(p.buyer_wallet) = LOWER(buyer.wallet_address))
+       LEFT JOIN users buyer ON p.user_id = buyer.id OR (p.buyer_wallet IS NOT NULL AND LOWER(p.buyer_wallet) = LOWER(buyer.wallet))
        WHERE p.user_id = $1 OR buyer.id = $1
        ORDER BY p.purchased_at DESC`,
       [userId],
