@@ -96,7 +96,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       return;
     }
 
-    apiFetch(`/api/tracks/${id}/purchased`, { skipAuthRedirect: true })
+    const storedWallet = typeof window !== 'undefined'
+      ? (localStorage.getItem('groovely_wallet') || localStorage.getItem('grooveli_wallet') || '')
+      : '';
+    const queryStr = storedWallet ? `?wallet=${encodeURIComponent(storedWallet)}` : '';
+
+    apiFetch(`/api/tracks/${id}/purchased${queryStr}`, { skipAuthRedirect: true })
       .then(async (res) => {
         if (res && res.ok) {
           const data = await res.json();

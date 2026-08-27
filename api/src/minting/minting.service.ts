@@ -432,17 +432,28 @@ export class MintingService {
   // Purchase check (for 40s limit enforcement)
   // ─────────────────────────────────────────────────────────────────────────
 
-  async isPurchased(userId: number | null | undefined, trackId: number): Promise<boolean> {
-    if (!userId || isNaN(userId)) return false;
+  async isPurchased(
+    userId: number | null | undefined,
+    walletAddress: string | null | undefined,
+    trackId: number
+  ): Promise<boolean> {
+    if (!userId && !walletAddress) return false;
+
     const result = await this.db.query(
       `SELECT p.id FROM purchases p
-       LEFT JOIN users u ON p.user_id = u.id OR (p.buyer_wallet IS NOT NULL AND LOWER(p.buyer_wallet) = LOWER(u.wallet))
-       LEFT JOIN editions e ON p.edition_id = e.id
-       LEFT JOIN songs s ON e.song_id = s.id
-       WHERE (p.user_id = $1 OR u.id = $1)
-         AND (p.track_id = $2 OR s.track_id = $2 OR p.track_id IN (SELECT id FROM songs WHERE track_id = $2))
+       LEFT JOIN users u ON p.user_id = u.id
+       WHERE (
+         (p.user_id IS NOT NULL AND $1::integer IS NOT NULL AND p.user_id = $1)
+         OR ($2::text IS NOT NULL AND LOWER(p.buyer_wallet) = LOWER($2))
+         OR ($2::text IS NOT NULL AND LOWER(u.wallet) = LOWER($2))
+       )
+       AND (
+         p.track_id = $3
+         OR p.track_id IN (SELECT track_id FROM songs WHERE id = $3 OR track_id = $3)
+         OR p.edition_id IN (SELECT id FROM editions WHERE song_id IN (SELECT id FROM songs WHERE track_id = $3))
+       )
        LIMIT 1`,
-      [userId, trackId],
+      [userId || null, walletAddress || null, trackId],
     );
     return result.rows.length > 0;
   }

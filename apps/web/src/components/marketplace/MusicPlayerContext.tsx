@@ -64,6 +64,27 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     purchasedRef.current = purchasedTrackIds;
   }, [purchasedTrackIds]);
 
+  // Pre-load purchased track IDs from library on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const token = localStorage.getItem('groovely_token') || localStorage.getItem('grooveli_token');
+    const wallet = localStorage.getItem('groovely_wallet') || localStorage.getItem('grooveli_wallet');
+    if (!token && !wallet) return;
+
+    apiFetch('/api/library?filter=purchased&limit=200', { skipAuthRedirect: true })
+      .then(async (res) => {
+        if (res && res.ok) {
+          const json = await res.json();
+          const items = json?.data?.tracks || json?.data || [];
+          if (Array.isArray(items) && items.length > 0) {
+            const ids = items.map((it: any) => it.id).filter(Boolean);
+            setPurchasedTrackIds(prev => new Set([...prev, ...ids]));
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const isTrackPurchased = useCallback((trackId: string | number) => {
     return Array.from(purchasedRef.current).some(pId => String(pId) === String(trackId));
   }, []);
@@ -189,6 +210,25 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
 
     setCurrentTrack(track);
+
+    // Check if newly selected track is purchased
+    if (!isTrackPurchased(track.id)) {
+      const storedWallet = typeof window !== 'undefined'
+        ? (localStorage.getItem('groovely_wallet') || localStorage.getItem('grooveli_wallet') || '')
+        : '';
+      const queryStr = storedWallet ? `?wallet=${encodeURIComponent(storedWallet)}` : '';
+      apiFetch(`/api/tracks/${track.id}/purchased${queryStr}`, { skipAuthRedirect: true })
+        .then(async (res) => {
+          if (res && res.ok) {
+            const json = await res.json();
+            if (json?.data?.purchased) {
+              setPurchasedTrackIds(prev => new Set([...prev, track.id]));
+            }
+          }
+        })
+        .catch(() => {});
+    }
+
     const url = resolveIpfsUrl(track.audioUrl) || 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
 
     try {

@@ -211,7 +211,8 @@ export class MintingController {
     const trackId = parseInt(id);
     if (isNaN(trackId)) throw new BadRequestException('Invalid track ID');
     const userId = req.userId ? parseInt(String(req.userId)) : null;
-    const purchased = await this.mintingService.isPurchased(userId, trackId);
+    const wallet = req.query?.wallet || req.headers?.['x-wallet-address'] || req.userWallet || null;
+    const purchased = await this.mintingService.isPurchased(userId, wallet, trackId);
     return { purchased, trackId };
   }
 
