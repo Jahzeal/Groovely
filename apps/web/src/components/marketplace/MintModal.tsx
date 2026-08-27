@@ -258,18 +258,9 @@ export const MintModal: React.FC<MintModalProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-between bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-3 mb-6">
-                  <div className="flex items-center gap-2 text-yellow-500 text-xs font-bold">
-                    <AlertCircle size={14} />
-                    <span>Connect your wallet to continue</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => login()}
-                    className="text-[10px] font-black uppercase text-yellow-400 bg-yellow-500/20 hover:bg-yellow-500/30 px-3 py-1.5 rounded-md transition-all cursor-pointer"
-                  >
-                    Connect
-                  </button>
+                <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-3 mb-6 text-yellow-500 text-xs font-bold">
+                  <AlertCircle size={14} className="shrink-0" />
+                  <span>Connect your wallet to continue</span>
                 </div>
               )}
 
