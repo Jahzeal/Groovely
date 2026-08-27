@@ -3,6 +3,7 @@ import {
   Get,
   Param,
   Query,
+  Req,
   BadRequestException,
 } from '@nestjs/common';
 import { MarketService } from './market.service';
