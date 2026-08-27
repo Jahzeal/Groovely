@@ -11,10 +11,15 @@ import { MusicPlayer } from '@/components/marketplace/MusicPlayer';
 import { CartProvider } from '@/components/marketplace/CartContext';
 import { Twitter, Instagram } from '@/components/ui/SocialIcons';
 import { Send, Disc, Loader2 } from 'lucide-react';
+import { usePrivy } from '@privy-io/react-auth';
+import { useRouter } from 'next/navigation';
 import { apiFetch, resolveIpfsUrl } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 
 export default function ExplorePage() {
+  const { authenticated: privyAuthenticated, ready: privyReady } = usePrivy();
+  const router = useRouter();
+
   const [trending, setTrending] = useState<any[]>([]);
   const [isLoadingTrending, setIsLoadingTrending] = useState(true);
   const [creators, setCreators] = useState<any[]>([]);
@@ -23,6 +28,16 @@ export default function ExplorePage() {
   const [isLoadingRecommended, setIsLoadingRecommended] = useState(true);
   const [recent, setRecent] = useState<any[]>([]);
   const [isLoadingRecent, setIsLoadingRecent] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && privyReady) {
+      const token = localStorage.getItem('groovely_token') || localStorage.getItem('grooveli_token');
+      const wallet = localStorage.getItem('groovely_wallet') || localStorage.getItem('grooveli_wallet');
+      if (!token && !privyAuthenticated && !wallet) {
+        router.replace('/login?redirect=/explore');
+      }
+    }
+  }, [privyAuthenticated, privyReady, router]);
 
   useEffect(() => {
     async function fetchTrending() {
