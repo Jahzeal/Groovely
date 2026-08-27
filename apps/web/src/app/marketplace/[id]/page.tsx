@@ -139,7 +139,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       const params = new URLSearchParams(window.location.search);
       if (params.get('action') === 'mint') {
         setMintModalOpen(true);
-        router.replace(`/marketplace/${id}`);
+        window.history.replaceState({}, '', `/marketplace/${id}`);
       }
     };
     checkMintAction();
@@ -149,7 +149,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     return () => {
       window.removeEventListener('open_mint_modal', handleOpenMint);
     };
-  }, [id, router]);
+  }, [id]);
 
   const handleSearch = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
