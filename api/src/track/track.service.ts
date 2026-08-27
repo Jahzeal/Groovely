@@ -321,16 +321,12 @@ export class TrackService {
               p.amount,
               p.currency
             FROM purchases p
-            JOIN editions e ON p.edition_id = e.id
-            JOIN songs s ON e.song_id = s.id
-            JOIN tracks t ON (p.track_id = t.id OR s.track_id = t.id)
+            JOIN tracks t ON p.track_id = t.id
             JOIN users u ON t.user_id = u.id
-            LEFT JOIN users buyer ON p.user_id = buyer.id OR (p.buyer_wallet IS NOT NULL AND LOWER(p.buyer_wallet) = LOWER(buyer.wallet))
-            WHERE (p.user_id = $1 OR buyer.id = $1)
+            WHERE (p.user_id = $1 OR (p.buyer_wallet IS NOT NULL AND LOWER(p.buyer_wallet) = (SELECT LOWER(wallet) FROM users WHERE id = $1)))
               AND p.tx_hash IS NOT NULL 
               AND p.tx_hash != ''
               AND p.tx_hash NOT LIKE '0x000%'
-              AND (t.status = 'active' OR t.status = 'published' OR e.contract_edition_id IS NOT NULL)
             ORDER BY t.id, p.purchased_at DESC
           ) as distinct_purchased
           ORDER BY action_date DESC

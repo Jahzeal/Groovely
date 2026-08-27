@@ -195,16 +195,21 @@ export function useMint({
 
         setTokenId(derivedTokenId);
 
-        await apiFetch('/api/mint/confirm', {
-          method: 'POST',
-          body: JSON.stringify({
-            edition_id: editionId,
-            tx_hash: mintTx,
-            token_id: derivedTokenId,
-            buyer_wallet: address,
-            license_type: 'standard',
-          }),
-        });
+        try {
+          await apiFetch('/api/mint/confirm', {
+            method: 'POST',
+            skipAuthRedirect: true,
+            body: JSON.stringify({
+              edition_id: editionId,
+              tx_hash: mintTx,
+              token_id: derivedTokenId,
+              buyer_wallet: address,
+              license_type: 'standard',
+            }),
+          });
+        } catch (syncErr) {
+          console.warn('Backend mint confirmation sync notice:', syncErr);
+        }
 
         setStep('success');
         onSuccess?.({ txHash: mintTx, tokenId: derivedTokenId });
@@ -288,16 +293,21 @@ export function useMint({
       setTokenId(derivedTokenId);
 
       // ── Step 5: Confirm with backend ───────────────────────────────────
-      await apiFetch('/api/mint/confirm', {
-        method: 'POST',
-        body: JSON.stringify({
-          edition_id: editionId,
-          tx_hash: mintTx,
-          token_id: derivedTokenId,
-          buyer_wallet: address,
-          license_type: 'standard',
-        }),
-      });
+      try {
+        await apiFetch('/api/mint/confirm', {
+          method: 'POST',
+          skipAuthRedirect: true,
+          body: JSON.stringify({
+            edition_id: editionId,
+            tx_hash: mintTx,
+            token_id: derivedTokenId,
+            buyer_wallet: address,
+            license_type: 'standard',
+          }),
+        });
+      } catch (syncErr) {
+        console.warn('Backend mint confirmation sync notice:', syncErr);
+      }
 
       setStep('success');
       onSuccess?.({ txHash: mintTx, tokenId: derivedTokenId });

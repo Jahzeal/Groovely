@@ -11,10 +11,10 @@ import {
 } from '@nestjs/common';
 import { MintingService, CreateSongDto, CreateEditionDto, ContributorDto, ConfirmMintDto } from './minting.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../common/guards/optional-jwt-auth.guard';
 import { ResponseMessage } from '../common/decorators/response-message.decorator';
 
 @Controller()
-@UseGuards(JwtAuthGuard)
 export class MintingController {
   constructor(private mintingService: MintingService) {}
 
@@ -23,6 +23,7 @@ export class MintingController {
   // ─────────────────────────────────────────────────────────────────────────
 
   @Post('songs')
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('Song created successfully')
   async createSong(@Req() req: any, @Body() body: CreateSongDto) {
     if (!body.title?.trim()) {
@@ -32,6 +33,7 @@ export class MintingController {
   }
 
   @Get('songs')
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('Songs retrieved successfully')
   async getMySongs(@Req() req: any) {
     const songs = await this.mintingService.getMySongs(req.userId);
@@ -39,6 +41,7 @@ export class MintingController {
   }
 
   @Get('songs/:id')
+  @UseGuards(OptionalJwtAuthGuard)
   @ResponseMessage('Song retrieved successfully')
   async getSong(@Param('id') id: string) {
     const songId = parseInt(id);
@@ -47,6 +50,7 @@ export class MintingController {
   }
 
   @Get('songs/track/:trackId')
+  @UseGuards(OptionalJwtAuthGuard)
   @ResponseMessage('Song details retrieved by track ID')
   async getSongByTrack(
     @Req() req: any,
@@ -58,6 +62,7 @@ export class MintingController {
   }
 
   @Post('songs/:id/published')
+  @UseGuards(OptionalJwtAuthGuard)
   @ResponseMessage('Song marked as published successfully')
   async markSongPublished(
     @Param('id') id: string,
@@ -78,6 +83,7 @@ export class MintingController {
   // ─────────────────────────────────────────────────────────────────────────
 
   @Post('songs/:id/contributors')
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('Contributors saved successfully')
   async setContributors(
     @Req() req: any,
@@ -98,12 +104,14 @@ export class MintingController {
   }
 
   @Get('creator/invitations')
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('Pending invitations retrieved successfully')
   async getPendingInvitations(@Req() req: any) {
     return this.mintingService.getPendingInvitations(req.userId);
   }
 
   @Post('creator/invitations/:id/respond')
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('Invitation status updated successfully')
   async respondToInvitation(
     @Req() req: any,
@@ -126,6 +134,7 @@ export class MintingController {
   // ─────────────────────────────────────────────────────────────────────────
 
   @Post('songs/:id/editions')
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('Edition created successfully')
   async createEdition(
     @Req() req: any,
@@ -146,13 +155,14 @@ export class MintingController {
   // ─────────────────────────────────────────────────────────────────────────
 
   @Post('mint/confirm')
+  @UseGuards(OptionalJwtAuthGuard)
   @ResponseMessage('Mint confirmed successfully')
   async confirmMint(@Req() req: any, @Body() body: ConfirmMintDto) {
     if (!body.edition_id || !body.tx_hash || !body.buyer_wallet) {
       throw new BadRequestException('edition_id, tx_hash, and buyer_wallet are required');
     }
-    // Inject authenticated user ID
-    body.buyer_user_id = req.userId;
+    // Inject authenticated user ID if present
+    body.buyer_user_id = req.userId || null;
     return this.mintingService.confirmMint(body);
   }
 
@@ -161,6 +171,7 @@ export class MintingController {
   // ─────────────────────────────────────────────────────────────────────────
 
   @Patch('songs/:id/contract-id')
+  @UseGuards(OptionalJwtAuthGuard)
   @ResponseMessage('Song contract ID updated successfully')
   async updateSongContractId(
     @Param('id') id: string,
@@ -174,6 +185,7 @@ export class MintingController {
   }
 
   @Patch('editions/:id/contract-id')
+  @UseGuards(OptionalJwtAuthGuard)
   @ResponseMessage('Edition contract ID updated successfully')
   async updateEditionContractId(
     @Param('id') id: string,
@@ -193,6 +205,7 @@ export class MintingController {
   // ─────────────────────────────────────────────────────────────────────────
 
   @Get('tracks/:id/purchased')
+  @UseGuards(OptionalJwtAuthGuard)
   @ResponseMessage('Purchase status retrieved')
   async isPurchased(@Req() req: any, @Param('id') id: string) {
     const trackId = parseInt(id);
@@ -203,6 +216,7 @@ export class MintingController {
   }
 
   @Get('my/purchases')
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('Purchases retrieved successfully')
   async getMyPurchases(@Req() req: any) {
     const purchases = await this.mintingService.getUserPurchases(req.userId);
