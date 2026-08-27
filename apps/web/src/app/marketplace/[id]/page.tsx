@@ -135,11 +135,20 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('action') === 'mint') {
-      setMintModalOpen(true);
-      router.replace(`/marketplace/${id}`);
-    }
+    const checkMintAction = () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('action') === 'mint') {
+        setMintModalOpen(true);
+        router.replace(`/marketplace/${id}`);
+      }
+    };
+    checkMintAction();
+
+    const handleOpenMint = () => setMintModalOpen(true);
+    window.addEventListener('open_mint_modal', handleOpenMint);
+    return () => {
+      window.removeEventListener('open_mint_modal', handleOpenMint);
+    };
   }, [id, router]);
 
   const handleSearch = (e: React.KeyboardEvent) => {
