@@ -41,14 +41,15 @@ interface MintModalProps {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const EDITION_STYLES: Record<string, { label: string; color: string; glow: string; badge: string }> = {
-  open:      { label: 'Open Edition',     color: 'border-zinc-600 bg-zinc-900/50',        glow: 'rgba(255,255,255,0.05)', badge: 'bg-zinc-700 text-zinc-300'       },
-  fan:       { label: 'Fan Edition',      color: 'border-accent-cyan/40 bg-cyan-900/10',  glow: 'rgba(45,212,191,0.15)',  badge: 'bg-cyan-900/50 text-accent-cyan' },
-  collector: { label: 'Collector Edition',color: 'border-accent-purple/40 bg-purple-900/10', glow: 'rgba(139,92,246,0.2)', badge: 'bg-purple-900/50 text-accent-purple' },
-  founder:   { label: 'Founder Edition',  color: 'border-yellow-500/40 bg-yellow-900/10', glow: 'rgba(234,179,8,0.15)',   badge: 'bg-yellow-900/50 text-yellow-400' },
+  open:      { label: 'Open Edition',          color: 'border-zinc-600 bg-zinc-900/50',        glow: 'rgba(255,255,255,0.05)', badge: 'bg-zinc-700 text-zinc-300'       },
+  single:    { label: 'Single Edition (1/1)',  color: 'border-emerald-500/40 bg-emerald-900/10', glow: 'rgba(16,185,129,0.15)', badge: 'bg-emerald-900/50 text-emerald-400' },
+  fan:       { label: 'Fan Edition',           color: 'border-accent-cyan/40 bg-cyan-900/10',  glow: 'rgba(45,212,191,0.15)',  badge: 'bg-cyan-900/50 text-accent-cyan' },
+  collector: { label: 'Collector Edition',     color: 'border-accent-purple/40 bg-purple-900/10', glow: 'rgba(139,92,246,0.2)', badge: 'bg-purple-900/50 text-accent-purple' },
+  founder:   { label: 'Founder Edition',       color: 'border-yellow-500/40 bg-yellow-900/10', glow: 'rgba(234,179,8,0.15)',   badge: 'bg-yellow-900/50 text-yellow-400' },
 };
 
 const getStyle = (type: string) =>
-  EDITION_STYLES[type] ?? EDITION_STYLES.open;
+  EDITION_STYLES[type?.toLowerCase()] ?? EDITION_STYLES.open;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Step indicator
@@ -257,10 +258,17 @@ export const MintModal: React.FC<MintModalProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 text-yellow-500 text-xs font-bold mb-6 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-3">
-                  <AlertCircle size={14} />
-                  Connect your wallet to continue
-                </div>
+                <button
+                  type="button"
+                  onClick={login}
+                  className="w-full flex items-center justify-between bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20 rounded-xl px-4 py-3 mb-6 text-left transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-2 text-yellow-500 text-xs font-bold">
+                    <AlertCircle size={14} />
+                    <span>Connect your wallet to continue</span>
+                  </div>
+                  <span className="text-[10px] font-black uppercase text-yellow-400 bg-yellow-500/20 px-2 py-1 rounded-md">Connect</span>
+                </button>
               )}
 
               {/* Live step indicator */}
@@ -289,21 +297,25 @@ export const MintModal: React.FC<MintModalProps> = ({
                 >
                   Back
                 </button>
-                {!isConnected && !authenticated ? (
+                {!isConnected ? (
                   <button
                     onClick={() => {
-                      const returnUrl = `/marketplace/${trackId}?action=mint`;
-                      router.push(`/login?redirect=${encodeURIComponent(returnUrl)}`);
+                      if (!authenticated) {
+                        const returnUrl = `/marketplace/${trackId}?action=mint`;
+                        router.push(`/login?redirect=${encodeURIComponent(returnUrl)}`);
+                      } else {
+                        login();
+                      }
                     }}
                     className="flex-[2] py-3.5 bg-accent-purple hover:bg-accent-purple/90 text-white font-black text-sm rounded-2xl transition-all shadow-[0_8px_30px_rgba(139,92,246,0.4)] hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
                   >
                     <Wallet size={16} />
-                    Log In / Sign Up to Mint
+                    {!authenticated ? 'Log In / Sign Up to Mint' : 'Connect Wallet to Mint'}
                   </button>
                 ) : (
                   <button
                     onClick={executeMint}
-                    disabled={isLoading || !isConnected}
+                    disabled={isLoading}
                     className="flex-[2] py-3.5 bg-accent-purple hover:bg-accent-purple/90 text-white font-black text-sm rounded-2xl transition-all shadow-[0_8px_30px_rgba(139,92,246,0.4)] hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isLoading ? (

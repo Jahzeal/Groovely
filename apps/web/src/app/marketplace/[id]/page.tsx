@@ -159,9 +159,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       return trackData.editions.map((e: any) => ({
         id: e.id,
         contractEditionId: Number(e.contract_edition_id) || 1, // Fallback to 1 if not yet synced/indexed
-        editionType: e.edition_type === 'open' ? 'fan' : e.edition_type, // map open to fan for UI matching
+        editionType: e.edition_type,
         mintPriceUsdc: parseFloat(e.mint_price_usdc) || parseFloat(track?.license_price || '0') || 5,
-        maxSupply: Number(e.max_supply) || 0,
+        maxSupply: e.max_supply !== null && e.max_supply !== undefined ? Number(e.max_supply) : null,
         mintedSupply: Number(e.minted_supply) || 0,
         active: e.active !== false,
       }));
