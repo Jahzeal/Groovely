@@ -28,12 +28,11 @@ export const MarketTopBar = () => {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedWallet = localStorage.getItem('groovely_wallet') || localStorage.getItem('grooveli_wallet');
-      if (storedWallet) setWalletAddress(storedWallet);
-      
       const token = localStorage.getItem('groovely_token') || localStorage.getItem('grooveli_token');
       if (token) {
         setIsAuthenticated(true);
+        const storedWallet = localStorage.getItem('groovely_wallet') || localStorage.getItem('grooveli_wallet');
+        if (storedWallet) setWalletAddress(storedWallet);
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));
           setRole(payload.role ?? null);
@@ -41,11 +40,14 @@ export const MarketTopBar = () => {
             setWalletAddress(payload.wallet);
           }
         } catch {}
-      } else if (user?.wallet?.address) {
+      } else if (privyAuthenticated && user?.wallet?.address) {
         setWalletAddress(user.wallet.address);
+      } else {
+        setIsAuthenticated(false);
+        setWalletAddress(null);
       }
     }
-  }, [user]);
+  }, [user, privyAuthenticated]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
