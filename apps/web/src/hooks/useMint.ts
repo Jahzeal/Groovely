@@ -247,9 +247,15 @@ export function useMint({
 
       // ── Step 2: Check / Request USDC approval ──────────────────────────
       const allowance = await checkUSDCAllowance(config, address);
+      if (allowance > 0n && allowance < priceRaw) {
+        setStep('approving');
+        const resetTx = await approveUSDC(config, 0n);
+        await waitForTx(config, resetTx);
+      }
+
       if (allowance < priceRaw) {
         setStep('approving');
-        const maxAllowance = parseUnits('10000', 6);
+        const maxAllowance = parseUnits('1000000', 6);
         const approveTx = await approveUSDC(config, maxAllowance);
         await waitForTx(config, approveTx);
       }
