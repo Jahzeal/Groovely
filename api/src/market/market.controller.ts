@@ -24,9 +24,11 @@ export class MarketController {
 
   @Get('for-you')
   @ResponseMessage('Recommended tracks retrieved successfully')
-  async getForYouTracks(@Query('limit') limit?: string) {
+  async getForYouTracks(@Req() req: any, @Query('limit') limit?: string) {
     const parsedLimit = limit ? parseInt(limit) : 10;
+    const userId = req.user?.id || req.user?.userId;
     const tracks = await this.marketService.getForYouTracks(
+      userId ? Number(userId) : undefined,
       isNaN(parsedLimit) ? 10 : parsedLimit,
     );
     return { tracks };
