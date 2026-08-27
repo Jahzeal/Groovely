@@ -112,6 +112,20 @@ export const MintModal: React.FC<MintModalProps> = ({
     if (selectedEdition) setUiStep('pay');
   };
 
+  const handleBackToChoose = () => {
+    reset();
+    setUiStep('choose');
+  };
+
+  const handleConnectOrLogin = () => {
+    if (!authenticated) {
+      const returnUrl = `/marketplace/${trackId}?action=mint`;
+      router.push(`/login?redirect=${encodeURIComponent(returnUrl)}`);
+    } else {
+      login();
+    }
+  };
+
   const isSoldOut = (ed: EditionInfo) =>
     !ed.active || (ed.maxSupply !== null && ed.maxSupply > 0 && ed.mintedSupply >= ed.maxSupply);
 
@@ -285,7 +299,7 @@ export const MintModal: React.FC<MintModalProps> = ({
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => { reset(); setUiStep('choose'); }}
+                  onClick={handleBackToChoose}
                   disabled={isLoading}
                   className="flex-1 py-3.5 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white font-bold text-sm rounded-2xl transition-all disabled:opacity-30"
                 >
@@ -294,14 +308,7 @@ export const MintModal: React.FC<MintModalProps> = ({
                 {!isConnected ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      if (!authenticated) {
-                        const returnUrl = `/marketplace/${trackId}?action=mint`;
-                        router.push(`/login?redirect=${encodeURIComponent(returnUrl)}`);
-                      } else {
-                        login();
-                      }
-                    }}
+                    onClick={handleConnectOrLogin}
                     className="flex-[2] py-3.5 bg-accent-purple hover:bg-accent-purple/90 text-white font-black text-sm rounded-2xl transition-all shadow-[0_8px_30px_rgba(139,92,246,0.4)] hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
                   >
                     <Wallet size={16} />
