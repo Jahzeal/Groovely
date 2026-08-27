@@ -253,22 +253,24 @@ export const MintModal: React.FC<MintModalProps> = ({
                   <div className="min-w-0">
                     <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Wallet</p>
                     <p className="text-xs font-black text-white font-mono truncate">
-                      {address.slice(0, 6)}…{address.slice(-4)}
+                      {address.slice(0, 6)}...{address.slice(-4)}
                     </p>
                   </div>
                 </div>
               ) : (
-                <button
-                  type="button"
-                  onClick={login}
-                  className="w-full flex items-center justify-between bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20 rounded-xl px-4 py-3 mb-6 text-left transition-all cursor-pointer"
-                >
-                  <span className="flex items-center gap-2 text-yellow-500 text-xs font-bold">
+                <div className="flex items-center justify-between bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-3 mb-6">
+                  <div className="flex items-center gap-2 text-yellow-500 text-xs font-bold">
                     <AlertCircle size={14} />
                     <span>Connect your wallet to continue</span>
-                  </span>
-                  <span className="text-[10px] font-black uppercase text-yellow-400 bg-yellow-500/20 px-2 py-1 rounded-md">Connect</span>
-                </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => login()}
+                    className="text-[10px] font-black uppercase text-yellow-400 bg-yellow-500/20 hover:bg-yellow-500/30 px-3 py-1.5 rounded-md transition-all cursor-pointer"
+                  >
+                    Connect
+                  </button>
+                </div>
               )}
 
               {/* Live step indicator */}
@@ -276,7 +278,7 @@ export const MintModal: React.FC<MintModalProps> = ({
                 <div className="flex items-center gap-3 bg-accent-purple/10 border border-accent-purple/20 rounded-xl px-4 py-3 mb-4">
                   <Loader2 size={16} className="text-accent-purple animate-spin shrink-0" />
                   <span className="text-sm font-bold text-accent-purple">
-                    {STEP_LABELS[step] || 'Processing…'}
+                    {STEP_LABELS[step] || 'Processing...'}
                   </span>
                 </div>
               )}
@@ -291,6 +293,7 @@ export const MintModal: React.FC<MintModalProps> = ({
 
               <div className="flex gap-3">
                 <button
+                  type="button"
                   onClick={() => { reset(); setUiStep('choose'); }}
                   disabled={isLoading}
                   className="flex-1 py-3.5 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white font-bold text-sm rounded-2xl transition-all disabled:opacity-30"
@@ -299,6 +302,7 @@ export const MintModal: React.FC<MintModalProps> = ({
                 </button>
                 {!isConnected ? (
                   <button
+                    type="button"
                     onClick={() => {
                       if (!authenticated) {
                         const returnUrl = `/marketplace/${trackId}?action=mint`;
@@ -314,12 +318,13 @@ export const MintModal: React.FC<MintModalProps> = ({
                   </button>
                 ) : (
                   <button
+                    type="button"
                     onClick={executeMint}
                     disabled={isLoading}
                     className="flex-[2] py-3.5 bg-accent-purple hover:bg-accent-purple/90 text-white font-black text-sm rounded-2xl transition-all shadow-[0_8px_30px_rgba(139,92,246,0.4)] hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isLoading ? (
-                      <><Loader2 size={16} className="animate-spin" /> Working…</>
+                      <><Loader2 size={16} className="animate-spin" /> Working...</>
                     ) : errorMessage ? (
                       <><Zap size={16} /> Try Again</>
                     ) : (
