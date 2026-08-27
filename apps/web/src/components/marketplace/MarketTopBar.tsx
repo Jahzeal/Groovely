@@ -15,7 +15,8 @@ export const MarketTopBar = () => {
   const { openCart } = useCart();
   const router = useRouter();
   const { logout } = useLogout();
-  const { user } = usePrivy();
+  const { user, authenticated: privyAuthenticated, login } = usePrivy();
+  const { address: wagmiAddress, isConnected: wagmiConnected } = useAccount();
   const [searchQuery, setSearchQuery] = useState('');
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
@@ -56,8 +57,8 @@ export const MarketTopBar = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const { address: wagmiAddress } = useAccount();
   const activeAddress = wagmiAddress || user?.wallet?.address || walletAddress;
+  const hasAuth = isAuthenticated || privyAuthenticated || wagmiConnected || !!activeAddress;
 
   const { data: nativeBalance } = useBalance({
     address: activeAddress as `0x${string}`,
@@ -162,18 +163,20 @@ export const MarketTopBar = () => {
 
       {/* Right side: Auth / Notifications / Cart / Wallet */}
       <div className="flex items-center justify-end gap-3 sm:gap-4 md:ml-6 shrink-0">
-        {!isAuthenticated ? (
+        {!hasAuth ? (
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link href="/login">
-              <button className="text-zinc-400 hover:text-white font-black text-[10px] uppercase tracking-widest px-3 sm:px-5 py-2 sm:py-3 transition-all">
-                Log In
-              </button>
-            </Link>
-            <Link href="/onboarding">
-              <button className="bg-accent-purple hover:bg-opacity-90 text-white font-black text-[10px] uppercase tracking-widest px-4 sm:px-6 py-2 sm:py-3 rounded-xl transition-all shadow-[0_0_15px_rgba(157,0,255,0.3)]">
-                Sign Up
-              </button>
-            </Link>
+            <button
+              onClick={() => login()}
+              className="text-zinc-400 hover:text-white font-black text-[10px] uppercase tracking-widest px-3 sm:px-5 py-2 sm:py-3 transition-all cursor-pointer"
+            >
+              Log In
+            </button>
+            <button
+              onClick={() => login()}
+              className="bg-accent-purple hover:bg-opacity-90 text-white font-black text-[10px] uppercase tracking-widest px-4 sm:px-6 py-2 sm:py-3 rounded-xl transition-all shadow-[0_0_15px_rgba(157,0,255,0.3)] cursor-pointer"
+            >
+              Connect Wallet
+            </button>
           </div>
         ) : (
           <>

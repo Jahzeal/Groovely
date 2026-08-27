@@ -3,8 +3,9 @@
 import React, { useState } from 'react';
 import { Play, Heart, Loader2, Pause } from 'lucide-react';
 import { useMusicPlayer } from '@/components/marketplace/MusicPlayerContext';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, resolveIpfsUrl } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 
 interface ExploreCardProps {
   id?: string | number;
@@ -12,12 +13,14 @@ interface ExploreCardProps {
   artist: string;
   image: string;
   audioUrl?: string;
+  price?: string;
   uploaderId?: number;
   queue?: any[];
   type?: string; 
 }
 
-export const ExploreCard = ({ id, title, artist, image, audioUrl, uploaderId, queue }: ExploreCardProps) => {
+export const ExploreCard = ({ id, title, artist, image, audioUrl, price, uploaderId, queue }: ExploreCardProps) => {
+  const router = useRouter();
   const [hovered, setHovered] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
@@ -52,14 +55,18 @@ export const ExploreCard = ({ id, title, artist, image, audioUrl, uploaderId, qu
     }
   };
 
+  const resolvedAudioUrl = resolveIpfsUrl(audioUrl);
+  const resolvedImageUrl = resolveIpfsUrl(image) || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
+
   return (
     <div
+      onClick={() => { if (id) router.push(`/marketplace/${id}`); }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       className="relative rounded-2xl overflow-hidden group cursor-pointer border border-white/5 hover:border-white/20 transition-all duration-300 w-full aspect-[16/10]"
     >
       <img
-        src={image}
+        src={resolvedImageUrl}
         alt={title}
         className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
       />
@@ -69,7 +76,7 @@ export const ExploreCard = ({ id, title, artist, image, audioUrl, uploaderId, qu
       <button
         onClick={handleSave}
         disabled={isSaving}
-        className={`absolute top-3 right-3 w-8 h-8 backdrop-blur-md border rounded-full flex items-center justify-center transition-all duration-300 z-10 ${hovered ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1'} ${isSaved ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-black/40 border-white/10 text-white hover:bg-white/20'} disabled:opacity-50`}
+        className={`absolute top-3 right-3 w-8 h-8 backdrop-blur-md border rounded-full flex items-center justify-center transition-all duration-300 z-20 ${hovered ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1'} ${isSaved ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-black/40 border-white/10 text-white hover:bg-white/20'} disabled:opacity-50`}
       >
         {isSaving ? (
           <Loader2 size={13} className="animate-spin" />
@@ -80,13 +87,14 @@ export const ExploreCard = ({ id, title, artist, image, audioUrl, uploaderId, qu
 
       {/* Play button */}
       <button
+        type="button"
         onClick={(e) => { 
           e.preventDefault(); 
           e.stopPropagation(); 
-          playTrack({ id: id || title, title, artist, image, audioUrl, uploaderId }, queue);
+          playTrack({ id: id || title, title, artist, image: resolvedImageUrl, audioUrl: resolvedAudioUrl, uploaderId, price }, queue);
         }}
-        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-all duration-300
-          ${hovered || isThisTrackPlaying ? 'opacity-100 scale-100' : 'opacity-100 sm:opacity-0 scale-100 sm:scale-75 sm:group-hover:opacity-100 sm:group-hover:scale-100'}`}
+        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-all duration-200 z-20 cursor-pointer
+          ${hovered || isThisTrackPlaying ? 'opacity-100 scale-100' : 'opacity-100 sm:opacity-0 scale-100 sm:scale-90 sm:group-hover:opacity-100 sm:group-hover:scale-100'}`}
       >
         {isThisTrackPlaying ? (
           <Pause size={16} fill="white" className="text-white" />

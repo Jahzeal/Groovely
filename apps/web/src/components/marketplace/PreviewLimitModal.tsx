@@ -34,7 +34,7 @@ export const PreviewLimitModal: React.FC = () => {
 
   const rawPrice = currentTrack.price;
   const numericPrice = parseFloat(rawPrice ? rawPrice.toString().replace(/[^0-9.]/g, '') : '');
-  const formattedPrice = isNaN(numericPrice) || numericPrice <= 0 ? '5.00' : numericPrice.toFixed(2);
+  const formattedPrice = isNaN(numericPrice) ? (rawPrice ? rawPrice.toString() : '0.00') : numericPrice.toFixed(2);
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
@@ -82,14 +82,20 @@ export const PreviewLimitModal: React.FC = () => {
             <h2 className="text-2xl font-black tracking-tight text-white mb-1 leading-tight">
               {currentTrack.title}
             </h2>
-            <p className="text-xs font-medium text-zinc-400 mb-3">
+            <p className="text-xs font-medium text-zinc-400 mb-5">
               by <span className="text-white font-bold">{currentTrack.artist}</span>
             </p>
 
-            {/* Price Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent-purple/10 border border-accent-purple/30 text-white font-black text-xs mb-6 shadow-[0_0_15px_rgba(157,0,255,0.2)]">
-              <Coins size={14} className="text-accent-purple" />
-              <span>Starting at <strong className="text-accent-cyan">${formattedPrice} USDC</strong></span>
+            {/* High-visibility Price Banner */}
+            <div className="w-full bg-gradient-to-r from-accent-purple/20 via-accent-purple/10 to-accent-cyan/10 border border-accent-purple/30 rounded-2xl p-4 mb-6 flex items-center justify-between shadow-[0_0_25px_rgba(139,92,246,0.15)]">
+              <div className="text-left">
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Unlock Full Access</p>
+                <p className="text-2xl font-black text-white font-mono tracking-tight">${formattedPrice} <span className="text-xs text-accent-cyan font-sans font-black">USDC</span></p>
+              </div>
+              <div className="bg-accent-purple/20 border border-accent-purple/40 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                <Coins size={14} className="text-accent-cyan" />
+                <span className="text-xs font-black text-accent-cyan uppercase tracking-wider">Instant Mint</span>
+              </div>
             </div>
 
             <p className="text-zinc-400 text-xs leading-relaxed mb-6 max-w-xs">

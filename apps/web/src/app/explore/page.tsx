@@ -11,7 +11,7 @@ import { MusicPlayer } from '@/components/marketplace/MusicPlayer';
 import { CartProvider } from '@/components/marketplace/CartContext';
 import { Twitter, Instagram } from '@/components/ui/SocialIcons';
 import { Send, Disc, Loader2 } from 'lucide-react';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, resolveIpfsUrl } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 
 export default function ExplorePage() {
@@ -117,9 +117,10 @@ export default function ExplorePage() {
     id: t.id,
     title: t.title,
     artist: t.artist_name || t.artistName || t.creatorName || t.artist || 'Unknown Artist',
-    image: t.cover_url || t.coverArt || t.image || '',
-    audioUrl: t.audio_url || t.audioUrl || t.preview_url,
-    uploaderId: t.user_id
+    image: resolveIpfsUrl(t.cover_url || t.coverArt || t.image || ''),
+    audioUrl: resolveIpfsUrl(t.audio_url || t.audioUrl || t.preview_url),
+    uploaderId: t.user_id,
+    price: t.price || t.license_price
   }));
 
   const handleFollow = async (id: string | number, currentStatus: boolean) => {
