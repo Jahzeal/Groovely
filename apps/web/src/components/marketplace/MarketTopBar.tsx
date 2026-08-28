@@ -137,7 +137,7 @@ export const MarketTopBar = () => {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={handleSearch}
-          className="w-full bg-[#0F0F1A] border border-white/5 rounded-xl py-2 sm:py-2.5 pl-8 sm:pl-10 pr-3 sm:pr-4 text-xs sm:text-sm font-medium focus:outline-none focus:border-accent-purple/50 transition-all placeholder-zinc-500 text-white"
+          className="w-full bg-[#0F0F1A] border border-white/5 rounded-xl py-2 sm:py-2.5 pl-8 sm:pl-10 pr-3 sm:pr-4 text-[16px] sm:text-sm font-medium focus:outline-none focus:border-accent-purple/50 transition-all placeholder-zinc-500 text-white"
         />
       </div>
 

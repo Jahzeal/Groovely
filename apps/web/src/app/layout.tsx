@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -15,6 +15,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Grooveli | Web3 Music Licensing & Marketplace",
   description: "Discover, stream, and license high-quality beats, podcasts, and songs with on-chain ownership on Grooveli.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 import { Web3Provider } from "@/components/providers/web3-provider";
