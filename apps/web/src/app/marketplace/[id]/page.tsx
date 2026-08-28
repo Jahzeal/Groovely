@@ -9,6 +9,7 @@ import { TrackCard } from '@/components/marketplace/TrackCard';
 import { MusicPlayer } from '@/components/marketplace/MusicPlayer';
 import { useMusicPlayer } from '@/components/marketplace/MusicPlayerContext';
 import { MintModal, EditionInfo } from '@/components/marketplace/MintModal';
+import { ShareModal } from '@/components/marketplace/ShareModal';
 import { Button } from '@/components/ui/Button';
 import {
   ChevronLeft,
@@ -22,7 +23,8 @@ import {
   ExternalLink,
   Copy,
   Info,
-  Check
+  Check,
+  Download
 } from 'lucide-react';
 import { CartProvider, useCart } from '@/components/marketplace/CartContext';
 import { use } from 'react';
@@ -39,6 +41,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [searchQuery, setSearchQuery] = React.useState('');
   const [isPurchased, setIsPurchased] = React.useState(false);
   const [mintModalOpen, setMintModalOpen] = React.useState(false);
+  const [shareModalOpen, setShareModalOpen] = React.useState(false);
   const [audioDuration, setAudioDuration] = React.useState<string>('Loading...');
   const [currentUserId, setCurrentUserId] = React.useState<number | null>(null);
 
@@ -419,6 +422,22 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         editions={editionsList}
       />
 
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        track={{
+          id: String(id),
+          title: displayTrack.title,
+          artist: displayTrack.creator,
+          image: displayTrack.image,
+          audioUrl: displayTrack.audio_url,
+          isPurchased,
+          isCreator: isUploader,
+        }}
+        onOpenMintModal={() => setMintModalOpen(true)}
+      />
+
       <style jsx>{`
         .divider-text {
           position: relative;
@@ -450,12 +469,16 @@ const PurchaseSidebar = ({
   isUploader,
   editionsList,
   onBuy,
+  onShare,
+  onExport,
 }: {
   track: any;
   isPurchased?: boolean;
   isUploader?: boolean;
   editionsList: EditionInfo[];
   onBuy?: () => void;
+  onShare?: () => void;
+  onExport?: () => void;
 }) => {
   return (
     <div className="bg-[#0F0F1A] border border-white/5 rounded-3xl p-8 sticky top-32">
@@ -476,7 +499,7 @@ const PurchaseSidebar = ({
 
       {isUploader ? (
         /* ── Uploader state ── */
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex items-center justify-center gap-2 py-4 bg-accent-cyan/10 border border-accent-cyan/20 rounded-2xl mb-3">
             <span className="text-sm font-black text-accent-cyan">You Uploaded This Track</span>
           </div>
@@ -486,7 +509,7 @@ const PurchaseSidebar = ({
         </div>
       ) : isPurchased ? (
         /* ── Owned state ── */
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex items-center justify-center gap-2 py-4 bg-accent-purple/10 border border-accent-purple/20 rounded-2xl mb-3">
             <Check size={18} className="text-accent-purple" strokeWidth={2.5} />
             <span className="text-sm font-black text-accent-purple">You Own This Track</span>
@@ -500,12 +523,31 @@ const PurchaseSidebar = ({
         <Button
           fullWidth
           onClick={onBuy}
-          className="mb-8 flex items-center justify-center gap-2 shadow-[0_8px_30px_rgba(139,92,246,0.4)]"
+          className="mb-6 flex items-center justify-center gap-2 shadow-[0_8px_30px_rgba(139,92,246,0.4)] cursor-pointer"
         >
           <ShoppingCart size={18} />
           Mint / Purchase
         </Button>
       )}
+
+      {/* Share and Export Action Row */}
+      <div className="grid grid-cols-2 gap-2.5 mb-8">
+        <button
+          onClick={onShare}
+          className="py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer hover:border-white/20"
+        >
+          <Share2 size={13} className="text-accent-purple" />
+          <span>Share</span>
+        </button>
+
+        <button
+          onClick={onExport}
+          className="py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer hover:border-white/20"
+        >
+          <Download size={13} className="text-accent-cyan" />
+          <span>Export</span>
+        </button>
+      </div>
 
       <div className="space-y-6">
         <div>

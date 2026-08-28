@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Play, ShoppingCart, Heart, Loader2, Pause } from 'lucide-react';
+import { Play, ShoppingCart, Heart, Loader2, Pause, Share2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCart } from './CartContext';
 import { useMusicPlayer } from './MusicPlayerContext';
@@ -74,6 +74,29 @@ export const TrackCard = ({ id, title, creator, image, audioUrl, licenseTypes, p
       />
       {/* Overlays */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+
+      {/* Quick Share button */}
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (typeof navigator !== 'undefined' && navigator.share) {
+            navigator.share({
+              title: `${title} by ${creator}`,
+              url: `${typeof window !== 'undefined' ? window.location.origin : ''}/marketplace/${id}`
+            }).catch(() => {});
+          } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+            navigator.clipboard.writeText(`${typeof window !== 'undefined' ? window.location.origin : ''}/marketplace/${id}`);
+            toast.success('Track link copied!');
+          }
+        }}
+        className={`absolute top-2.5 sm:top-3 left-2.5 sm:left-3 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-200 border bg-black/40 backdrop-blur-md border-white/10 text-white/70 hover:text-white hover:bg-black/60 shadow-lg cursor-pointer ${
+          hovered ? 'opacity-100 scale-100' : 'opacity-0 scale-75'
+        }`}
+        title="Share track"
+      >
+        <Share2 size={12} />
+      </button>
 
       {/* Like button */}
       <button

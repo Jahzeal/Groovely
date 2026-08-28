@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useRef } from 'react';
-import { SkipBack, Play, Pause, SkipForward, Volume2, Lock, ShoppingCart } from 'lucide-react';
+import { SkipBack, Play, Pause, SkipForward, Volume2, Lock, ShoppingCart, Share2 } from 'lucide-react';
 import { useMusicPlayer } from './MusicPlayerContext';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 
 const PREVIEW_LIMIT = 40;
 
@@ -263,6 +264,25 @@ export const MusicPlayer = () => {
               />
             </div>
           </div>
+
+          {/* Quick Share Button */}
+          <button
+            onClick={() => {
+              if (typeof navigator !== 'undefined' && navigator.share) {
+                navigator.share({
+                  title: `${currentTrack.title} by ${currentTrack.artist}`,
+                  url: `${typeof window !== 'undefined' ? window.location.origin : ''}/marketplace/${currentTrack.id}`
+                }).catch(() => {});
+              } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                navigator.clipboard.writeText(`${typeof window !== 'undefined' ? window.location.origin : ''}/marketplace/${currentTrack.id}`);
+                toast.success('Track link copied!');
+              }
+            }}
+            className="text-zinc-400 hover:text-white transition-colors cursor-pointer p-1.5 rounded-lg hover:bg-white/5"
+            title="Share track"
+          >
+            <Share2 size={16} />
+          </button>
         </div>
 
       </div>
