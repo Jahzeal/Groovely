@@ -1,45 +1,64 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, SlidersHorizontal } from 'lucide-react';
 
 const CATEGORIES: Record<string, string[]> = {
-  'All': ['Afrobeats', 'Hip-Hop', 'R&B', 'Trap', 'Lo-Fi', 'Electronic', 'Pop', 'Jazz', 'Gospel', 'Dancehall', 'Reggae'],
-  'Music': ['Afrobeats', 'Hip-Hop', 'R&B', 'Trap', 'Lo-Fi', 'Electronic', 'Pop', 'Jazz', 'Gospel', 'Drill'],
-  'Podcast': ['Society & Culture', 'Tech', 'Comedy', 'Business', 'Education', 'Music News', 'True Crime', 'Health'],
-  'Samples': ['Drum Kits', 'Vocals', 'Melodies', 'One-Shots', 'Loops', 'Bass', 'FX', 'Percussion'],
-  'Skit': ['Comedy', 'Social Commentary', 'Parody', 'Pranks', 'Satire', 'Street Interviews'],
+  'All': ['All', 'Afrobeats', 'Trap', 'Hip-Hop', 'R&B', 'Lo-Fi', 'Electronic', 'Pop', 'Drill', 'Amapiano', 'Dancehall'],
+  'Music': ['All', 'Afrobeats', 'Hip-Hop', 'R&B', 'Pop', 'Electronic', 'Jazz', 'Gospel', 'Amapiano', 'Dancehall'],
+  'Beats': ['All', 'Trap Beats', 'Afro Beats', 'Boom Bap', 'Lo-Fi', 'Drill', 'Club', 'Melodic'],
+  'Podcasts': ['All', 'Society & Culture', 'Tech & AI', 'Music Business', 'Comedy', 'Education', 'True Crime'],
+  'Skits': ['All', 'Comedy', 'Viral Parody', 'Street Interviews', 'Standup', 'Satire'],
 };
 
-const CONTENT_TYPES = ['All', 'Music', 'Podcast', 'Samples', 'Skit'];
+const CONTENT_TYPES = ['All', 'Music', 'Beats', 'Podcasts', 'Skits'];
 
-export const ExploreNav = () => {
-  const [activeType, setActiveType] = useState('All');
-  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+interface ExploreNavProps {
+  activeType?: string;
+  onTypeChange?: (type: string) => void;
+  selectedGenre?: string;
+  onGenreChange?: (genre: string) => void;
+}
 
-  const toggleGenre = (genre: string) => {
-    setSelectedGenres(prev =>
-      prev.includes(genre) ? prev.filter(g => g !== genre) : [...prev, genre]
-    );
+export const ExploreNav: React.FC<ExploreNavProps> = ({
+  activeType: externalType,
+  onTypeChange,
+  selectedGenre: externalGenre,
+  onGenreChange,
+}) => {
+  const [internalType, setInternalType] = useState('All');
+  const [internalGenre, setInternalGenre] = useState('All');
+
+  const activeType = externalType !== undefined ? externalType : internalType;
+  const selectedGenre = externalGenre !== undefined ? externalGenre : internalGenre;
+
+  const handleTypeClick = (type: string) => {
+    if (onTypeChange) onTypeChange(type);
+    else setInternalType(type);
+
+    if (onGenreChange) onGenreChange('All');
+    else setInternalGenre('All');
+  };
+
+  const handleGenreClick = (genre: string) => {
+    if (onGenreChange) onGenreChange(genre);
+    else setInternalGenre(genre);
   };
 
   const currentGenres = CATEGORIES[activeType] || CATEGORIES['All'];
 
   return (
-    <div className="flex items-center gap-0 px-4 sm:px-8 py-3 sm:py-4 bg-[#192134]/80 backdrop-blur-md sticky top-[73px] z-20 overflow-x-auto no-scrollbar border-b border-[#2D3548]">
+    <div className="flex items-center gap-0 px-4 sm:px-8 py-2.5 sm:py-3.5 bg-[#070a14]/90 backdrop-blur-xl sticky top-[65px] sm:top-[73px] z-20 overflow-x-auto no-scrollbar border-b border-white/10 shadow-lg">
       {/* Content type tabs */}
-      <div className="flex items-center gap-1 shrink-0 pr-4">
+      <div className="flex items-center gap-1.5 shrink-0 pr-3 sm:pr-4">
         {CONTENT_TYPES.map(type => (
           <button
             key={type}
-            onClick={() => {
-              setActiveType(type);
-              setSelectedGenres([]);
-            }}
-            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer
+            onClick={() => handleTypeClick(type)}
+            className={`px-3 sm:px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 cursor-pointer
               ${activeType === type
-                ? 'bg-accent-purple text-white shadow-[0_0_12px_rgba(139,92,246,0.35)]'
-                : 'text-zinc-500 hover:text-white hover:bg-white/5'
+                ? 'bg-accent-purple text-white shadow-[0_0_15px_rgba(139,92,246,0.4)] scale-[1.02]'
+                : 'text-zinc-400 hover:text-white hover:bg-white/5'
               }`}
           >
             {type}
@@ -51,25 +70,20 @@ export const ExploreNav = () => {
       <div className="w-px h-5 bg-white/10 shrink-0 mr-3" />
 
       {/* Genre pills */}
-      <div className="flex items-center gap-2 flex-1 overflow-x-auto no-scrollbar">
+      <div className="flex items-center gap-1.5 flex-1 overflow-x-auto no-scrollbar">
         {currentGenres.map((genre) => {
-          const isActive = selectedGenres.includes(genre);
+          const isActive = selectedGenre === genre;
           return (
             <button
               key={genre}
-              onClick={() => toggleGenre(genre)}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-200 border shrink-0 cursor-pointer
+              onClick={() => handleGenreClick(genre)}
+              className={`px-3 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all duration-200 cursor-pointer shrink-0 border
                 ${isActive
-                  ? 'bg-accent-purple text-white border-accent-purple shadow-[0_0_12px_rgba(139,92,246,0.35)]'
-                  : 'bg-white/5 text-zinc-400 border-white/5 hover:border-white/15 hover:text-white'
+                  ? 'bg-white/15 border-accent-purple/60 text-white shadow-sm'
+                  : 'bg-white/[0.02] border-white/5 text-zinc-400 hover:text-zinc-200 hover:bg-white/5'
                 }`}
             >
               {genre}
-              {isActive && (
-                <span className="ml-1 opacity-80" onClick={(e) => { e.stopPropagation(); toggleGenre(genre); }}>
-                  <X size={11} strokeWidth={3} />
-                </span>
-              )}
             </button>
           );
         })}

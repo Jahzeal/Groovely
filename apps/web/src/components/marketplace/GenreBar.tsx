@@ -48,7 +48,7 @@ export const GenreBar: React.FC<GenreBarProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-2 px-4 sm:px-8 py-2.5 sm:py-3 border-b border-[#2D3548] bg-[#192134]/90 backdrop-blur-md sticky top-[69px] sm:top-[73px] z-20 transition-all">
+    <div className="flex flex-col gap-2 px-4 sm:px-8 py-2 sm:py-2.5 border-b border-white/10 bg-[#070a14]/95 backdrop-blur-xl sticky top-[65px] sm:top-[73px] z-20 transition-all shadow-md">
       {/* Top row: Main Category Pills */}
       <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5">
         {MAIN_CATEGORIES.map((cat) => {

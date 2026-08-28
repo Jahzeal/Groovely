@@ -3,22 +3,23 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { MarketTopBar } from '@/components/marketplace/MarketTopBar';
-import { ExploreNav } from '@/components/explore/ExploreNav';
-import { ExploreHero } from '@/components/explore/ExploreHero';
+import { GenreBar } from '@/components/marketplace/GenreBar';
+import { FeaturedCarousel } from '@/components/marketplace/FeaturedCarousel';
 import { ExploreCard } from '@/components/explore/ExploreCard';
 import { CreatorCard } from '@/components/explore/CreatorCard';
 import { MusicPlayer } from '@/components/marketplace/MusicPlayer';
 import { CartProvider } from '@/components/marketplace/CartContext';
 import { Twitter, Instagram } from '@/components/ui/SocialIcons';
-import { Send, Disc, Loader2 } from 'lucide-react';
-import { usePrivy } from '@privy-io/react-auth';
+import { Send, Disc, Loader2, Sparkles, TrendingUp, Users, Clock, Music } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { apiFetch, resolveIpfsUrl } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 
 export default function ExplorePage() {
-  const { authenticated: privyAuthenticated, ready: privyReady } = usePrivy();
   const router = useRouter();
+
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
 
   const [trending, setTrending] = useState<any[]>([]);
   const [isLoadingTrending, setIsLoadingTrending] = useState(true);
@@ -28,16 +29,6 @@ export default function ExplorePage() {
   const [isLoadingRecommended, setIsLoadingRecommended] = useState(true);
   const [recent, setRecent] = useState<any[]>([]);
   const [isLoadingRecent, setIsLoadingRecent] = useState(true);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && privyReady) {
-      const token = localStorage.getItem('groovely_token') || localStorage.getItem('grooveli_token');
-      const wallet = localStorage.getItem('groovely_wallet') || localStorage.getItem('grooveli_wallet');
-      if (!token && !privyAuthenticated && !wallet) {
-        router.replace('/login?redirect=/explore');
-      }
-    }
-  }, [privyAuthenticated, privyReady, router]);
 
   useEffect(() => {
     async function fetchTrending() {
@@ -131,7 +122,7 @@ export default function ExplorePage() {
   const mapTracksToQueue = (tracks: any[]) => tracks.map(t => ({
     id: t.id,
     title: t.title,
-    artist: t.artist_name || t.artistName || t.creatorName || t.artist || 'Unknown Artist',
+    artist: t.artist_name || t.artistName || t.creatorName || t.artist || 'Grooveli Creator',
     image: resolveIpfsUrl(t.cover_url || t.coverArt || t.image || ''),
     audioUrl: resolveIpfsUrl(t.audio_url || t.audioUrl || t.preview_url),
     uploaderId: t.user_id,
@@ -151,7 +142,6 @@ export default function ExplorePage() {
         setCreators(prev => prev.map(c => c.id === id ? { ...c, is_following: nextStatus, isFollowing: nextStatus } : c));
       } else {
         const data = await res?.json();
-        // If we get "Already following" but we were trying to follow, just sync state
         if (data?.error === 'Already following this creator' && !currentStatus) {
            setCreators(prev => prev.map(c => c.id === id ? { ...c, is_following: true, isFollowing: true } : c));
            return;
@@ -164,51 +154,83 @@ export default function ExplorePage() {
     }
   };
 
+  const filterByCategory = (list: any[]) => {
+    if (activeCategory === 'All') return list;
+    const catLower = activeCategory.toLowerCase();
+    return list.filter(item => {
+      const itemCat = (item.category || item.type || '').toLowerCase();
+      if (catLower === 'music') return itemCat === 'music' || itemCat === 'song' || itemCat === 'track' || !itemCat;
+      if (catLower === 'beats' || catLower === 'beat') return itemCat.includes('beat');
+      if (catLower === 'podcasts' || catLower === 'podcast') return itemCat.includes('podcast');
+      if (catLower === 'skits' || catLower === 'skit') return itemCat.includes('skit');
+      return true;
+    });
+  };
+
+  const filteredTrending = filterByCategory(trending);
+  const filteredRecommended = filterByCategory(recommended);
+  const filteredRecent = filterByCategory(recent);
+
   return (
     <CartProvider>
-      <div className="flex h-screen overflow-hidden bg-[#192134] text-white font-sans selection:bg-[#8A2BE2] selection:text-white">
-        {/* We use role="fan" here to show the correct menu */}
+      <div className="flex h-screen overflow-hidden bg-[#070a14] text-white font-sans selection:bg-[#8A2BE2] selection:text-white">
         <Sidebar activePage="explore" />
 
-        <div className="flex-1 flex flex-col min-w-0 bg-[#192134]">
+        <div className="flex-1 flex flex-col min-w-0 bg-[#070a14]">
           <MarketTopBar />
-          <ExploreNav />
+          <GenreBar
+            activeCategory={activeCategory}
+            onSelectCategory={setActiveCategory}
+            activeGenre={selectedGenre}
+            onSelectGenre={setSelectedGenre}
+          />
 
           <main className="flex-1 overflow-y-auto flex flex-col">
             <div className="p-4 sm:p-6 md:p-8 pt-4 flex-1 flex flex-col justify-between min-h-[calc(100vh-140px)]">
               <div>
-                <ExploreHero />
+                {/* Dynamic Spotlight Carousel */}
+                <div className="mb-8">
+                  <FeaturedCarousel />
+                </div>
 
                 {/* Trending Now */}
                 <div className="mb-8 sm:mb-12">
                   <div className="flex items-center justify-between mb-4 sm:mb-6">
-                    <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">Trending Now</h2>
-                    <button className="text-xs font-bold text-accent-purple uppercase tracking-widest hover:text-white transition-colors">View All</button>
+                    <div className="flex items-center gap-2">
+                      <TrendingUp size={18} className="text-accent-purple" />
+                      <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">Trending Now</h2>
+                    </div>
+                    <button
+                      onClick={() => router.push('/marketplace')}
+                      className="text-xs font-bold text-accent-purple uppercase tracking-widest hover:text-white transition-colors cursor-pointer"
+                    >
+                      View All
+                    </button>
                   </div>
                   
                   {isLoadingTrending ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="w-8 h-8 text-accent-purple animate-spin" />
                     </div>
-                  ) : trending.length > 0 ? (
+                  ) : filteredTrending.length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
-                      {trending.map((track, i) => (
+                      {filteredTrending.map((track, i) => (
                         <ExploreCard 
                           key={track.id || i} 
                           id={track.id}
                           title={track.title}
-                          artist={track.artist_name || track.artistName || track.creatorName || track.artist || 'Unknown Artist'}
+                          artist={track.artist_name || track.artistName || track.creatorName || track.artist || 'Grooveli Creator'}
                           image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
                           audioUrl={track.audio_url || track.audioUrl || track.preview_url}
                           uploaderId={track.user_id}
                           price={track.price || track.license_price || '1.00'}
-                          queue={mapTracksToQueue(trending)}
+                          queue={mapTracksToQueue(filteredTrending)}
                         />
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-12 bg-white/5 rounded-2xl border border-white/5">
-                      <p className="text-zinc-500 font-medium text-xs sm:text-sm">No trending tracks found at the moment.</p>
+                    <div className="text-center py-12 bg-white/[0.02] rounded-2xl border border-white/5">
+                      <p className="text-zinc-500 font-medium text-xs sm:text-sm">No trending tracks found in this category.</p>
                     </div>
                   )}
                 </div>
@@ -216,8 +238,16 @@ export default function ExplorePage() {
                 {/* Creators */}
                 <div className="mb-8 sm:mb-12">
                   <div className="flex items-center justify-between mb-4 sm:mb-6">
-                    <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">Creators</h2>
-                    <button className="text-xs font-bold text-accent-purple uppercase tracking-widest hover:text-white transition-colors">Discover More</button>
+                    <div className="flex items-center gap-2">
+                      <Users size={18} className="text-accent-cyan" />
+                      <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">Featured Creators</h2>
+                    </div>
+                    <button
+                      onClick={() => router.push('/marketplace')}
+                      className="text-xs font-bold text-accent-purple uppercase tracking-widest hover:text-white transition-colors cursor-pointer"
+                    >
+                      Discover More
+                    </button>
                   </div>
                   
                   {isLoadingCreators ? (
@@ -243,7 +273,7 @@ export default function ExplorePage() {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-10 bg-white/5 rounded-2xl border border-white/5">
+                    <div className="text-center py-10 bg-white/[0.02] rounded-2xl border border-white/5">
                       <p className="text-zinc-500 font-medium text-xs sm:text-sm">No creators featured today.</p>
                     </div>
                   )}
@@ -252,33 +282,41 @@ export default function ExplorePage() {
                 {/* Recommended For You */}
                 <div className="mb-8 sm:mb-12">
                   <div className="flex items-center justify-between mb-4 sm:mb-6">
-                    <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">Recommended For You</h2>
-                    <button className="text-xs font-bold text-accent-purple uppercase tracking-widest hover:text-white transition-colors">See More</button>
+                    <div className="flex items-center gap-2">
+                      <Sparkles size={18} className="text-accent-purple" />
+                      <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">Recommended For You</h2>
+                    </div>
+                    <button
+                      onClick={() => router.push('/marketplace')}
+                      className="text-xs font-bold text-accent-purple uppercase tracking-widest hover:text-white transition-colors cursor-pointer"
+                    >
+                      See More
+                    </button>
                   </div>
                   
                   {isLoadingRecommended ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="w-8 h-8 text-accent-purple animate-spin" />
                     </div>
-                  ) : recommended.length > 0 ? (
+                  ) : filteredRecommended.length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
-                      {recommended.map((track, i) => (
+                      {filteredRecommended.map((track, i) => (
                         <ExploreCard 
                           key={track.id || i} 
                           id={track.id}
                           title={track.title}
-                          artist={track.artist_name || track.artistName || track.creatorName || track.artist || 'Unknown Artist'}
+                          artist={track.artist_name || track.artistName || track.creatorName || track.artist || 'Grooveli Creator'}
                           image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
                           audioUrl={track.audio_url || track.audioUrl || track.preview_url}
                           uploaderId={track.user_id}
                           price={track.price || track.license_price || '1.00'}
-                          queue={mapTracksToQueue(recommended)}
+                          queue={mapTracksToQueue(filteredRecommended)}
                         />
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-12 bg-white/5 rounded-2xl border border-white/5">
-                      <p className="text-zinc-500 font-medium">Listening to more tracks helps us improve your recommendations!</p>
+                    <div className="text-center py-12 bg-white/[0.02] rounded-2xl border border-white/5">
+                      <p className="text-zinc-500 font-medium text-xs sm:text-sm">Explore and listen to tracks to personalize your recommendations!</p>
                     </div>
                   )}
                 </div>
@@ -286,33 +324,41 @@ export default function ExplorePage() {
                 {/* Recently Added */}
                 <div className="mb-16">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-black text-white tracking-tight">Recently Added</h2>
-                    <button className="text-xs font-bold text-accent-purple uppercase tracking-widest hover:text-white transition-colors">View Newest</button>
+                    <div className="flex items-center gap-2">
+                      <Clock size={18} className="text-accent-cyan" />
+                      <h2 className="text-xl font-black text-white tracking-tight">Recently Added</h2>
+                    </div>
+                    <button
+                      onClick={() => router.push('/marketplace')}
+                      className="text-xs font-bold text-accent-purple uppercase tracking-widest hover:text-white transition-colors cursor-pointer"
+                    >
+                      View Newest
+                    </button>
                   </div>
                   
                   {isLoadingRecent ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="w-8 h-8 text-accent-purple animate-spin" />
                     </div>
-                  ) : recent.length > 0 ? (
+                  ) : filteredRecent.length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-                      {recent.map((track, i) => (
+                      {filteredRecent.map((track, i) => (
                         <ExploreCard 
                           key={track.id || i} 
                           id={track.id}
                           title={track.title}
-                          artist={track.artist_name || track.artistName || track.creatorName || track.artist || 'Unknown Artist'}
+                          artist={track.artist_name || track.artistName || track.creatorName || track.artist || 'Grooveli Creator'}
                           image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1485603348612-40db7f90bbbe?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
                           audioUrl={track.audio_url || track.audioUrl || track.preview_url}
                           uploaderId={track.user_id}
                           price={track.price || track.license_price || '1.00'}
-                          queue={mapTracksToQueue(recent)}
+                          queue={mapTracksToQueue(filteredRecent)}
                         />
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-12 bg-white/5 rounded-2xl border border-white/5">
-                      <p className="text-zinc-500 font-medium">New content is uploaded every day. Check back soon!</p>
+                    <div className="text-center py-12 bg-white/[0.02] rounded-2xl border border-white/5">
+                      <p className="text-zinc-500 font-medium text-xs sm:text-sm">New tracks are uploaded regularly. Check back soon!</p>
                     </div>
                   )}
                 </div>
