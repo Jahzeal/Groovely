@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Copy, Check, Share2, Twitter, Send, Download, Code, Lock, Music } from 'lucide-react';
+import { X, Copy, Check, Share2, Send, Download, Code, Lock, Music } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface ShareModalProps {
@@ -233,7 +233,9 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                     className="flex flex-col items-center justify-center p-3 rounded-2xl bg-[#050811] border border-white/5 hover:border-white/20 hover:bg-white/[0.04] transition-all cursor-pointer group"
                   >
                     <div className="w-8 h-8 rounded-xl bg-black flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
-                      <Twitter size={15} className="text-white" />
+                      <svg className="w-3.5 h-3.5 text-white fill-current" viewBox="0 0 24 24">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                      </svg>
                     </div>
                     <span className="text-[11px] font-bold text-zinc-300">X (Twitter)</span>
                   </button>
