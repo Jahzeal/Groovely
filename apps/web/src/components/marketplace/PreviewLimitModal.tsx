@@ -35,6 +35,17 @@ export const PreviewLimitModal: React.FC = () => {
   if (!previewLimitReached || !currentTrack) return null;
 
   const rawPrice = currentTrack.price;
+  const isFree = Boolean(
+    currentTrack.payment_model === 'none' ||
+    rawPrice === 0 ||
+    rawPrice === '0' ||
+    rawPrice === '0.00' ||
+    rawPrice === 'Free' ||
+    (typeof rawPrice === 'string' && rawPrice.toLowerCase().includes('free'))
+  );
+
+  if (isFree) return null;
+
   const numericPrice = parseFloat(rawPrice ? rawPrice.toString().replace(/[^0-9.]/g, '') : '');
   const formattedPrice = isNaN(numericPrice) || numericPrice <= 0 ? '1.00' : numericPrice.toFixed(2);
 

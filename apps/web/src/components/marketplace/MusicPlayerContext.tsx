@@ -11,6 +11,7 @@ interface Track {
   audioUrl?: string;
   uploaderId?: number;
   price?: string | number;
+  payment_model?: string;
   licenseTypes?: string[];
 }
 
@@ -92,7 +93,7 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const getIsUploader = useCallback((track: Track | null) => {
     if (!track || !track.uploaderId) return false;
     if (typeof window === 'undefined') return false;
-    const stored = localStorage.getItem('grooveli_user_id');
+    const stored = localStorage.getItem('grooveli_user_id') || localStorage.getItem('groovely_user_id');
     return stored ? Number(stored) === Number(track.uploaderId) : false;
   }, []);
 
@@ -155,9 +156,22 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
             }
           }
 
-          // 40-second preview enforcement
+          // Check if this track is free or owned by creator
+          const isFreeTrack = Boolean(
+            activeTrack && (
+              activeTrack.payment_model === 'none' ||
+              activeTrack.price === 0 ||
+              activeTrack.price === '0' ||
+              activeTrack.price === '0.00' ||
+              activeTrack.price === 'Free' ||
+              (typeof activeTrack.price === 'string' && activeTrack.price.toLowerCase().includes('free'))
+            )
+          );
+
+          // 40-second preview enforcement (only for paid, unpurchased tracks by non-creators)
           if (
             activeTrack &&
+            !isFreeTrack &&
             audio.currentTime >= PREVIEW_LIMIT_SECONDS &&
             !isTrackPurchased(activeTrack.id) &&
             !getIsUploader(activeTrack)

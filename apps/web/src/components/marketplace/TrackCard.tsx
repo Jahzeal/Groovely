@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Play, ShoppingCart, Heart, Loader2, Pause, Share2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCart } from './CartContext';

@@ -172,25 +172,31 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   // Build editions list from database or fallback (hook is always called at top level)
   const editionsList: EditionInfo[] = React.useMemo(() => {
     if (!trackData) return [];
+    const isFree = track?.payment_model === 'none' || track?.license_price === '0.00' || Number(track?.license_price) === 0;
+
     if (trackData.editions && trackData.editions.length > 0) {
-      return trackData.editions.map((e: any) => ({
-        id: e.id,
-        contractEditionId: Number(e.contract_edition_id) || 1, // Fallback to 1 if not yet synced/indexed
-        editionType: e.edition_type,
-        mintPriceUsdc: parseFloat(e.mint_price_usdc) || parseFloat(track?.license_price || '0') || 5,
-        maxSupply: e.max_supply !== null && e.max_supply !== undefined ? Number(e.max_supply) : null,
-        mintedSupply: Number(e.minted_supply) || 0,
-        active: e.active !== false,
-      }));
+      return trackData.editions.map((e: any) => {
+        const rawEdPrice = Number(e.mint_price_usdc);
+        const edPrice = isFree ? 0 : (!isNaN(rawEdPrice) ? rawEdPrice : (Number(track?.license_price) || 0));
+        return {
+          id: e.id,
+          contractEditionId: Number(e.contract_edition_id) || 1,
+          editionType: e.edition_type,
+          mintPriceUsdc: edPrice,
+          maxSupply: e.max_supply !== null && e.max_supply !== undefined ? Number(e.max_supply) : null,
+          mintedSupply: Number(e.minted_supply) || 0,
+          active: e.active !== false,
+        };
+      });
     }
 
-    const fallbackPrice = parseFloat(track?.license_price || track?.price || '5');
+    const fallbackPrice = isFree ? 0 : (parseFloat(track?.license_price || track?.price || '1.00') || 0);
     return [
       {
         id: track?.id || 0,
         contractEditionId: 1,
         editionType: 'fan',
-        mintPriceUsdc: isNaN(fallbackPrice) || fallbackPrice <= 0 ? 5 : fallbackPrice,
+        mintPriceUsdc: fallbackPrice,
         maxSupply: 1000,
         mintedSupply: 0,
         active: true,
@@ -201,10 +207,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   // Map backend fields to the UI needs (hook is always called at top level)
   const displayTrack = React.useMemo(() => {
     if (!track || !creator) return null;
-    const startingPriceVal = editionsList.length > 0
-      ? Math.min(...editionsList.map(e => e.mintPriceUsdc))
-      : (parseFloat(track.license_price || track.price || '5.00'));
-    const finalPrice = isNaN(startingPriceVal) || startingPriceVal <= 0 ? '5.00' : startingPriceVal.toFixed(2);
+    const isFree = track.payment_model === 'none' || track.license_price === '0.00' || Number(track.license_price) === 0;
+    const startingPriceVal = isFree ? 0 : (
+      editionsList.length > 0
+        ? Math.min(...editionsList.map(e => e.mintPriceUsdc))
+        : (parseFloat(track.license_price || track.price || '1.00') || 0)
+    );
+    const finalPrice = isFree ? '0.00' : (isNaN(startingPriceVal) ? '1.00' : startingPriceVal.toFixed(2));
 
     return {
       ...track,
@@ -516,6 +525,16 @@ const PurchaseSidebar = ({
           </div>
           <p className="text-center text-[11px] text-zinc-600 font-bold uppercase tracking-wider">
             Unlimited listening · Full license active
+          </p>
+        </div>
+      ) : track.price === '0.00' || track.payment_model === 'none' ? (
+        /* ── Free Track State ── */
+        <div className="mb-6">
+          <div className="flex items-center justify-center gap-2 py-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl mb-2">
+            <span className="text-sm font-black text-emerald-400">Free Full Access</span>
+          </div>
+          <p className="text-center text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
+            No license fee required · Stream in Full
           </p>
         </div>
       ) : (
