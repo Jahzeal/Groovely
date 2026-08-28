@@ -90,9 +90,7 @@ export const TrackCard = ({ id, title, creator, image, audioUrl, licenseTypes, p
             toast.success('Track link copied!');
           }
         }}
-        className={`absolute top-2.5 sm:top-3 left-2.5 sm:left-3 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-200 border bg-black/40 backdrop-blur-md border-white/10 text-white/70 hover:text-white hover:bg-black/60 shadow-lg cursor-pointer ${
-          hovered ? 'opacity-100 scale-100' : 'opacity-0 scale-75'
-        }`}
+        className={`absolute top-2 sm:top-3 left-2 sm:left-3 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-200 border bg-black/60 sm:bg-black/40 backdrop-blur-md border-white/15 text-white hover:bg-black/80 shadow-lg cursor-pointer opacity-100 sm:opacity-0 sm:group-hover:opacity-100 scale-100 sm:scale-75 sm:group-hover:scale-100`}
         title="Share track"
       >
         <Share2 size={12} />
@@ -102,9 +100,9 @@ export const TrackCard = ({ id, title, creator, image, audioUrl, licenseTypes, p
       <button
         onClick={handleSave}
         disabled={isSaving}
-        className={`absolute top-2.5 right-2.5 sm:top-3 sm:right-3 w-7 h-7 sm:w-8 sm:h-8 rounded-full backdrop-blur-md border flex items-center justify-center transition-all duration-300
-          ${liked ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-black/40 border-white/10 text-zinc-500 hover:text-white'}
-          ${hovered ? 'opacity-100 translate-y-0' : 'opacity-0 sm:opacity-0 -translate-y-1'}
+        className={`absolute top-2 right-2 sm:top-3 sm:right-3 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full backdrop-blur-md border flex items-center justify-center transition-all duration-300 shadow-lg cursor-pointer
+          ${liked ? 'bg-red-500/30 border-red-500/50 text-red-400' : 'bg-black/60 sm:bg-black/40 border-white/15 text-white/90 hover:text-white'}
+          opacity-100 sm:opacity-0 sm:group-hover:opacity-100 scale-100 sm:scale-75 sm:group-hover:scale-100
           disabled:opacity-50`}
       >
         {isSaving ? (
@@ -130,8 +128,8 @@ export const TrackCard = ({ id, title, creator, image, audioUrl, licenseTypes, p
             licenseTypes
           }, queue);
         }}
-        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-all duration-300
-          ${hovered || isThisTrackPlaying ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}
+        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-all duration-300 z-10 cursor-pointer
+          ${isThisTrackPlaying ? 'opacity-100 scale-100' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100 scale-100 sm:scale-75 sm:group-hover:scale-100'}`}
       >
         {isThisTrackPlaying ? (
           <Pause size={14} fill="white" className="text-white" />
@@ -181,8 +179,7 @@ export const TrackCard = ({ id, title, creator, image, audioUrl, licenseTypes, p
                   currency: currency || '$1.00 USDC'
                 });
               }}
-              className={`w-6 h-6 sm:w-7 sm:h-7 bg-accent-purple hover:bg-accent-purple/80 rounded-lg flex items-center justify-center transition-all duration-300 shadow-[0_0_10px_rgba(139,92,246,0.4)]
-                ${hovered ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}
+              className="w-6 h-6 sm:w-7 sm:h-7 bg-accent-purple hover:bg-accent-purple/80 rounded-lg flex items-center justify-center transition-all duration-300 shadow-[0_0_10px_rgba(139,92,246,0.4)] opacity-100 scale-100 cursor-pointer"
               title="Add to cart"
             >
               <ShoppingCart size={11} className="text-white" />

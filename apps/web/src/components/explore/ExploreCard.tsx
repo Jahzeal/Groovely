@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Play, Heart, Loader2, Pause } from 'lucide-react';
+import { Play, Heart, Loader2, Pause, Share2 } from 'lucide-react';
 import { useMusicPlayer } from '@/components/marketplace/MusicPlayerContext';
 import { apiFetch, resolveIpfsUrl } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -32,7 +32,7 @@ export const ExploreCard = ({ id, title, artist, image, audioUrl, price, uploade
     e.preventDefault();
     e.stopPropagation();
     
-    if (!id || isSaved) return;
+    if (!id) return;
     
     setIsSaving(true);
     try {
@@ -40,6 +40,7 @@ export const ExploreCard = ({ id, title, artist, image, audioUrl, price, uploade
       const res = await apiFetch(`/api/library/save/${id}`, {
         method
       });
+      
       if (res && res.ok) {
         setIsSaved(!isSaved);
         toast.success(isSaved ? 'Removed from library' : 'Saved to library');
@@ -55,8 +56,8 @@ export const ExploreCard = ({ id, title, artist, image, audioUrl, price, uploade
     }
   };
 
-  const resolvedAudioUrl = resolveIpfsUrl(audioUrl);
   const resolvedImageUrl = resolveIpfsUrl(image) || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
+  const resolvedAudioUrl = resolveIpfsUrl(audioUrl);
 
   return (
     <div
@@ -72,11 +73,32 @@ export const ExploreCard = ({ id, title, artist, image, audioUrl, price, uploade
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
 
+      {/* Quick Share button */}
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (typeof navigator !== 'undefined' && navigator.share) {
+            navigator.share({
+              title: `${title} by ${artist}`,
+              url: `${typeof window !== 'undefined' ? window.location.origin : ''}/marketplace/${id}`
+            }).catch(() => {});
+          } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+            navigator.clipboard.writeText(`${typeof window !== 'undefined' ? window.location.origin : ''}/marketplace/${id}`);
+            toast.success('Track link copied!');
+          }
+        }}
+        className="absolute top-2 left-2 sm:top-3 sm:left-3 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-200 border bg-black/60 sm:bg-black/40 backdrop-blur-md border-white/15 text-white hover:bg-black/80 shadow-lg cursor-pointer opacity-100 sm:opacity-0 sm:group-hover:opacity-100 scale-100 sm:scale-75 sm:group-hover:scale-100 z-20"
+        title="Share track"
+      >
+        <Share2 size={12} />
+      </button>
+
       {/* Save button */}
       <button
         onClick={handleSave}
         disabled={isSaving}
-        className={`absolute top-2 right-2 sm:top-3 sm:right-3 w-7 h-7 sm:w-8 sm:h-8 backdrop-blur-md border rounded-full flex items-center justify-center transition-all duration-300 z-20 ${hovered ? 'opacity-100 translate-y-0' : 'opacity-0 sm:opacity-0 -translate-y-1'} ${isSaved ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-black/40 border-white/10 text-white hover:bg-white/20'} disabled:opacity-50`}
+        className={`absolute top-2 right-2 sm:top-3 sm:right-3 w-7 h-7 sm:w-8 sm:h-8 backdrop-blur-md border rounded-full flex items-center justify-center transition-all duration-300 z-20 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 scale-100 sm:scale-75 sm:group-hover:scale-100 ${isSaved ? 'bg-red-500/30 border-red-500/50 text-red-400' : 'bg-black/60 sm:bg-black/40 border-white/15 text-white/90 hover:text-white'} disabled:opacity-50 cursor-pointer shadow-lg`}
       >
         {isSaving ? (
           <Loader2 size={12} className="animate-spin" />
@@ -94,7 +116,7 @@ export const ExploreCard = ({ id, title, artist, image, audioUrl, price, uploade
           playTrack({ id: id || title, title, artist, image: resolvedImageUrl, audioUrl: resolvedAudioUrl, uploaderId, price }, queue);
         }}
         className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-all duration-200 z-20 cursor-pointer
-          ${hovered || isThisTrackPlaying ? 'opacity-100 scale-100' : 'opacity-100 sm:opacity-0 scale-100 sm:scale-90 sm:group-hover:opacity-100 sm:group-hover:scale-100'}`}
+          ${isThisTrackPlaying ? 'opacity-100 scale-100' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100 scale-100 sm:scale-90 sm:group-hover:scale-100'}`}
       >
         {isThisTrackPlaying ? (
           <Pause size={14} fill="white" className="text-white" />
