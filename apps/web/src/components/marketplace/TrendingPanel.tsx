@@ -92,12 +92,12 @@ export const TrendingPanel = () => {
   };
 
   return (
-    <div className="flex flex-col h-[300px]">
+    <div className="flex flex-col h-auto xl:h-[300px]">
       <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-3 px-1 shrink-0">Trending</h3>
 
-      <div className="flex-1 overflow-y-auto pr-2 flex flex-col gap-2 custom-scrollbar">
+      <div className="grid grid-cols-2 gap-3 xl:flex xl:flex-col xl:gap-2 overflow-y-auto xl:pr-2 custom-scrollbar">
         {isLoading ? (
-          <div className="flex-1 flex items-center justify-center min-h-[200px]">
+          <div className="col-span-2 xl:col-span-1 flex-1 flex items-center justify-center min-h-[140px] xl:min-h-[200px]">
             <Loader2 className="w-6 h-6 text-accent-purple animate-spin" />
           </div>
         ) : trending.length > 0 ? (
@@ -107,7 +107,7 @@ export const TrendingPanel = () => {
               onClick={() => router.push(`/marketplace/${track.id}`)}
               onMouseEnter={() => setHoveredId(track.id)}
               onMouseLeave={() => setHoveredId(null)}
-              className="relative rounded-2xl overflow-hidden h-[110px] shrink-0 group cursor-pointer border border-white/5 hover:border-accent-purple/30 transition-all duration-300"
+              className="relative rounded-2xl overflow-hidden aspect-square sm:aspect-[4/3] xl:aspect-auto xl:h-[110px] shrink-0 group cursor-pointer border border-white/5 hover:border-accent-purple/30 transition-all duration-300 bg-[#121829]"
             >
               {/* Background */}
               <img
@@ -115,18 +115,18 @@ export const TrendingPanel = () => {
                 alt={track.title}
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-black/20 xl:to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
 
               {/* Content */}
-              <div className="absolute inset-0 flex flex-col justify-between p-3">
-                <div className="flex items-start justify-between">
-                  <div className="min-w-0 pr-2">
+              <div className="absolute inset-0 flex flex-col justify-between p-2.5 sm:p-3">
+                <div className="flex items-start justify-between gap-1">
+                  <div className="min-w-0 pr-1 flex-1">
                     <h4 className="text-xs font-black text-white tracking-tight leading-tight truncate">{track.title}</h4>
                     <p className="text-[10px] text-zinc-400 font-medium mt-0.5 truncate">{track.creator}</p>
                   </div>
                   <div className="flex flex-col gap-1.5 shrink-0">
-                    {/* Play button on hover */}
+                    {/* Play button */}
                     <button
                       onClick={(e) => {
                         e.preventDefault();
@@ -151,7 +151,9 @@ export const TrendingPanel = () => {
                           licenseTypes: t.licenseTypes
                         })));
                       }}
-                      className={`w-7 h-7 bg-accent-purple rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ${hoveredId === track.id ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}
+                      className={`w-7 h-7 bg-accent-purple rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ${
+                        hoveredId === track.id || currentTrack?.id === track.id ? 'opacity-100 scale-100' : 'opacity-90 sm:opacity-0 sm:group-hover:opacity-100 scale-95 sm:scale-75 sm:group-hover:scale-100'
+                      }`}
                     >
                       {currentTrack?.id === track.id && isPlaying ? (
                         <Pause size={10} fill="white" className="text-white" />
@@ -159,11 +161,15 @@ export const TrendingPanel = () => {
                         <Play size={10} fill="white" className="text-white ml-0.5" />
                       )}
                     </button>
-                    {/* Save button on hover */}
+                    {/* Save button */}
                     <button
                       onClick={(e) => handleSave(e, track.id)}
                       disabled={savingId === track.id || savedIds.includes(track.id)}
-                      className={`w-7 h-7 backdrop-blur-md border rounded-full flex items-center justify-center shadow-lg transition-all duration-300 hover:scale-110 ${savedIds.includes(track.id) ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-white/10 border-white/10 text-white hover:bg-white/20'} ${hoveredId === track.id ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}
+                      className={`w-7 h-7 backdrop-blur-md border rounded-full flex items-center justify-center shadow-lg transition-all duration-300 hover:scale-110 ${
+                        savedIds.includes(track.id) ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-black/40 sm:bg-white/10 border-white/10 text-white hover:bg-white/20'
+                      } ${
+                        hoveredId === track.id || savedIds.includes(track.id) ? 'opacity-100 scale-100' : 'opacity-90 sm:opacity-0 sm:group-hover:opacity-100 scale-95 sm:scale-75 sm:group-hover:scale-100'
+                      }`}
                     >
                       {savingId === track.id ? (
                         <Loader2 size={10} className="animate-spin" />
@@ -174,39 +180,29 @@ export const TrendingPanel = () => {
                   </div>
                 </div>
 
-                <div className="flex items-end justify-between">
+                <div className="flex items-end justify-between gap-1 pt-1">
                   {/* License badges */}
                   <div className="flex gap-1 flex-wrap">
                     {track.licenseTypes.slice(0, 1).map((lt) => (
                       <span
                         key={lt}
-                        className="text-[8px] font-black uppercase tracking-wider bg-black/60 border border-white/10 backdrop-blur-md px-1.5 py-0.5 rounded-md text-zinc-300"
+                        className="text-[8px] font-black uppercase tracking-wider bg-black/60 border border-white/10 backdrop-blur-md px-1.5 py-0.5 rounded-md text-zinc-300 truncate max-w-[80px]"
                       >
                         {lt}
                       </span>
                     ))}
                   </div>
 
-                  {/* Price + buy */}
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded-full bg-accent-purple/30 border border-accent-purple/50 flex items-center justify-center">
-                        <span className="text-[6px] text-accent-purple font-black">Ξ</span>
-                      </div>
-                      <span className="text-[10px] font-black text-white">{track.currency}</span>
-                    </div>
-                    <button
-                      className={`w-6 h-6 bg-accent-purple/80 hover:bg-accent-purple rounded-lg flex items-center justify-center transition-all duration-300 ${hoveredId === track.id ? 'opacity-100' : 'opacity-0'}`}
-                    >
-                      <ShoppingCart size={10} className="text-white" />
-                    </button>
+                  {/* Price */}
+                  <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/10 shrink-0">
+                    <span className="text-[10px] font-black text-accent-cyan">{track.currency}</span>
                   </div>
                 </div>
               </div>
             </div>
           ))
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 bg-white/[0.02] border border-dashed border-white/5 rounded-2xl py-10 px-4 text-center">
+          <div className="col-span-2 xl:col-span-1 flex-1 flex flex-col items-center justify-center text-zinc-600 bg-white/[0.02] border border-dashed border-white/5 rounded-2xl py-8 px-4 text-center">
             <p className="text-[10px] font-black uppercase tracking-widest">No Trending Items</p>
             <p className="text-[10px] mt-1 font-medium">Check back later for trending tracks</p>
           </div>
