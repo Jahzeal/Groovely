@@ -28,8 +28,7 @@ export const CartOverlay = ({ isOpen, onClose }: CartOverlayProps) => {
   };
 
   const subtotal = cartItems.reduce((acc, item) => acc + (Number(item.price) || 1.0), 0);
-  const gasEstimate = 0.05;
-  const total = subtotal + gasEstimate;
+  const total = subtotal;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 md:p-10">
@@ -168,12 +167,12 @@ export const CartOverlay = ({ isOpen, onClose }: CartOverlayProps) => {
                     <span className="font-bold text-white">${subtotal.toFixed(2)} USDC</span>
                   </div>
                   <div className="flex justify-between text-zinc-400">
-                    <span>Estimated Network Gas</span>
-                    <span className="font-bold text-zinc-300">~${cartItems.length > 0 ? gasEstimate.toFixed(2) : '0.00'}</span>
+                    <span>Network Fee</span>
+                    <span className="font-bold text-zinc-400 text-[11px]">Paid in POL by wallet</span>
                   </div>
                   <div className="flex justify-between text-sm font-black pt-2 text-white border-t border-white/5">
                     <span>Total Amount</span>
-                    <span className="text-accent-cyan">${cartItems.length > 0 ? total.toFixed(2) : '0.00'} USDC</span>
+                    <span className="text-accent-cyan">${total.toFixed(2)} USDC</span>
                   </div>
                 </div>
               </div>
