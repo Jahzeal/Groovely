@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Play, Pause, ShoppingCart, Loader2, Heart } from 'lucide-react';
+import { Play, Pause, ShoppingCart, Loader2, Heart, Share2 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { useMusicPlayer } from './MusicPlayerContext';
 import { useRouter } from 'next/navigation';
@@ -151,9 +151,12 @@ export const TrendingPanel = () => {
                           licenseTypes: t.licenseTypes
                         })));
                       }}
-                      className={`w-7 h-7 bg-accent-purple rounded-full flex items-center justify-center shadow-lg transition-all duration-300 ${
-                        hoveredId === track.id || currentTrack?.id === track.id ? 'opacity-100 scale-100' : 'opacity-90 sm:opacity-0 sm:group-hover:opacity-100 scale-95 sm:scale-75 sm:group-hover:scale-100'
+                      className={`w-7 h-7 bg-accent-purple rounded-full flex items-center justify-center shadow-lg transition-all duration-300 cursor-pointer ${
+                        hoveredId === track.id || currentTrack?.id === track.id
+                          ? 'opacity-100 scale-100'
+                          : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100 scale-100 sm:scale-75 sm:group-hover:scale-100'
                       }`}
+                      title={currentTrack?.id === track.id && isPlaying ? "Pause" : "Play"}
                     >
                       {currentTrack?.id === track.id && isPlaying ? (
                         <Pause size={10} fill="white" className="text-white" />
@@ -161,21 +164,52 @@ export const TrendingPanel = () => {
                         <Play size={10} fill="white" className="text-white ml-0.5" />
                       )}
                     </button>
+
                     {/* Save button */}
                     <button
                       onClick={(e) => handleSave(e, track.id)}
-                      disabled={savingId === track.id || savedIds.includes(track.id)}
-                      className={`w-7 h-7 backdrop-blur-md border rounded-full flex items-center justify-center shadow-lg transition-all duration-300 hover:scale-110 ${
-                        savedIds.includes(track.id) ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-black/40 sm:bg-white/10 border-white/10 text-white hover:bg-white/20'
+                      disabled={savingId === track.id}
+                      className={`w-7 h-7 backdrop-blur-md border rounded-full flex items-center justify-center shadow-lg transition-all duration-300 hover:scale-110 cursor-pointer ${
+                        savedIds.includes(track.id)
+                          ? 'bg-red-500/30 border-red-500/50 text-red-400'
+                          : 'bg-black/60 sm:bg-black/40 border-white/15 text-white/90 hover:text-white'
                       } ${
-                        hoveredId === track.id || savedIds.includes(track.id) ? 'opacity-100 scale-100' : 'opacity-90 sm:opacity-0 sm:group-hover:opacity-100 scale-95 sm:scale-75 sm:group-hover:scale-100'
+                        hoveredId === track.id || savedIds.includes(track.id)
+                          ? 'opacity-100 scale-100'
+                          : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100 scale-100 sm:scale-75 sm:group-hover:scale-100'
                       }`}
+                      title="Save to library"
                     >
                       {savingId === track.id ? (
                         <Loader2 size={10} className="animate-spin" />
                       ) : (
                         <Heart size={10} fill={savedIds.includes(track.id) ? 'currentColor' : 'none'} />
                       )}
+                    </button>
+
+                    {/* Quick Share button */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (typeof navigator !== 'undefined' && navigator.share) {
+                          navigator.share({
+                            title: `${track.title} by ${track.creator}`,
+                            url: `${typeof window !== 'undefined' ? window.location.origin : ''}/marketplace/${track.id}`
+                          }).catch(() => {});
+                        } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                          navigator.clipboard.writeText(`${typeof window !== 'undefined' ? window.location.origin : ''}/marketplace/${track.id}`);
+                          toast.success('Track link copied!');
+                        }
+                      }}
+                      className={`w-7 h-7 bg-black/60 sm:bg-black/40 border border-white/15 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-black/80 shadow-lg transition-all duration-300 cursor-pointer ${
+                        hoveredId === track.id
+                          ? 'opacity-100 scale-100'
+                          : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100 scale-100 sm:scale-75 sm:group-hover:scale-100'
+                      }`}
+                      title="Share track"
+                    >
+                      <Share2 size={10} />
                     </button>
                   </div>
                 </div>
