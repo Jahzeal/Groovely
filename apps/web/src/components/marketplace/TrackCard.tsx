@@ -149,7 +149,7 @@ export const TrackCard = ({ id, title, creator, image, audioUrl, licenseTypes, p
                 e.stopPropagation();
                 addToCart({
                   id: String(id),
-                  trackId: id,
+                  trackId: typeof id === 'number' ? id : parseInt(String(id)) || undefined,
                   title,
                   creator,
                   image,
