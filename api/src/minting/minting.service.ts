@@ -396,7 +396,9 @@ export class MintingService {
 
     await this.db.query('BEGIN');
     try {
-      // Record purchase
+      const priceNumeric = (parseFloat(edition.mint_price_usdc) || 0) * amount;
+
+      // Record purchase using the verified DB edition primary key (edition.id)
       await this.db.query(
         `INSERT INTO purchases
            (user_id, track_id, edition_id, amount, currency, tx_hash, token_id, license_type, buyer_wallet, purchased_at)
@@ -404,8 +406,8 @@ export class MintingService {
         [
           buyerUserId,
           actualTrackId,
-          dto.edition_id,
-          edition.mint_price_usdc * amount,
+          edition.id,
+          priceNumeric,
           dto.tx_hash,
           dto.token_id,
           dto.license_type || edition.edition_type,
@@ -413,10 +415,10 @@ export class MintingService {
         ],
       );
 
-      // Increment minted supply
+      // Increment minted supply on the verified edition record
       await this.db.query(
         'UPDATE editions SET minted_supply = minted_supply + $1 WHERE id = $2',
-        [amount, dto.edition_id],
+        [amount, edition.id],
       );
 
       await this.db.query('COMMIT');

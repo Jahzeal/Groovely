@@ -4,10 +4,12 @@ import {
   Param,
   Query,
   Req,
+  UseGuards,
   BadRequestException,
 } from '@nestjs/common';
 import { MarketService } from './market.service';
 import { ResponseMessage } from '../common/decorators/response-message.decorator';
+import { OptionalJwtAuthGuard } from '../common/guards/optional-jwt-auth.guard';
 
 @Controller('market')
 export class MarketController {
@@ -24,10 +26,11 @@ export class MarketController {
   }
 
   @Get('for-you')
+  @UseGuards(OptionalJwtAuthGuard)
   @ResponseMessage('Recommended tracks retrieved successfully')
   async getForYouTracks(@Req() req: any, @Query('limit') limit?: string) {
     const parsedLimit = limit ? parseInt(limit) : 10;
-    const userId = req.user?.id || req.user?.userId;
+    const userId = req.userId || req.user?.id || req.user?.userId;
     const tracks = await this.marketService.getForYouTracks(
       userId ? Number(userId) : undefined,
       isNaN(parsedLimit) ? 10 : parsedLimit,

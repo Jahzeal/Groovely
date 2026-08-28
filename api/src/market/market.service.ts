@@ -146,8 +146,23 @@ export class MarketService {
 
   async getTracksByCategory(category: string, limit = 20) {
     let categoryFilter = '';
-    if (category !== 'all') {
-      categoryFilter = 'AND t.category = $2';
+    const cleanCat = category ? category.toLowerCase().trim() : 'all';
+    let params: any[] = [limit];
+
+    if (cleanCat !== 'all') {
+      if (cleanCat === 'beats' || cleanCat === 'beat') {
+        categoryFilter = 'AND (LOWER(t.category) = $2 OR LOWER(t.category) = $3)';
+        params = [limit, 'beat', 'beats'];
+      } else if (cleanCat === 'podcasts' || cleanCat === 'podcast') {
+        categoryFilter = 'AND (LOWER(t.category) = $2 OR LOWER(t.category) = $3)';
+        params = [limit, 'podcast', 'podcasts'];
+      } else if (cleanCat === 'skits' || cleanCat === 'skit') {
+        categoryFilter = 'AND (LOWER(t.category) = $2 OR LOWER(t.category) = $3)';
+        params = [limit, 'skit', 'skits'];
+      } else {
+        categoryFilter = 'AND LOWER(t.category) = $2';
+        params = [limit, cleanCat];
+      }
     }
 
     const queryText = `
@@ -173,7 +188,6 @@ export class MarketService {
        LIMIT $1
      `;
 
-    const params = category !== 'all' ? [limit, category] : [limit];
     const result = await this.db.query(queryText, params);
     return result.rows;
   }
