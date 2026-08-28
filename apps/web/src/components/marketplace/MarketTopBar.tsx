@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation';
 export const MarketTopBar = () => {
   const [sortOpen, setSortOpen] = useState(false);
   const [sortLabel, setSortLabel] = useState('Sort By');
-  const { openCart } = useCart();
+  const { openCart, cartCount } = useCart();
   const router = useRouter();
   const { logout } = useLogout();
   const { user, authenticated: privyAuthenticated, login } = usePrivy();
@@ -195,6 +195,11 @@ export const MarketTopBar = () => {
               title="View cart"
             >
               <ShoppingCart size={18} strokeWidth={2} />
+              {cartCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-accent-purple text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-[0_0_8px_rgba(157,0,255,0.7)] animate-in zoom-in">
+                  {cartCount}
+                </span>
+              )}
             </button>
 
             {/* Wallet Dropdown */}
@@ -205,18 +210,18 @@ export const MarketTopBar = () => {
                   e.stopPropagation();
                   setDropdownOpen((o) => !o);
                 }}
-                className="flex items-center gap-2 bg-[#0F0F1A] border border-white/5 rounded-xl px-2.5 sm:px-3.5 py-1.5 sm:py-2 hover:bg-white/5 cursor-pointer transition-all"
+                className="flex items-center gap-1.5 sm:gap-2 bg-[#0F0F1A] border border-white/5 rounded-xl p-1.5 sm:px-3 sm:py-2 hover:bg-white/5 cursor-pointer transition-all shrink-0"
               >
                 <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg overflow-hidden border border-white/10 shrink-0">
                   <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="Wallet" className="w-full h-full object-contain" />
                 </div>
-                <div className="hidden sm:flex flex-col items-start leading-none text-left">
+                <div className="hidden md:flex flex-col items-start leading-none text-left">
                   <span className="text-[8px] font-bold uppercase tracking-wider text-zinc-500 mb-0.5">
                     {role ?? 'wallet'}
                   </span>
                   <span className="text-xs font-bold tracking-tight text-white/90 truncate">{abbrev}</span>
                 </div>
-                <span className="sm:hidden text-xs font-bold font-mono text-white/90">{abbrev}</span>
+                <span className="hidden sm:inline-block md:hidden text-xs font-bold font-mono text-white/90">{abbrev}</span>
                 <ChevronDown
                   size={12}
                   className={`text-zinc-500 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`}

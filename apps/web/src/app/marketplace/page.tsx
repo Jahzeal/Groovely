@@ -28,16 +28,31 @@ function MarketplaceContent() {
   const [beatsTracks, setBeatsTracks] = useState<any[]>([]);
   const [isLoadingBeats, setIsLoadingBeats] = useState(true);
   
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
+
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get('q')?.toLowerCase() || '';
 
   const filterTracks = (tracks: any[]) => {
-    if (!searchQuery) return tracks;
-    return tracks.filter(t => 
-      t.title?.toLowerCase().includes(searchQuery) || 
-      t.creator?.toLowerCase().includes(searchQuery) ||
-      t.category?.toLowerCase().includes(searchQuery)
-    );
+    let result = tracks;
+    if (searchQuery) {
+      result = result.filter(t => 
+        t.title?.toLowerCase().includes(searchQuery) || 
+        t.creator?.toLowerCase().includes(searchQuery) ||
+        t.category?.toLowerCase().includes(searchQuery)
+      );
+    }
+    if (selectedGenre) {
+      const gLower = selectedGenre.toLowerCase();
+      result = result.filter(t => 
+        t.title?.toLowerCase().includes(gLower) ||
+        t.description?.toLowerCase().includes(gLower) ||
+        (Array.isArray(t.tags) && t.tags.some((tag: string) => tag.toLowerCase().includes(gLower))) ||
+        (Array.isArray(t.license_types) && t.license_types.some((lt: string) => lt.toLowerCase().includes(gLower)))
+      );
+    }
+    return result;
   };
 
   useEffect(() => {
@@ -179,229 +194,276 @@ function MarketplaceContent() {
 
         <div className="flex-1 flex flex-col min-w-0 bg-[#192134]">
           <MarketTopBar />
-          <GenreBar />
+          <GenreBar
+            activeCategory={selectedCategory}
+            onSelectCategory={setSelectedCategory}
+            activeGenre={selectedGenre}
+            onSelectGenre={setSelectedGenre}
+          />
 
           {/* Main scrollable area */}
           <main className="flex-1 overflow-y-auto flex flex-col">
             <div className="p-4 sm:p-6 md:p-8 pt-4 flex-1 flex flex-col justify-between min-h-[calc(100vh-140px)]">
               <div>
-                {/* Featured + Trending two-column layout */}
-                <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6 mb-6 sm:mb-8">
-                <FeaturedCarousel />
-                <TrendingPanel />
-              </div>
+                {/* When 'All' is selected, show Featured + Trending and all overview shelves */}
+                {selectedCategory === 'All' && (
+                  <>
+                    {/* Featured + Trending two-column layout */}
+                    <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6 mb-6 sm:mb-8">
+                      <FeaturedCarousel />
+                      <TrendingPanel />
+                    </div>
 
-              {/* For You section */}
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-base sm:text-lg font-black uppercase tracking-widest text-white">For You</h2>
-                <button className="text-accent-purple text-xs font-bold uppercase tracking-widest hover:underline transition-all">
-                  See All
-                </button>
-              </div>
+                    {/* For You section */}
+                    <div className="mb-4 flex items-center justify-between">
+                      <h2 className="text-base sm:text-lg font-black uppercase tracking-widest text-white">For You</h2>
+                      <button onClick={() => setSelectedCategory('All')} className="text-accent-purple text-xs font-bold uppercase tracking-widest hover:underline transition-all">
+                        See All
+                      </button>
+                    </div>
 
-              {isLoadingForYou ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 text-accent-cyan animate-spin" />
-                </div>
-              ) : filterTracks(forYou).length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 mb-10 sm:mb-16">
-                  {filterTracks(forYou).map((track, i) => (
-                    <TrackCard 
-                      key={track.id || i} 
-                      id={track.id}
-                      title={track.title}
-                      creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
-                      image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
-                      audioUrl={track.audio_url || track.audioUrl || track.preview_url}
-                      licenseTypes={track.license_types || track.licenseTypes || ['License']}
-                      price={track.price || '0.00 ETH'}
-                      currency={track.currency || track.fiat_price || '$0'}
-                      uploaderId={track.user_id}
-                      queue={mapTracksToQueue(filterTracks(forYou))}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 bg-white/5 rounded-2xl border border-white/5 mb-10 sm:mb-16">
-                  <p className="text-zinc-500 font-medium text-xs sm:text-sm">
-                    {searchQuery ? `No results found for "${searchQuery}"` : 'Explore the marketplace to get personalized recommendations!'}
-                  </p>
-                </div>
-              )}
+                    {isLoadingForYou ? (
+                      <div className="flex items-center justify-center py-12">
+                        <Loader2 className="w-8 h-8 text-accent-cyan animate-spin" />
+                      </div>
+                    ) : filterTracks(forYou).length > 0 ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 mb-10 sm:mb-16">
+                        {filterTracks(forYou).map((track, i) => (
+                          <TrackCard 
+                            key={track.id || i} 
+                            id={track.id}
+                            title={track.title}
+                            creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
+                            image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
+                            audioUrl={track.audio_url || track.audioUrl || track.preview_url}
+                            licenseTypes={track.license_types || track.licenseTypes || ['License']}
+                            price={track.price || '0.00 ETH'}
+                            currency={track.currency || track.fiat_price || '$0'}
+                            uploaderId={track.user_id}
+                            queue={mapTracksToQueue(filterTracks(forYou))}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 bg-white/5 rounded-2xl border border-white/5 mb-10 sm:mb-16">
+                        <p className="text-zinc-500 font-medium text-xs sm:text-sm">
+                          {searchQuery ? `No results found for "${searchQuery}"` : 'Explore the marketplace to get personalized recommendations!'}
+                        </p>
+                      </div>
+                    )}
 
-              {/* Explore All section */}
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-base sm:text-lg font-black uppercase tracking-widest text-white">Explore Marketplace</h2>
-                <div className="flex items-center gap-4">
-                   <button className="text-zinc-500 text-[10px] font-black uppercase tracking-widest hover:text-white transition-colors">Filters</button>
-                   <div className="w-px h-3 bg-white/10" />
-                   <button className="text-accent-purple text-xs font-bold uppercase tracking-widest hover:underline transition-all">
-                     View All
-                   </button>
-                </div>
-              </div>
+                    {/* Explore All section */}
+                    <div className="mb-4 flex items-center justify-between">
+                      <h2 className="text-base sm:text-lg font-black uppercase tracking-widest text-white">Explore Marketplace</h2>
+                    </div>
 
-              {isLoadingAll ? (
-                <div className="flex items-center justify-center py-20">
-                  <Loader2 className="w-10 h-10 text-accent-purple animate-spin" />
-                </div>
-              ) : filterTracks(allTracks).length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 mb-10 sm:mb-16">
-                  {filterTracks(allTracks).map((track, i) => (
-                    <TrackCard 
-                      key={track.id || i} 
-                      id={track.id}
-                      title={track.title}
-                      creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
-                      image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
-                      audioUrl={track.audio_url || track.audioUrl || track.preview_url}
-                      licenseTypes={track.license_types || track.licenseTypes || ['License']}
-                      price={track.price || '0.00 ETH'}
-                      currency={track.currency || track.fiat_price || '$0'}
-                      uploaderId={track.user_id}
-                      queue={mapTracksToQueue(filterTracks(allTracks))}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-16 sm:py-20 bg-white/5 rounded-3xl border border-white/5 border-dashed mb-10 sm:mb-16">
-                  <p className="text-zinc-500 font-medium text-xs sm:text-sm">
-                    {searchQuery ? `No results found for "${searchQuery}"` : 'No tracks found in the marketplace yet.'}
-                  </p>
-                </div>
-              )}
+                    {isLoadingAll ? (
+                      <div className="flex items-center justify-center py-20">
+                        <Loader2 className="w-10 h-10 text-accent-purple animate-spin" />
+                      </div>
+                    ) : filterTracks(allTracks).length > 0 ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 mb-10 sm:mb-16">
+                        {filterTracks(allTracks).map((track, i) => (
+                          <TrackCard 
+                            key={track.id || i} 
+                            id={track.id}
+                            title={track.title}
+                            creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
+                            image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
+                            audioUrl={track.audio_url || track.audioUrl || track.preview_url}
+                            licenseTypes={track.license_types || track.licenseTypes || ['License']}
+                            price={track.price || '0.00 ETH'}
+                            currency={track.currency || track.fiat_price || '$0'}
+                            uploaderId={track.user_id}
+                            queue={mapTracksToQueue(filterTracks(allTracks))}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-16 sm:py-20 bg-white/5 rounded-3xl border border-white/5 border-dashed mb-10 sm:mb-16">
+                        <p className="text-zinc-500 font-medium text-xs sm:text-sm">
+                          {searchQuery ? `No results found for "${searchQuery}"` : 'No tracks found in the marketplace yet.'}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
 
-              {/* Music Category section */}
-              <div className="mb-4">
-                <h2 className="text-base sm:text-lg font-black uppercase tracking-widest text-white">Music</h2>
-              </div>
+                {/* Music Category Section */}
+                {(selectedCategory === 'All' || selectedCategory === 'Music') && (
+                  <div>
+                    <div className="mb-4 flex items-center justify-between">
+                      <h2 className="text-base sm:text-lg font-black uppercase tracking-widest text-white">Music</h2>
+                      {selectedCategory === 'All' && (
+                        <button onClick={() => setSelectedCategory('Music')} className="text-accent-purple text-xs font-bold uppercase tracking-widest hover:underline transition-all">
+                          See All
+                        </button>
+                      )}
+                    </div>
 
-              {isLoadingMusic ? (
-                <div className="flex items-center justify-center py-16">
-                  <Loader2 className="w-10 h-10 text-accent-cyan animate-spin" />
-                </div>
-              ) : musicTracks.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 mb-10 sm:mb-16">
-                  {musicTracks.map((track, i) => (
-                    <TrackCard 
-                      key={track.id || i} 
-                      id={track.id}
-                      title={track.title}
-                      creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
-                      image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
-                      audioUrl={track.audio_url || track.audioUrl || track.preview_url}
-                      licenseTypes={track.license_types || track.licenseTypes || ['Music']}
-                      price={track.price || '0.05 ETH'}
-                      currency={track.currency || track.fiat_price || '$84'}
-                      uploaderId={track.user_id}
-                      queue={mapTracksToQueue(musicTracks)}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 sm:py-16 bg-white/5 rounded-3xl border border-white/5 mb-10 sm:mb-16">
-                  <p className="text-zinc-500 font-medium text-xs sm:text-sm">New music tracks arriving soon.</p>
-                </div>
-              )}
+                    {isLoadingMusic ? (
+                      <div className="flex items-center justify-center py-16">
+                        <Loader2 className="w-10 h-10 text-accent-cyan animate-spin" />
+                      </div>
+                    ) : filterTracks(musicTracks).length > 0 ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 mb-10 sm:mb-16">
+                        {filterTracks(musicTracks).map((track, i) => (
+                          <TrackCard 
+                            key={track.id || i} 
+                            id={track.id}
+                            title={track.title}
+                            creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
+                            image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
+                            audioUrl={track.audio_url || track.audioUrl || track.preview_url}
+                            licenseTypes={track.license_types || track.licenseTypes || ['Music']}
+                            price={track.price || '0.05 ETH'}
+                            currency={track.currency || track.fiat_price || '$84'}
+                            uploaderId={track.user_id}
+                            queue={mapTracksToQueue(filterTracks(musicTracks))}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 sm:py-16 bg-white/5 rounded-3xl border border-white/5 mb-10 sm:mb-16">
+                        <p className="text-zinc-500 font-medium text-xs sm:text-sm">
+                          {selectedGenre ? `No music tracks found under "${selectedGenre}".` : 'New music tracks arriving soon.'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-              {/* Podcast Category section */}
-              <div className="mb-4">
-                <h2 className="text-base sm:text-lg font-black uppercase tracking-widest text-white">Podcasts</h2>
-              </div>
+                {/* Beats Category Section */}
+                {(selectedCategory === 'All' || selectedCategory === 'Beats') && (
+                  <div>
+                    <div className="mb-4 flex items-center justify-between">
+                      <h2 className="text-base sm:text-lg font-black uppercase tracking-widest text-white">Beats</h2>
+                      {selectedCategory === 'All' && (
+                        <button onClick={() => setSelectedCategory('Beats')} className="text-accent-purple text-xs font-bold uppercase tracking-widest hover:underline transition-all">
+                          See All
+                        </button>
+                      )}
+                    </div>
 
-              {isLoadingPodcast ? (
-                <div className="flex items-center justify-center py-16">
-                  <Loader2 className="w-10 h-10 text-accent-purple animate-spin" />
-                </div>
-              ) : podcastTracks.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 mb-10 sm:mb-16">
-                  {podcastTracks.map((track, i) => (
-                    <TrackCard 
-                      key={track.id || i} 
-                      id={track.id}
-                      title={track.title}
-                      creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
-                      image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1478737270197-497851a1f29d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
-                      audioUrl={track.audio_url || track.audioUrl || track.preview_url}
-                      licenseTypes={track.license_types || track.licenseTypes || ['Podcast']}
-                      price={track.price || '0.02 ETH'}
-                      currency={track.currency || track.fiat_price || '$33'}
-                      uploaderId={track.user_id}
-                      queue={mapTracksToQueue(podcastTracks)}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 sm:py-16 bg-white/5 rounded-3xl border border-white/5 mb-10 sm:mb-16">
-                  <p className="text-zinc-500 font-medium text-xs sm:text-sm">Stay tuned for new podcast episodes.</p>
-                </div>
-              )}
+                    {isLoadingBeats ? (
+                      <div className="flex items-center justify-center py-16">
+                        <Loader2 className="w-10 h-10 text-accent-purple animate-spin" />
+                      </div>
+                    ) : filterTracks(beatsTracks).length > 0 ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 mb-10 sm:mb-16">
+                        {filterTracks(beatsTracks).map((track, i) => (
+                          <TrackCard 
+                            key={track.id || i} 
+                            id={track.id}
+                            title={track.title}
+                            creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
+                            image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
+                            audioUrl={track.audio_url || track.audioUrl || track.preview_url}
+                            licenseTypes={track.license_types || track.licenseTypes || ['Beat', 'Lease']}
+                            price={track.price || '0.08 ETH'}
+                            currency={track.currency || track.fiat_price || '$134'}
+                            uploaderId={track.user_id}
+                            queue={mapTracksToQueue(filterTracks(beatsTracks))}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 sm:py-16 bg-white/5 rounded-3xl border border-white/5 mb-10 sm:mb-16">
+                        <p className="text-zinc-500 font-medium text-xs sm:text-sm">
+                          {selectedGenre ? `No beats found under "${selectedGenre}".` : 'New beats are being cooked up. Stay tuned!'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-              {/* Skit Category section */}
-              <div className="mb-4">
-                <h2 className="text-base sm:text-lg font-black uppercase tracking-widest text-white">Skits</h2>
-              </div>
+                {/* Podcast Category Section */}
+                {(selectedCategory === 'All' || selectedCategory === 'Podcasts') && (
+                  <div>
+                    <div className="mb-4 flex items-center justify-between">
+                      <h2 className="text-base sm:text-lg font-black uppercase tracking-widest text-white">Podcasts</h2>
+                      {selectedCategory === 'All' && (
+                        <button onClick={() => setSelectedCategory('Podcasts')} className="text-accent-purple text-xs font-bold uppercase tracking-widest hover:underline transition-all">
+                          See All
+                        </button>
+                      )}
+                    </div>
 
-              {isLoadingSkit ? (
-                <div className="flex items-center justify-center py-16">
-                  <Loader2 className="w-10 h-10 text-accent-cyan animate-spin" />
-                </div>
-              ) : skitTracks.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 mb-10 sm:mb-16">
-                  {skitTracks.map((track, i) => (
-                    <TrackCard 
-                      key={track.id || i} 
-                      id={track.id}
-                      title={track.title}
-                      creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
-                      image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
-                      audioUrl={track.audio_url || track.audioUrl || track.preview_url}
-                      licenseTypes={track.license_types || track.licenseTypes || ['Skit']}
-                      price={track.price || '0.01 ETH'}
-                      currency={track.currency || track.fiat_price || '$16'}
-                      uploaderId={track.user_id}
-                      queue={mapTracksToQueue(skitTracks)}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 sm:py-16 bg-white/5 rounded-3xl border border-white/5 mb-10 sm:mb-16">
-                  <p className="text-zinc-500 font-medium text-xs sm:text-sm">Laughter is coming! Check back for new skits.</p>
-                </div>
-              )}
+                    {isLoadingPodcast ? (
+                      <div className="flex items-center justify-center py-16">
+                        <Loader2 className="w-10 h-10 text-accent-purple animate-spin" />
+                      </div>
+                    ) : filterTracks(podcastTracks).length > 0 ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 mb-10 sm:mb-16">
+                        {filterTracks(podcastTracks).map((track, i) => (
+                          <TrackCard 
+                            key={track.id || i} 
+                            id={track.id}
+                            title={track.title}
+                            creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
+                            image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1478737270197-497851a1f29d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
+                            audioUrl={track.audio_url || track.audioUrl || track.preview_url}
+                            licenseTypes={track.license_types || track.licenseTypes || ['Podcast']}
+                            price={track.price || '0.02 ETH'}
+                            currency={track.currency || track.fiat_price || '$33'}
+                            uploaderId={track.user_id}
+                            queue={mapTracksToQueue(filterTracks(podcastTracks))}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 sm:py-16 bg-white/5 rounded-3xl border border-white/5 mb-10 sm:mb-16">
+                        <p className="text-zinc-500 font-medium text-xs sm:text-sm">
+                          {selectedGenre ? `No podcasts found under "${selectedGenre}".` : 'Stay tuned for new podcast episodes.'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-              {/* Beats Category section */}
-              <div className="mb-4">
-                <h2 className="text-base sm:text-lg font-black uppercase tracking-widest text-white">Beats</h2>
-              </div>
+                {/* Skits Category Section */}
+                {(selectedCategory === 'All' || selectedCategory === 'Skits') && (
+                  <div>
+                    <div className="mb-4 flex items-center justify-between">
+                      <h2 className="text-base sm:text-lg font-black uppercase tracking-widest text-white">Skits</h2>
+                      {selectedCategory === 'All' && (
+                        <button onClick={() => setSelectedCategory('Skits')} className="text-accent-purple text-xs font-bold uppercase tracking-widest hover:underline transition-all">
+                          See All
+                        </button>
+                      )}
+                    </div>
 
-              {isLoadingBeats ? (
-                <div className="flex items-center justify-center py-16">
-                  <Loader2 className="w-10 h-10 text-accent-purple animate-spin" />
-                </div>
-              ) : beatsTracks.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 mb-20 sm:mb-24">
-                  {beatsTracks.map((track, i) => (
-                    <TrackCard 
-                      key={track.id || i} 
-                      id={track.id}
-                      title={track.title}
-                      creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
-                      image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
-                      audioUrl={track.audio_url || track.audioUrl || track.preview_url}
-                      licenseTypes={track.license_types || track.licenseTypes || ['Beat', 'Lease']}
-                      price={track.price || '0.08 ETH'}
-                      currency={track.currency || track.fiat_price || '$134'}
-                      uploaderId={track.user_id}
-                      queue={mapTracksToQueue(beatsTracks)}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 sm:py-16 bg-white/5 rounded-3xl border border-white/5 mb-20 sm:mb-24">
-                  <p className="text-zinc-500 font-medium text-xs sm:text-sm">New beats are being cooked up. Stay tuned!</p>
-                </div>
-              )}
+                    {isLoadingSkit ? (
+                      <div className="flex items-center justify-center py-16">
+                        <Loader2 className="w-10 h-10 text-accent-cyan animate-spin" />
+                      </div>
+                    ) : filterTracks(skitTracks).length > 0 ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 mb-10 sm:mb-16">
+                        {filterTracks(skitTracks).map((track, i) => (
+                          <TrackCard 
+                            key={track.id || i} 
+                            id={track.id}
+                            title={track.title}
+                            creator={track.artist_name || track.artistName || track.creatorName || track.creator || 'Unknown'}
+                            image={track.cover_url || track.coverArt || track.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'}
+                            audioUrl={track.audio_url || track.audioUrl || track.preview_url}
+                            licenseTypes={track.license_types || track.licenseTypes || ['Skit']}
+                            price={track.price || '0.01 ETH'}
+                            currency={track.currency || track.fiat_price || '$16'}
+                            uploaderId={track.user_id}
+                            queue={mapTracksToQueue(filterTracks(skitTracks))}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 sm:py-16 bg-white/5 rounded-3xl border border-white/5 mb-10 sm:mb-16">
+                        <p className="text-zinc-500 font-medium text-xs sm:text-sm">
+                          {selectedGenre ? `No skits found under "${selectedGenre}".` : 'Laughter is coming! Check back for new skits.'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
               </div>
 

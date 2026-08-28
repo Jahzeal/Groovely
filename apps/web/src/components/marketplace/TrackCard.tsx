@@ -26,7 +26,7 @@ export const TrackCard = ({ id, title, creator, image, audioUrl, licenseTypes, p
   const [liked, setLiked] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const { openCart } = useCart();
+  const { addToCart } = useCart();
   const { playTrack, currentTrack, isPlaying } = useMusicPlayer();
 
   const isThisTrackPlaying = currentTrack?.id === id && isPlaying;
@@ -144,9 +144,23 @@ export const TrackCard = ({ id, title, creator, image, audioUrl, licenseTypes, p
               <span className="text-[11px] sm:text-xs font-black text-white">{currency}</span>
             </div>
             <button
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); openCart(); }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                addToCart({
+                  id: String(id),
+                  trackId: id,
+                  title,
+                  creator,
+                  image,
+                  license: licenseTypes[0] || 'License',
+                  price: 1.0,
+                  currency: currency || '$1.00 USDC'
+                });
+              }}
               className={`w-6 h-6 sm:w-7 sm:h-7 bg-accent-purple hover:bg-accent-purple/80 rounded-lg flex items-center justify-center transition-all duration-300 shadow-[0_0_10px_rgba(139,92,246,0.4)]
                 ${hovered ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}
+              title="Add to cart"
             >
               <ShoppingCart size={11} className="text-white" />
             </button>
