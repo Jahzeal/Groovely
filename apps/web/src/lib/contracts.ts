@@ -273,7 +273,7 @@ export async function setContributorsOnChain(
     abi: GROOVELI_ABI,
     functionName: 'setContributors',
     args: [BigInt(songId), contributors],
-    gas: BigInt(300000),
+    gas: BigInt(600000),
   });
 }
 
@@ -291,7 +291,7 @@ export async function createEditionOnChain(
     abi: GROOVELI_ABI,
     functionName: 'createEdition',
     args: [BigInt(songId), editionType, BigInt(maxSupply), parseUSDC(mintPriceUsdc), metadataUri],
-    gas: BigInt(300000),
+    gas: BigInt(600000),
   });
 }
 
@@ -319,7 +319,7 @@ export async function publishSongOnChain(
       parseUSDC(mintPriceUsdc),
       editionMetadataUri
     ],
-    gas: BigInt(500000),
+    gas: BigInt(1200000),
   });
 }
 

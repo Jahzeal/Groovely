@@ -37,6 +37,14 @@ export class CreatorController {
     return { tracks };
   }
 
+  @Get('tracks')
+  @ResponseMessage('Dashboard tracks retrieved successfully')
+  async getTracks(@Req() req: any) {
+    const userId = req.userId;
+    const tracks = await this.creatorService.getDashboardTracks(userId);
+    return { tracks };
+  }
+
   @Get('dashboard/transactions')
   @ResponseMessage('Dashboard transactions retrieved successfully')
   async getTransactions(@Req() req: any) {

@@ -247,9 +247,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         <div className="flex-1 flex flex-col min-w-0">
           <MarketTopBar />
 
-          <main className="flex-1 overflow-y-auto pb-32">
-            {/* Spotify / Apple Music Style Crisp Hero Banner */}
-            <div className="relative min-h-[380px] sm:min-h-[420px] w-full overflow-hidden flex items-end p-6 sm:p-10 border-b border-white/5">
+          <main className="flex-1 overflow-y-auto flex flex-col justify-between min-h-[calc(100vh-140px)]">
+            <div>
+              {/* Spotify / Apple Music Style Crisp Hero Banner */}
+              <div className="relative min-h-[380px] sm:min-h-[420px] w-full overflow-hidden flex items-end p-6 sm:p-10 border-b border-white/5">
               {/* Ambient Blur Backdrop */}
               <img 
                 src={displayTrack.image} 
@@ -387,9 +388,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 />
               </aside>
             </div>
+            </div>
 
-            <footer className="px-10 py-10 border-t border-white/5 opacity-40 hover:opacity-100 transition-opacity flex justify-between items-center text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
-              <div className="flex gap-8">
+            <footer className="mt-auto px-6 sm:px-10 pt-8 pb-28 sm:pb-32 border-t border-white/5 opacity-60 hover:opacity-100 transition-opacity flex flex-col sm:flex-row justify-between items-center gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
+              <div className="flex gap-6 sm:gap-8">
                 <a href="#" className="hover:text-white transition-colors">About Grooveli</a>
                 <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
                 <a href="#" className="hover:text-white transition-colors">Terms of Use</a>

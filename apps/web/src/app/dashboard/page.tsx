@@ -126,9 +126,10 @@ export default function DashboardPage() {
       <div className="flex-1 flex flex-col min-w-0 bg-[#192134]">
         <TopBar displayName={displayName} />
 
-        <main className="flex-1 p-4 sm:p-6 md:p-8 lg:p-10 overflow-y-auto custom-scrollbar pb-28 lg:pb-12">
-          {/* Welcome Message (Hidden on mobile because it's in the mobile header, visible on desktop) */}
-          <div className="hidden lg:block mb-8 translate-y-0 opacity-100 transition-all duration-500">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 lg:p-10 overflow-y-auto custom-scrollbar flex flex-col justify-between min-h-[calc(100vh-100px)]">
+          <div>
+            {/* Welcome Message (Hidden on mobile because it's in the mobile header, visible on desktop) */}
+            <div className="hidden lg:block mb-8 translate-y-0 opacity-100 transition-all duration-500">
             <h1 className="font-['Clash_Display',sans-serif] text-3xl md:text-4xl font-bold tracking-tight text-white mb-1.5">
               Hello, {displayName}! 👋
             </h1>
@@ -197,9 +198,10 @@ export default function DashboardPage() {
 
           {/* Promo Section */}
           <PromoCards />
+          </div>
 
           {/* Footer (Figma Frame 310 & 309) */}
-          <footer className="mt-12 sm:mt-16 py-8 border-t border-[#232B3E] flex flex-col md:flex-row justify-between items-center gap-6 text-[#CACACA]">
+          <footer className="mt-auto pt-8 pb-20 sm:pb-8 border-t border-[#232B3E] flex flex-col md:flex-row justify-between items-center gap-6 text-[#CACACA]">
             <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-[10px] font-['Space_Grotesk',sans-serif] text-center md:text-left">
               <div className="flex items-center gap-2">
                 <a href="#" className="hover:text-white transition-colors">About Groovely</a>

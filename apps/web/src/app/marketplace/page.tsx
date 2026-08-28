@@ -182,10 +182,11 @@ function MarketplaceContent() {
           <GenreBar />
 
           {/* Main scrollable area */}
-          <main className="flex-1 overflow-y-auto pb-28 sm:pb-24">
-            <div className="p-4 sm:p-6 md:p-8 pt-4">
-              {/* Featured + Trending two-column layout */}
-              <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6 mb-6 sm:mb-8">
+          <main className="flex-1 overflow-y-auto flex flex-col">
+            <div className="p-4 sm:p-6 md:p-8 pt-4 flex-1 flex flex-col justify-between min-h-[calc(100vh-140px)]">
+              <div>
+                {/* Featured + Trending two-column layout */}
+                <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6 mb-6 sm:mb-8">
                 <FeaturedCarousel />
                 <TrendingPanel />
               </div>
@@ -203,7 +204,7 @@ function MarketplaceContent() {
                   <Loader2 className="w-8 h-8 text-accent-cyan animate-spin" />
                 </div>
               ) : filterTracks(forYou).length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 mb-10 sm:mb-16">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 mb-10 sm:mb-16">
                   {filterTracks(forYou).map((track, i) => (
                     <TrackCard 
                       key={track.id || i} 
@@ -245,7 +246,7 @@ function MarketplaceContent() {
                   <Loader2 className="w-10 h-10 text-accent-purple animate-spin" />
                 </div>
               ) : filterTracks(allTracks).length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 mb-10 sm:mb-16">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 mb-10 sm:mb-16">
                   {filterTracks(allTracks).map((track, i) => (
                     <TrackCard 
                       key={track.id || i} 
@@ -280,7 +281,7 @@ function MarketplaceContent() {
                   <Loader2 className="w-10 h-10 text-accent-cyan animate-spin" />
                 </div>
               ) : musicTracks.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 mb-10 sm:mb-16">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 mb-10 sm:mb-16">
                   {musicTracks.map((track, i) => (
                     <TrackCard 
                       key={track.id || i} 
@@ -313,7 +314,7 @@ function MarketplaceContent() {
                   <Loader2 className="w-10 h-10 text-accent-purple animate-spin" />
                 </div>
               ) : podcastTracks.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 mb-10 sm:mb-16">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 mb-10 sm:mb-16">
                   {podcastTracks.map((track, i) => (
                     <TrackCard 
                       key={track.id || i} 
@@ -346,7 +347,7 @@ function MarketplaceContent() {
                   <Loader2 className="w-10 h-10 text-accent-cyan animate-spin" />
                 </div>
               ) : skitTracks.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 mb-10 sm:mb-16">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 mb-10 sm:mb-16">
                   {skitTracks.map((track, i) => (
                     <TrackCard 
                       key={track.id || i} 
@@ -379,7 +380,7 @@ function MarketplaceContent() {
                   <Loader2 className="w-10 h-10 text-accent-purple animate-spin" />
                 </div>
               ) : beatsTracks.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 mb-20 sm:mb-24">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 mb-20 sm:mb-24">
                   {beatsTracks.map((track, i) => (
                     <TrackCard 
                       key={track.id || i} 
@@ -402,8 +403,10 @@ function MarketplaceContent() {
                 </div>
               )}
 
+              </div>
+
               {/* Footer */}
-              <footer className="py-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8 opacity-60 hover:opacity-100 transition-opacity">
+              <footer className="mt-auto pt-8 pb-28 sm:pb-32 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 opacity-70 hover:opacity-100 transition-opacity">
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-[10px] font-black uppercase tracking-widest text-zinc-500">
                   <a href="#" className="hover:text-accent-purple transition-colors">About Grooveli</a>
                   <span className="w-1 h-1 bg-zinc-800 rounded-full" />

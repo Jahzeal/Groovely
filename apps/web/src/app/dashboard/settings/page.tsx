@@ -330,16 +330,15 @@ export default function SettingsPage() {
         {/* ========================================================================= */}
         {/* MAIN SCROLLABLE CONTENT                                                   */}
         {/* ========================================================================= */}
-        <main className="flex-1 overflow-y-auto pb-28 px-4 sm:px-8 md:px-10 pt-4 md:pt-8 bg-[#192134]">
-          <div className="max-w-[720px] space-y-8">
-
+        <main className="flex-1 overflow-y-auto bg-[#192134] flex flex-col">
+          <div className="flex-1 flex flex-col justify-between max-w-[720px] w-full px-4 sm:px-8 md:px-10 pt-4 md:pt-8 min-h-[calc(100vh-100px)]">
             {loadingProfile ? (
               <div className="py-24 flex flex-col items-center justify-center space-y-4">
                 <Loader2 className="animate-spin text-[#8A2BE2]" size={36} />
                 <p className="text-sm font-['Space_Grotesk',sans-serif] text-[#CACACA]">Loading settings...</p>
               </div>
             ) : (
-              <>
+              <div className="space-y-8">
                 {/* ===================================================================== */}
                 {/* 1. PROFILE SECTION (Figma Mobile top: 142px - 588px)                  */}
                 {/* ===================================================================== */}
@@ -677,36 +676,36 @@ export default function SettingsPage() {
                     </button>
                   </div>
                 </section>
-
-                {/* ===================================================================== */}
-                {/* FOOTER (Mobile Frame 310 & 309 / Desktop Text Container)              */}
-                {/* ===================================================================== */}
-                <footer className="mt-14 pt-6 border-t border-[#2D3548] flex flex-col md:flex-row justify-between items-center gap-4 text-[#CACACA]">
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-y-1.5 gap-x-2 text-[10px] sm:text-sm font-['Space_Grotesk',sans-serif]">
-                    <div className="flex items-center gap-2">
-                      <a href="#" className="hover:text-white transition-colors">About Groovely</a>
-                      <span className="w-1 h-1 bg-[#CACACA] rounded-full" />
-                      <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-                      <span className="w-1 h-1 bg-[#CACACA] rounded-full" />
-                      <a href="#" className="hover:text-white transition-colors">Terms of Use</a>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="hidden sm:inline-block w-1 h-1 bg-[#CACACA] rounded-full" />
-                      <a href="#" className="hover:text-white transition-colors">Docs/Developer API</a>
-                      <span className="w-1 h-1 bg-[#CACACA] rounded-full" />
-                      <a href="#" className="hover:text-white transition-colors">Feedback</a>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-4 text-[#CACACA]">
-                    <a href="#" className="hover:text-white transition-colors" aria-label="Twitter"><Twitter size={16} /></a>
-                    <a href="#" className="hover:text-white transition-colors" aria-label="Disc"><Disc size={16} /></a>
-                    <a href="#" className="hover:text-white transition-colors" aria-label="Telegram"><Send size={16} /></a>
-                    <a href="#" className="hover:text-white transition-colors" aria-label="Instagram"><Instagram size={16} /></a>
-                  </div>
-                </footer>
-              </>
+              </div>
             )}
+
+            {/* ===================================================================== */}
+            {/* FOOTER (Mobile Frame 310 & 309 / Desktop Text Container)              */}
+            {/* ===================================================================== */}
+            <footer className="mt-auto pt-8 pb-20 sm:pb-8 border-t border-[#2D3548] flex flex-col md:flex-row justify-between items-center gap-4 text-[#CACACA]">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-y-1.5 gap-x-2 text-[10px] sm:text-sm font-['Space_Grotesk',sans-serif]">
+                <div className="flex items-center gap-2">
+                  <a href="#" className="hover:text-white transition-colors">About Groovely</a>
+                  <span className="w-1 h-1 bg-[#CACACA] rounded-full" />
+                  <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+                  <span className="w-1 h-1 bg-[#CACACA] rounded-full" />
+                  <a href="#" className="hover:text-white transition-colors">Terms of Use</a>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="hidden sm:inline-block w-1 h-1 bg-[#CACACA] rounded-full" />
+                  <a href="#" className="hover:text-white transition-colors">Docs/Developer API</a>
+                  <span className="w-1 h-1 bg-[#CACACA] rounded-full" />
+                  <a href="#" className="hover:text-white transition-colors">Feedback</a>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 text-[#CACACA]">
+                <a href="#" className="hover:text-white transition-colors" aria-label="Twitter"><Twitter size={16} /></a>
+                <a href="#" className="hover:text-white transition-colors" aria-label="Disc"><Disc size={16} /></a>
+                <a href="#" className="hover:text-white transition-colors" aria-label="Telegram"><Send size={16} /></a>
+                <a href="#" className="hover:text-white transition-colors" aria-label="Instagram"><Instagram size={16} /></a>
+              </div>
+            </footer>
 
           </div>
         </main>

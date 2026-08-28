@@ -33,6 +33,7 @@ import {
   waitForTx 
 } from '@/lib/contracts';
 import { apiFetch } from '@/lib/api';
+import { formatBlockchainError, FormattedError } from '@/lib/blockchainError';
 import toast from 'react-hot-toast';
 
 export default function MintPage() {
@@ -50,6 +51,7 @@ export default function MintPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mintStatus, setMintStatus] = useState<'idle' | 'confirming' | 'minting' | 'success'>('idle');
   const [mintStepLabel, setMintStepLabel] = useState('Step 1/2: Approving USDC fee...');
+  const [mintError, setMintError] = useState<FormattedError | null>(null);
   const [showCollabModal, setShowCollabModal] = useState(false);
 
   // Loaded Track Data
@@ -72,9 +74,49 @@ export default function MintPage() {
   const [collabPercentage, setCollabPercentage] = useState(10);
   const [collabRole, setCollabRole] = useState('writer');
   const [isSearchingCollab, setIsSearchingCollab] = useState(false);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedUserObj, setSelectedUserObj] = useState<any | null>(null);
+
+  // Debounced auto-suggest user search
+  React.useEffect(() => {
+    const cleanQuery = collabUsername.replace(/^@/, '').trim();
+    if (!cleanQuery || cleanQuery.length < 1) {
+      setSuggestions([]);
+      setIsFetchingSuggestions(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsFetchingSuggestions(true);
+      try {
+        const res = await apiFetch(`/api/profile/search?q=${encodeURIComponent(cleanQuery)}`);
+        if (res && res.ok) {
+          const json = await res.json();
+          const list = Array.isArray(json) ? json : json.data || json.users || [];
+          setSuggestions(list);
+          setShowSuggestions(true);
+        }
+      } catch (err) {
+        console.error('Failed to fetch user suggestions:', err);
+      } finally {
+        setIsFetchingSuggestions(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [collabUsername]);
+
+  const handleSelectSuggestion = (user: any) => {
+    const cleanUName = (user.username || '').replace(/^@/, '');
+    setCollabUsername(cleanUName);
+    setSelectedUserObj(user);
+    setShowSuggestions(false);
+  };
 
   const handleAddCollabClick = async () => {
-    const username = collabUsername.trim();
+    const username = collabUsername.trim().replace(/^@/, '');
     if (!username) {
       toast.error('Please enter a username');
       return;
@@ -91,27 +133,36 @@ export default function MintPage() {
 
     setIsSearchingCollab(true);
     try {
-      const res = await apiFetch(`/api/profile/${username}`);
-      if (!res || !res.ok) {
-        throw new Error('User not found');
+      let targetWallet = selectedUserObj?.username?.toLowerCase() === username.toLowerCase() ? selectedUserObj?.wallet : null;
+
+      if (!targetWallet) {
+        const res = await apiFetch(`/api/profile/${username}`);
+        if (!res || !res.ok) {
+          throw new Error('User not found');
+        }
+        const json = await res.json();
+        const user = json.data || json.user || json;
+        targetWallet = user?.wallet;
       }
-      const user = await res.json();
-      if (!user.wallet) {
+
+      if (!targetWallet) {
         throw new Error('User does not have a wallet registered');
       }
 
       setCollaborators([
         ...collaborators,
         {
-          username: user.username,
-          wallet: user.wallet,
+          username: username,
+          wallet: targetWallet,
           percentage: collabPercentage,
           role: collabRole,
         }
       ]);
       setCollabUsername('');
+      setSelectedUserObj(null);
+      setShowSuggestions(false);
       setShowCollabModal(false);
-      toast.success(`Added @${user.username} as ${collabRole}`);
+      toast.success(`Added @${username} as ${collabRole}`);
     } catch (err: any) {
       toast.error(err.message || 'Failed to verify username');
     } finally {
@@ -221,6 +272,7 @@ export default function MintPage() {
       toast.error('Currently Polygon network is enabled for direct smart contract minting');
       return;
     }
+    setMintError(null);
     setIsModalOpen(true);
     setMintStatus('confirming');
   };
@@ -239,6 +291,7 @@ export default function MintPage() {
       return;
     }
 
+    setMintError(null);
     setMintStatus('minting');
 
     try {
@@ -389,9 +442,10 @@ export default function MintPage() {
       toast.success('Track minted on-chain successfully!');
     } catch (err: any) {
       console.error('Minting error:', err);
-      toast.error(err.message || 'Minting transaction failed');
-      setMintStatus('idle');
-      setIsModalOpen(false);
+      const formatted = formatBlockchainError(err, { action: 'publish', requiredUsdc: 2.50 });
+      setMintError(formatted);
+      toast.error(formatted.message);
+      setMintStatus('confirming');
     }
   };
 
@@ -833,17 +887,83 @@ export default function MintPage() {
             </h3>
 
             <div className="space-y-3">
-              <div>
+              <div className="relative">
                 <label className="block text-xs font-bold text-zinc-400 mb-1 font-['Space_Grotesk',sans-serif]">
                   Username (without @)
                 </label>
-                <input
-                  type="text"
-                  value={collabUsername}
-                  onChange={(e) => setCollabUsername(e.target.value)}
-                  placeholder="e.g. producer_jane"
-                  className="w-full h-12 bg-[#192134] border border-[#2D3548] focus:border-[#8A2BE2] rounded-lg px-3 text-sm text-white focus:outline-none"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={collabUsername}
+                    onChange={(e) => {
+                      setCollabUsername(e.target.value);
+                      setSelectedUserObj(null);
+                    }}
+                    onFocus={() => {
+                      if (suggestions.length > 0) setShowSuggestions(true);
+                    }}
+                    placeholder="Type username or name..."
+                    className="w-full h-12 bg-[#192134] border border-[#2D3548] focus:border-[#8A2BE2] rounded-lg pl-3 pr-10 text-sm text-white focus:outline-none"
+                  />
+                  {isFetchingSuggestions && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <Loader2 size={16} className="text-[#8A2BE2] animate-spin" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Auto-suggest dropdown menu */}
+                {showSuggestions && collabUsername.trim().length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-1.5 bg-[#121929] border border-[#2D3548] rounded-xl shadow-2xl z-30 max-h-56 overflow-y-auto custom-scrollbar p-1.5 space-y-1">
+                    {suggestions.length > 0 ? (
+                      suggestions.map((user) => (
+                        <div
+                          key={user.id || user.username}
+                          onClick={() => handleSelectSuggestion(user)}
+                          className="flex items-center justify-between p-2 rounded-lg hover:bg-[#1E293B] cursor-pointer transition-colors"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            {user.avatar_url ? (
+                              <img
+                                src={user.avatar_url}
+                                alt={user.username}
+                                className="w-8 h-8 rounded-full object-cover shrink-0 border border-white/10"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-[#8A2BE2]/20 border border-[#8A2BE2]/40 text-[#8A2BE2] font-bold text-xs flex items-center justify-center shrink-0">
+                                {(user.display_name || user.username || 'U').slice(0, 1).toUpperCase()}
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-white truncate leading-tight">
+                                {user.display_name || user.username}
+                              </p>
+                              <p className="text-[11px] text-zinc-400 font-mono truncate">
+                                @{user.username}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="shrink-0 text-right">
+                            {user.wallet ? (
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                {user.wallet.slice(0, 6)}...{user.wallet.slice(-4)}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                No wallet
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    ) : !isFetchingSuggestions ? (
+                      <div className="py-3 px-2 text-center text-xs text-zinc-500 font-['Space_Grotesk',sans-serif]">
+                        No creators found for "{collabUsername}"
+                      </div>
+                    ) : null}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -903,17 +1023,23 @@ export default function MintPage() {
 
       {/* Confirmation Modal */}
       <MintConfirmationModal
-        isOpen={isModalOpen && mintStatus === 'confirming'}
-        onClose={() => { setIsModalOpen(false); setMintStatus('idle'); }}
+        isOpen={isModalOpen && (mintStatus === 'confirming' || mintStatus === 'minting')}
+        onClose={() => { setIsModalOpen(false); setMintStatus('idle'); setMintError(null); }}
         onConfirm={handleMintConfirmed}
+        isLoading={mintStatus === 'minting'}
+        loadingLabel={mintStepLabel}
+        errorMessage={mintError?.message}
+        errorTitle={mintError?.title}
+        actionUrl={mintError?.actionUrl}
+        actionLabel={mintError?.actionLabel}
         data={{
-          fee: '1.00',
+          fee: '2.50 USDC',
           from: address ? `${address.slice(0, 6)}...${address.slice(-4)}` : '0x...',
           to: 'Groovely Contract',
           network: network === 'polygon' ? 'Polygon (Amoy)' : network.toUpperCase(),
-          gasFee: '0.005',
-          totalEth: '1.00',
-          totalUsd: '1.00'
+          gasFee: '~0.02 POL',
+          totalEth: '2.50 USDC',
+          totalUsd: '2.50'
         }}
       />
 

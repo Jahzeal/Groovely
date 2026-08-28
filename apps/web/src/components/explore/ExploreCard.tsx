@@ -76,12 +76,12 @@ export const ExploreCard = ({ id, title, artist, image, audioUrl, price, uploade
       <button
         onClick={handleSave}
         disabled={isSaving}
-        className={`absolute top-3 right-3 w-8 h-8 backdrop-blur-md border rounded-full flex items-center justify-center transition-all duration-300 z-20 ${hovered ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1'} ${isSaved ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-black/40 border-white/10 text-white hover:bg-white/20'} disabled:opacity-50`}
+        className={`absolute top-2 right-2 sm:top-3 sm:right-3 w-7 h-7 sm:w-8 sm:h-8 backdrop-blur-md border rounded-full flex items-center justify-center transition-all duration-300 z-20 ${hovered ? 'opacity-100 translate-y-0' : 'opacity-0 sm:opacity-0 -translate-y-1'} ${isSaved ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-black/40 border-white/10 text-white hover:bg-white/20'} disabled:opacity-50`}
       >
         {isSaving ? (
-          <Loader2 size={13} className="animate-spin" />
+          <Loader2 size={12} className="animate-spin" />
         ) : (
-          <Heart size={13} fill={isSaved ? 'currentColor' : 'none'} />
+          <Heart size={12} fill={isSaved ? 'currentColor' : 'none'} />
         )}
       </button>
 
@@ -93,19 +93,19 @@ export const ExploreCard = ({ id, title, artist, image, audioUrl, price, uploade
           e.stopPropagation(); 
           playTrack({ id: id || title, title, artist, image: resolvedImageUrl, audioUrl: resolvedAudioUrl, uploaderId, price }, queue);
         }}
-        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-all duration-200 z-20 cursor-pointer
+        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-all duration-200 z-20 cursor-pointer
           ${hovered || isThisTrackPlaying ? 'opacity-100 scale-100' : 'opacity-100 sm:opacity-0 scale-100 sm:scale-90 sm:group-hover:opacity-100 sm:group-hover:scale-100'}`}
       >
         {isThisTrackPlaying ? (
-          <Pause size={16} fill="white" className="text-white" />
+          <Pause size={14} fill="white" className="text-white" />
         ) : (
-          <Play size={16} fill="white" className="text-white ml-0.5" />
+          <Play size={14} fill="white" className="text-white ml-0.5" />
         )}
       </button>
 
-      <div className="absolute bottom-0 left-0 right-0 p-4">
-        <h4 className="text-[15px] font-black text-white tracking-tight leading-tight mb-1">{title}</h4>
-        <p className="text-xs text-zinc-400 font-medium">{artist}</p>
+      <div className="absolute bottom-0 left-0 right-0 p-2.5 sm:p-4">
+        <h4 className="text-xs sm:text-[15px] font-black text-white tracking-tight leading-tight mb-0.5 truncate">{title}</h4>
+        <p className="text-[10px] sm:text-xs text-zinc-400 font-medium truncate">{artist}</p>
       </div>
     </div>
   );

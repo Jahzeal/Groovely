@@ -277,8 +277,9 @@ export default function AnalyticsPage() {
         {/* ========================================================================= */}
         {/* MAIN SCROLLABLE CONTENT                                                   */}
         {/* ========================================================================= */}
-        <main className="flex-1 overflow-y-auto pb-28 px-4 sm:px-8 md:px-10 pt-4 md:pt-8 bg-[#192134]">
-          <div className="max-w-[1200px] mx-auto space-y-6">
+        <main className="flex-1 overflow-y-auto bg-[#192134] flex flex-col">
+          <div className="flex-1 flex flex-col justify-between max-w-[1200px] w-full mx-auto px-4 sm:px-8 md:px-10 pt-4 md:pt-8 min-h-[calc(100vh-100px)]">
+            <div className="space-y-6">
 
             {/* ===================================================================== */}
             {/* 3 METRIC CARDS (Streams, Earnings, Uploads)                           */}
@@ -580,11 +581,12 @@ export default function AnalyticsPage() {
               </div>
 
             </div>
+            </div>
 
             {/* ===================================================================== */}
             {/* FOOTER                                                                */}
             {/* ===================================================================== */}
-            <footer className="mt-10 sm:mt-14 pt-6 border-t border-[#2D3548] flex flex-col md:flex-row justify-between items-center gap-4 text-[#CACACA]">
+            <footer className="mt-auto pt-8 pb-20 sm:pb-8 border-t border-[#2D3548] flex flex-col md:flex-row justify-between items-center gap-4 text-[#CACACA]">
               <div className="flex flex-col sm:flex-row items-center justify-center gap-y-1.5 gap-x-2 text-[10px] sm:text-sm font-['Space_Grotesk',sans-serif]">
                 <div className="flex items-center gap-2">
                   <a href="#" className="hover:text-white transition-colors">About Groovely</a>

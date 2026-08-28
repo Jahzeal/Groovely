@@ -16,6 +16,7 @@ import {
   USDC_ADDRESS,
 } from '@/lib/contracts';
 import { apiFetch } from '@/lib/api';
+import { formatBlockchainError } from '@/lib/blockchainError';
 import { useWallets } from '@privy-io/react-auth';
 import { createPublicClient, http, encodeFunctionData, parseUnits } from 'viem';
 import { createKernelAccount, createKernelAccountClient, createZeroDevPaymasterClient } from '@zerodev/sdk';
@@ -64,31 +65,8 @@ export interface UseMintOptions {
 }
 
 function parseMintError(err: any, mintPriceUsdc: number): string {
-  const msg = err?.shortMessage || err?.details || err?.message || '';
-  const lower = msg.toLowerCase();
-
-  if (lower.includes('user rejected') || lower.includes('user denied') || lower.includes('action rejected') || lower.includes('userrejected')) {
-    return 'Transaction was cancelled in your wallet.';
-  }
-
-  if (lower.includes('exceeds allowance') || lower.includes('allowance')) {
-    return 'USDC token approval was not granted or was insufficient. Please approve the USDC transaction in your wallet when prompted.';
-  }
-
-  if (lower.includes('insufficient funds for gas') || lower.includes('insufficient funds for intrinsic') || (lower.includes('insufficient funds') && !lower.includes('usdc'))) {
-    return 'Insufficient POL in your wallet to cover Polygon network gas fees (~0.02 POL required).';
-  }
-
-  if (lower.includes('insufficient usdc') || lower.includes('exceeds balance') || lower.includes('transfer amount exceeds balance')) {
-    const formattedPrice = typeof mintPriceUsdc === 'number' ? mintPriceUsdc.toFixed(2) : mintPriceUsdc;
-    return `Insufficient USDC balance. You need at least $${formattedPrice} USDC in your wallet to purchase this edition.`;
-  }
-
-  if (lower.includes('json is not a valid request object') || lower.includes('failed to fetch') || lower.includes('network error') || lower.includes('400')) {
-    return 'RPC network connection error. Please ensure your wallet is connected to Polygon Mainnet and try again.';
-  }
-
-  return msg.replace(/^ContractFunctionExecutionError:\s*/i, '').replace(/^Error:\s*/i, '') || 'Something went wrong during the purchase. Please try again.';
+  const formatted = formatBlockchainError(err, { action: 'mint', requiredUsdc: mintPriceUsdc });
+  return formatted.message;
 }
 
 export function useMint({

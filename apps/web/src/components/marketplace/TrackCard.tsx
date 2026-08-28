@@ -64,7 +64,7 @@ export const TrackCard = ({ id, title, creator, image, audioUrl, licenseTypes, p
       onClick={() => router.push(`/marketplace/${id || 1}`)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="relative rounded-2xl overflow-hidden h-[190px] group cursor-pointer border border-white/5 hover:border-accent-purple/30 transition-all duration-300"
+      className="relative rounded-2xl overflow-hidden h-[165px] sm:h-[190px] group cursor-pointer border border-white/5 hover:border-accent-purple/30 transition-all duration-300"
     >
       {/* Image */}
       <img
@@ -79,15 +79,15 @@ export const TrackCard = ({ id, title, creator, image, audioUrl, licenseTypes, p
       <button
         onClick={handleSave}
         disabled={isSaving}
-        className={`absolute top-3 right-3 w-8 h-8 rounded-full backdrop-blur-md border flex items-center justify-center transition-all duration-300
+        className={`absolute top-2.5 right-2.5 sm:top-3 sm:right-3 w-7 h-7 sm:w-8 sm:h-8 rounded-full backdrop-blur-md border flex items-center justify-center transition-all duration-300
           ${liked ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-black/40 border-white/10 text-zinc-500 hover:text-white'}
-          ${hovered ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1'}
+          ${hovered ? 'opacity-100 translate-y-0' : 'opacity-0 sm:opacity-0 -translate-y-1'}
           disabled:opacity-50`}
       >
         {isSaving ? (
-          <Loader2 size={13} className="animate-spin" />
+          <Loader2 size={12} className="animate-spin" />
         ) : (
-          <Heart size={13} fill={liked ? 'currentColor' : 'none'} />
+          <Heart size={12} fill={liked ? 'currentColor' : 'none'} />
         )}
       </button>
 
@@ -107,28 +107,28 @@ export const TrackCard = ({ id, title, creator, image, audioUrl, licenseTypes, p
             licenseTypes
           }, queue);
         }}
-        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-all duration-300
-          ${hovered ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}
+        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-accent-purple rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.5)] transition-all duration-300
+          ${hovered || isThisTrackPlaying ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}
       >
         {isThisTrackPlaying ? (
-          <Pause size={16} fill="white" className="text-white" />
+          <Pause size={14} fill="white" className="text-white" />
         ) : (
-          <Play size={16} fill="white" className="text-white ml-0.5" />
+          <Play size={14} fill="white" className="text-white ml-0.5" />
         )}
       </button>
 
       {/* Footer info */}
-      <div className="absolute bottom-0 left-0 right-0 p-4">
-        <h4 className="text-sm font-black text-white tracking-tight leading-tight mb-0.5">{title}</h4>
-        <p className="text-[11px] text-zinc-400 font-medium mb-2">{creator}</p>
+      <div className="absolute bottom-0 left-0 right-0 p-2.5 sm:p-4">
+        <h4 className="text-xs sm:text-sm font-black text-white tracking-tight leading-tight mb-0.5 truncate">{title}</h4>
+        <p className="text-[10px] sm:text-[11px] text-zinc-400 font-medium mb-1.5 truncate">{creator}</p>
 
-        <div className="flex items-end justify-between">
+        <div className="flex items-end justify-between gap-1">
           {/* License pills */}
-          <div className="flex flex-wrap gap-1">
-            {(licenseTypes || []).map((lt) => (
+          <div className="flex flex-wrap gap-1 overflow-hidden max-h-5">
+            {(licenseTypes || []).slice(0, 1).map((lt) => (
               <span
                 key={lt}
-                className="text-[9px] font-black uppercase tracking-wider bg-white/10 border border-white/10 px-2 py-0.5 rounded-md text-zinc-300"
+                className="text-[8px] sm:text-[9px] font-black uppercase tracking-wider bg-white/10 border border-white/10 px-1.5 py-0.5 rounded text-zinc-300 truncate max-w-[80px]"
               >
                 {lt}
               </span>
@@ -136,19 +136,19 @@ export const TrackCard = ({ id, title, creator, image, audioUrl, licenseTypes, p
           </div>
 
           {/* Price + Buy */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             <div className="flex items-center gap-1">
-              <div className="w-3.5 h-3.5 rounded-full bg-accent-purple/30 border border-accent-purple/50 flex items-center justify-center">
-                <span className="text-[7px] text-accent-purple font-black">Ξ</span>
+              <div className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-accent-purple/30 border border-accent-purple/50 flex items-center justify-center">
+                <span className="text-[6px] sm:text-[7px] text-accent-purple font-black">Ξ</span>
               </div>
-              <span className="text-xs font-black text-white">{currency}</span>
+              <span className="text-[11px] sm:text-xs font-black text-white">{currency}</span>
             </div>
             <button
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); openCart(); }}
-              className={`w-7 h-7 bg-accent-purple hover:bg-accent-purple/80 rounded-lg flex items-center justify-center transition-all duration-300 shadow-[0_0_10px_rgba(139,92,246,0.4)]
+              className={`w-6 h-6 sm:w-7 sm:h-7 bg-accent-purple hover:bg-accent-purple/80 rounded-lg flex items-center justify-center transition-all duration-300 shadow-[0_0_10px_rgba(139,92,246,0.4)]
                 ${hovered ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}
             >
-              <ShoppingCart size={12} className="text-white" />
+              <ShoppingCart size={11} className="text-white" />
             </button>
           </div>
         </div>

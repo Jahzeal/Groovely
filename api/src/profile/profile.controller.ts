@@ -9,6 +9,7 @@ import {
   UseInterceptors,
   UploadedFile,
   Param,
+  Query,
   Req,
   BadRequestException,
 } from '@nestjs/common';
@@ -278,8 +279,15 @@ export class ProfileController {
   }
 
   // ==========================================
-  // Public Profiles
+  // Public Profiles & User Search
   // ==========================================
+
+  @Get('profile/search')
+  @Get('users/search')
+  @ResponseMessage('Users retrieved successfully')
+  async searchUsers(@Query('q') q: string) {
+    return this.profileService.searchUsers(q || '');
+  }
 
   @Get('profile/:username')
   @ResponseMessage('Profile retrieved successfully')

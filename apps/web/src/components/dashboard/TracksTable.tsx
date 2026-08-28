@@ -34,6 +34,18 @@ interface TrackRow {
   status?: string;
 }
 
+const formatEarnings = (val: any): string => {
+  const num = typeof val === 'number' ? val : parseFloat(val);
+  if (isNaN(num) || num === 0) return '$0.00';
+  return `$${num.toFixed(2)}`;
+};
+
+const formatStreams = (val: any): string => {
+  const num = typeof val === 'number' ? val : parseInt(val, 10);
+  if (isNaN(num)) return '0';
+  return num.toLocaleString();
+};
+
 const StatusBadge = ({ status }: { status: string }) => {
   const s = status?.toLowerCase();
   const normalizedStatus = s === 'active' || s === 'live' ? 'Live' : s === 'minting' ? 'Minting' : s === 'failed' ? 'Failed' : s === 'pending_approval' ? 'Pending splits' : 'Draft';
@@ -56,7 +68,7 @@ const StatusBadge = ({ status }: { status: string }) => {
   return (
     <span 
       title={tooltips[normalizedStatus]}
-      className={`cursor-help px-3 py-0.5 rounded-full text-[11px] font-['Space_Grotesk',sans-serif] font-bold uppercase tracking-wider ${styles[normalizedStatus] || styles.Draft}`}
+      className={`cursor-help px-3 py-0.5 rounded-full text-[11px] font-['Space_Grotesk',sans-serif] font-bold uppercase tracking-wider whitespace-nowrap ${styles[normalizedStatus] || styles.Draft}`}
     >
       {normalizedStatus}
     </span>
@@ -84,7 +96,7 @@ export const TracksTable = () => {
 
   const fetchTracks = async () => {
     try {
-      const res = await apiFetch('/api/creator/tracks');
+      const res = await apiFetch('/api/creator/dashboard/tracks');
       if (res && res.ok) {
         const json = await res.json();
         let parsedTracks: TrackRow[] = [];
@@ -179,158 +191,282 @@ export const TracksTable = () => {
           <p>No tracks found.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto w-full">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b border-white/5 text-[10px] font-black text-zinc-500 uppercase tracking-widest">
-                <th className="pb-4 font-black">Track</th>
-                <th className="pb-4 font-black">Content</th>
-                <th className="pb-4 font-black text-center">Streams</th>
-                <th className="pb-4 font-black text-center">Earnings</th>
-                <th className="pb-4 font-black text-center">Status</th>
-                <th className="pb-4 font-black text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {Array.isArray(tracks) && tracks.map((track, i) => {
-                const s = track.status?.toLowerCase() || 'draft';
-                const isLive = s === 'active' || s === 'live';
-                const isFailed = s === 'failed';
-                const isMinting = s === 'minting';
-                const isDraft = !isLive && !isMinting;
-                const isMenuOpen = openMenuTrackId === track.id;
+        <>
+          {/* ========================================================================= */}
+          {/* MOBILE CARDS VIEW (Clean & Non-Squashed on < 640px)                      */}
+          {/* ========================================================================= */}
+          <div className="sm:hidden flex flex-col divide-y divide-white/5">
+            {tracks.map((track, i) => {
+              const s = track.status?.toLowerCase() || 'draft';
+              const isLive = s === 'active' || s === 'live';
+              const isFailed = s === 'failed';
+              const isMenuOpen = openMenuTrackId === track.id;
 
-                return (
-                  <tr key={track.id || i} className="group hover:bg-white/[0.02] transition-colors">
-                    <td className="py-5">
-                      <div className="flex items-center gap-4">
-                        <img 
-                          src={ipfsToHttp(track.image || track.cover_url || track.coverImage) || "https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=100&q=80"} 
-                          alt={track.name || track.title || "Track"} 
-                          className="w-10 h-10 rounded-lg object-cover" 
-                        />
-                        <div className="flex flex-col">
-                           <span className="text-sm font-bold text-white group-hover:text-[#8A2BE2] transition-colors">
-                             {track.name || track.title || "Untitled Track"}
-                           </span>
-                           <div className="flex items-center gap-2 mt-1">
-                              <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">
-                                {track.artist_name || track.artist || (track.artist_username ? `@${track.artist_username}` : "Unknown Artist")}
-                              </span>
-                              {(track as any).contributor_role && (track as any).contributor_role !== 'creator' && (
-                                <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-[#8A2BE2]/15 text-[#8A2BE2] border border-[#8A2BE2]/20">
-                                  {(track as any).contributor_role}
-                                </span>
-                              )}
-                           </div>
+              return (
+                <div key={track.id || i} className="py-4 flex flex-col gap-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <img 
+                        src={ipfsToHttp(track.image || track.cover_url || track.coverImage) || "https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=100&q=80"} 
+                        alt={track.name || track.title || "Track"} 
+                        className="w-12 h-12 rounded-xl object-cover shrink-0 border border-white/10" 
+                      />
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-bold text-white truncate">
+                          {track.name || track.title || "Untitled Track"}
+                        </span>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[11px] font-medium text-zinc-400 truncate">
+                            {track.artist_name || track.artist || (track.artist_username ? `@${track.artist_username}` : "Unknown Artist")}
+                          </span>
+                          {(track as any).contributor_role && (track as any).contributor_role !== 'creator' && (
+                            <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-[#8A2BE2]/15 text-[#8A2BE2] border border-[#8A2BE2]/20 shrink-0">
+                              {(track as any).contributor_role}
+                            </span>
+                          )}
                         </div>
                       </div>
-                    </td>
-                    <td className="py-5">
-                      <span className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl text-xs font-bold text-zinc-400">
-                        {track.content || track.category || "Audio"}
-                      </span>
-                    </td>
-                    <td className="py-5 text-center text-sm font-bold text-zinc-300">{track.streams || "0"}</td>
-                    <td className="py-5 text-center text-sm font-bold text-zinc-300">{track.earnings || "$0.00"}</td>
-                    <td className="py-5 text-center">
-                      <StatusBadge status={track.status || 'Draft'} />
-                    </td>
-                    <td className="py-5 text-right">
-                      <div className="relative inline-flex items-center justify-end gap-2.5 text-zinc-400">
-                        
-                        {/* Edit Pencil Icon: Prefills all details into upload page */}
-                        <button
-                          onClick={() => handleEditClick(track)}
-                          className="p-1.5 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-white transition-all cursor-pointer"
-                          title="Edit track details"
-                        >
-                          <Edit2 size={16} />
-                        </button>
+                    </div>
+                    <StatusBadge status={track.status || 'Draft'} />
+                  </div>
 
-                        {/* More Actions Menu Button ( : ) */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenMenuTrackId(isMenuOpen ? null : (track.id ?? null));
-                          }}
-                          className={`p-1.5 rounded-lg hover:bg-white/10 transition-all cursor-pointer ${isMenuOpen ? 'text-[#8A2BE2] bg-white/10' : 'hover:text-white'}`}
-                          title="More actions"
-                        >
-                          <MoreVertical size={16} />
-                        </button>
-
-                        {/* Dropdown Menu Popover */}
-                        {isMenuOpen && (
-                          <div
-                            ref={menuRef}
-                            className="absolute right-0 top-full mt-1.5 w-48 bg-[#0B101D] border border-[#2D3548] rounded-xl shadow-[0_15px_40px_rgba(0,0,0,0.85)] py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 text-left font-['Space_Grotesk',sans-serif]"
-                          >
-                            {/* Mint Option */}
-                            {isLive ? (
-                              <div 
-                                className="px-3.5 py-2.5 flex items-center justify-between text-xs font-semibold text-zinc-500 opacity-40 cursor-not-allowed select-none filter blur-[0.3px]"
-                                title="This track has already been minted"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <Zap size={14} className="text-zinc-600" />
-                                  <span>Mint Edition</span>
-                                </div>
-                                <span className="text-[9px] uppercase tracking-wider font-bold text-[#00FF88]">Minted</span>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => handleMintClick(track)}
-                                className="w-full px-3.5 py-2.5 flex items-center gap-2 text-xs font-bold text-[#8A2BE2] hover:bg-[#8A2BE2]/15 hover:text-white transition-all cursor-pointer"
-                              >
-                                <Zap size={14} className="text-[#8A2BE2]" />
-                                <span>{isFailed ? 'Retry Minting' : 'Mint Track'}</span>
-                              </button>
-                            )}
-
-                            {/* Edit Option */}
-                            <button
-                              onClick={() => {
-                                setOpenMenuTrackId(null);
-                                handleEditClick(track);
-                              }}
-                              className="w-full px-3.5 py-2.5 flex items-center gap-2 text-xs font-medium text-zinc-300 hover:bg-white/5 hover:text-white transition-all cursor-pointer"
-                            >
-                              <Edit2 size={14} className="text-zinc-400" />
-                              <span>Edit Details</span>
-                            </button>
-
-                            <div className="h-[1px] bg-white/5 my-1" />
-
-                            {/* Delete Option */}
-                            <button
-                              onClick={() => handleDeleteClick(track)}
-                              disabled={deletingTrackId === track.id}
-                              className="w-full px-3.5 py-2.5 flex items-center gap-2 text-xs font-bold text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all cursor-pointer disabled:opacity-50"
-                            >
-                              {deletingTrackId === track.id ? (
-                                <>
-                                  <Loader2 size={14} className="animate-spin text-red-400" />
-                                  <span>Deleting...</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Trash2 size={14} className="text-red-400" />
-                                  <span>Delete Track</span>
-                                </>
-                              )}
-                            </button>
-                          </div>
-                        )}
-
+                  <div className="relative flex items-center justify-between bg-white/[0.02] border border-white/5 rounded-xl px-3.5 py-2.5">
+                    <div className="flex items-center gap-5">
+                      <div>
+                        <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider block">Streams</span>
+                        <span className="text-xs font-bold text-zinc-200">{formatStreams(track.streams)}</span>
                       </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      <div>
+                        <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider block">Earnings</span>
+                        <span className="text-xs font-bold text-[#00FF88]">{formatEarnings(track.earnings)}</span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider block">Content</span>
+                        <span className="text-xs font-bold text-zinc-300">{track.content || track.category || "Audio"}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 relative">
+                      <button
+                        onClick={() => handleEditClick(track)}
+                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
+                        title="Edit track"
+                      >
+                        <Edit2 size={15} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuTrackId(isMenuOpen ? null : (track.id ?? null));
+                        }}
+                        className={`p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors ${isMenuOpen ? 'text-[#8A2BE2] bg-white/10' : 'text-zinc-400 hover:text-white'}`}
+                        title="More options"
+                      >
+                        <MoreVertical size={15} />
+                      </button>
+
+                      {/* Dropdown Menu Popover on Mobile */}
+                      {isMenuOpen && (
+                        <div
+                          ref={menuRef}
+                          className="absolute right-0 bottom-full mb-1.5 w-44 bg-[#0B101D] border border-[#2D3548] rounded-xl shadow-[0_15px_40px_rgba(0,0,0,0.85)] py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 text-left font-['Space_Grotesk',sans-serif]"
+                        >
+                          {isLive ? (
+                            <div className="px-3 py-2 text-xs font-semibold text-zinc-500 select-none flex items-center justify-between">
+                              <span className="flex items-center gap-1.5"><Zap size={13} /> Minted</span>
+                              <span className="text-[9px] text-[#00FF88] font-bold uppercase">Live</span>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleMintClick(track)}
+                              className="w-full px-3 py-2 flex items-center gap-2 text-xs font-bold text-[#8A2BE2] hover:bg-[#8A2BE2]/15 hover:text-white transition-all cursor-pointer"
+                            >
+                              <Zap size={13} className="text-[#8A2BE2]" />
+                              <span>{isFailed ? 'Retry Minting' : 'Mint Track'}</span>
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              setOpenMenuTrackId(null);
+                              handleEditClick(track);
+                            }}
+                            className="w-full px-3 py-2 flex items-center gap-2 text-xs font-medium text-zinc-300 hover:bg-white/5 hover:text-white transition-all cursor-pointer"
+                          >
+                            <Edit2 size={13} className="text-zinc-400" />
+                            <span>Edit Details</span>
+                          </button>
+                          <div className="h-[1px] bg-white/5 my-1" />
+                          <button
+                            onClick={() => handleDeleteClick(track)}
+                            disabled={deletingTrackId === track.id}
+                            className="w-full px-3 py-2 flex items-center gap-2 text-xs font-bold text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all cursor-pointer"
+                          >
+                            <Trash2 size={13} className="text-red-400" />
+                            <span>Delete Track</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ========================================================================= */}
+          {/* DESKTOP & TABLET TABLE (Visible on >= 640px)                               */}
+          {/* ========================================================================= */}
+          <div className="hidden sm:block overflow-x-auto w-full">
+            <table className="w-full text-left min-w-[620px]">
+              <thead>
+                <tr className="border-b border-white/5 text-[10px] font-black text-zinc-500 uppercase tracking-widest">
+                  <th className="pb-4 font-black">Track</th>
+                  <th className="pb-4 font-black">Content</th>
+                  <th className="pb-4 font-black text-center">Streams</th>
+                  <th className="pb-4 font-black text-center">Earnings</th>
+                  <th className="pb-4 font-black text-center">Status</th>
+                  <th className="pb-4 font-black text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {tracks.map((track, i) => {
+                  const s = track.status?.toLowerCase() || 'draft';
+                  const isLive = s === 'active' || s === 'live';
+                  const isFailed = s === 'failed';
+                  const isMenuOpen = openMenuTrackId === track.id;
+
+                  return (
+                    <tr key={track.id || i} className="group hover:bg-white/[0.02] transition-colors">
+                      <td className="py-5">
+                        <div className="flex items-center gap-4">
+                          <img 
+                            src={ipfsToHttp(track.image || track.cover_url || track.coverImage) || "https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=100&q=80"} 
+                            alt={track.name || track.title || "Track"} 
+                            className="w-10 h-10 rounded-lg object-cover shrink-0" 
+                          />
+                          <div className="flex flex-col min-w-0 max-w-[200px] lg:max-w-none">
+                             <span className="text-sm font-bold text-white group-hover:text-[#8A2BE2] transition-colors truncate">
+                               {track.name || track.title || "Untitled Track"}
+                             </span>
+                             <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider truncate">
+                                  {track.artist_name || track.artist || (track.artist_username ? `@${track.artist_username}` : "Unknown Artist")}
+                                </span>
+                                {(track as any).contributor_role && (track as any).contributor_role !== 'creator' && (
+                                  <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-[#8A2BE2]/15 text-[#8A2BE2] border border-[#8A2BE2]/20 shrink-0">
+                                    {(track as any).contributor_role}
+                                  </span>
+                                )}
+                             </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-5">
+                        <span className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl text-xs font-bold text-zinc-400 whitespace-nowrap">
+                          {track.content || track.category || "Audio"}
+                        </span>
+                      </td>
+                      <td className="py-5 text-center text-sm font-bold text-zinc-300">{formatStreams(track.streams)}</td>
+                      <td className="py-5 text-center text-sm font-bold text-[#00FF88]">{formatEarnings(track.earnings)}</td>
+                      <td className="py-5 text-center">
+                        <StatusBadge status={track.status || 'Draft'} />
+                      </td>
+                      <td className="py-5 text-right">
+                        <div className="relative inline-flex items-center justify-end gap-2.5 text-zinc-400">
+                          
+                          {/* Edit Pencil Icon: Prefills all details into upload page */}
+                          <button
+                            onClick={() => handleEditClick(track)}
+                            className="p-1.5 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-white transition-all cursor-pointer"
+                            title="Edit track details"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+
+                          {/* More Actions Menu Button ( : ) */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuTrackId(isMenuOpen ? null : (track.id ?? null));
+                            }}
+                            className={`p-1.5 rounded-lg hover:bg-white/10 transition-all cursor-pointer ${isMenuOpen ? 'text-[#8A2BE2] bg-white/10' : 'hover:text-white'}`}
+                            title="More actions"
+                          >
+                            <MoreVertical size={16} />
+                          </button>
+
+                          {/* Dropdown Menu Popover */}
+                          {isMenuOpen && (
+                            <div
+                              ref={menuRef}
+                              className="absolute right-0 top-full mt-1.5 w-48 bg-[#0B101D] border border-[#2D3548] rounded-xl shadow-[0_15px_40px_rgba(0,0,0,0.85)] py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150 text-left font-['Space_Grotesk',sans-serif]"
+                            >
+                              {/* Mint Option */}
+                              {isLive ? (
+                                <div 
+                                  className="px-3.5 py-2.5 flex items-center justify-between text-xs font-semibold text-zinc-500 opacity-40 cursor-not-allowed select-none filter blur-[0.3px]"
+                                  title="This track has already been minted"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Zap size={14} className="text-zinc-600" />
+                                    <span>Mint Edition</span>
+                                  </div>
+                                  <span className="text-[9px] uppercase tracking-wider font-bold text-[#00FF88]">Minted</span>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => handleMintClick(track)}
+                                  className="w-full px-3.5 py-2.5 flex items-center gap-2 text-xs font-bold text-[#8A2BE2] hover:bg-[#8A2BE2]/15 hover:text-white transition-all cursor-pointer"
+                                >
+                                  <Zap size={14} className="text-[#8A2BE2]" />
+                                  <span>{isFailed ? 'Retry Minting' : 'Mint Track'}</span>
+                                </button>
+                              )}
+
+                              {/* Edit Option */}
+                              <button
+                                onClick={() => {
+                                  setOpenMenuTrackId(null);
+                                  handleEditClick(track);
+                                }}
+                                className="w-full px-3.5 py-2.5 flex items-center gap-2 text-xs font-medium text-zinc-300 hover:bg-white/5 hover:text-white transition-all cursor-pointer"
+                              >
+                                <Edit2 size={14} className="text-zinc-400" />
+                                <span>Edit Details</span>
+                              </button>
+
+                              <div className="h-[1px] bg-white/5 my-1" />
+
+                              {/* Delete Option */}
+                              <button
+                                onClick={() => handleDeleteClick(track)}
+                                disabled={deletingTrackId === track.id}
+                                className="w-full px-3.5 py-2.5 flex items-center gap-2 text-xs font-bold text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all cursor-pointer disabled:opacity-50"
+                              >
+                                {deletingTrackId === track.id ? (
+                                  <>
+                                    <Loader2 size={14} className="animate-spin text-red-400" />
+                                    <span>Deleting...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Trash2 size={14} className="text-red-400" />
+                                    <span>Delete Track</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          )}
+
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );

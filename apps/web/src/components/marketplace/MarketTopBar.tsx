@@ -116,88 +116,85 @@ export const MarketTopBar = () => {
   };
 
   return (
-    <header className="flex flex-col md:flex-row items-stretch md:items-center justify-between px-4 sm:px-6 md:px-10 py-3 sm:py-5 bg-[#192134]/80 backdrop-blur-md border-b border-[#2D3548] sticky top-0 z-40 gap-3 md:gap-4">
-      {/* Top row on mobile / Left side on desktop: Hamburger + Search + Right Icons */}
-      <div className="flex items-center justify-between gap-3 w-full md:w-auto md:flex-1 md:max-w-2xl">
-        {/* Mobile Hamburger Button */}
-        <button
-          onClick={toggleMobileSidebar}
-          className="md:hidden p-2 rounded-xl bg-[#0F0F1A] border border-white/10 text-white hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
-          aria-label="Open menu"
-        >
-          <Menu size={20} />
-        </button>
+    <header className="flex items-center justify-between px-3 sm:px-6 md:px-8 py-2.5 sm:py-3.5 bg-[#192134]/90 backdrop-blur-md border-b border-[#2D3548] sticky top-0 z-40 gap-2 sm:gap-4 w-full">
+      {/* Left: Mobile Hamburger */}
+      <button
+        onClick={toggleMobileSidebar}
+        className="md:hidden p-2 rounded-xl bg-[#0F0F1A] border border-white/5 text-white hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
+        aria-label="Open menu"
+      >
+        <Menu size={18} />
+      </button>
 
-        {/* Search Bar */}
-        <div className="relative flex-1 group">
-          <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-zinc-600 group-focus-within:text-accent-purple transition-colors">
-            <Search size={16} />
-          </div>
-          <input
-            type="text"
-            placeholder="Search beats, podcasts, samples..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={handleSearch}
-            className="w-full bg-[#0F0F1A] border border-white/5 rounded-xl py-2.5 sm:py-3 pl-10 pr-4 text-xs sm:text-sm font-medium focus:outline-none focus:border-accent-purple/50 transition-all placeholder-zinc-600 text-white"
-          />
+      {/* Center: Search Bar */}
+      <div className="relative flex-1 min-w-[120px] max-w-xl group">
+        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-zinc-500 group-focus-within:text-accent-purple transition-colors">
+          <Search size={15} />
         </div>
-
-        {/* Sort Dropdown (hidden on small mobile or compact) */}
-        <div className="relative hidden sm:block">
-          <button
-            onClick={() => setSortOpen(!sortOpen)}
-            className="flex items-center gap-2 bg-[#0F0F1A] border border-white/5 rounded-xl px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-zinc-400 hover:text-white hover:border-white/10 transition-all whitespace-nowrap"
-          >
-            {sortLabel}
-            <ChevronDown size={14} className={`transition-transform ${sortOpen ? 'rotate-180' : ''}`} />
-          </button>
-          {sortOpen && (
-            <div className="absolute top-full mt-2 right-0 w-52 bg-[#0F0F1A] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
-              {sortOptions.map((opt) => (
-                <button
-                  key={opt}
-                  onClick={() => { setSortLabel(opt); setSortOpen(false); }}
-                  className="w-full text-left px-5 py-3 text-sm font-medium text-zinc-400 hover:bg-accent-purple/10 hover:text-white transition-all"
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <input
+          type="text"
+          placeholder="Search beats, podcasts, samples..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={handleSearch}
+          className="w-full bg-[#0F0F1A] border border-white/5 rounded-xl py-2 sm:py-2.5 pl-8 sm:pl-10 pr-3 sm:pr-4 text-xs sm:text-sm font-medium focus:outline-none focus:border-accent-purple/50 transition-all placeholder-zinc-500 text-white"
+        />
       </div>
 
-      {/* Right side: Auth / Notifications / Cart / Wallet */}
-      <div className="flex items-center justify-end gap-3 sm:gap-4 md:ml-6 shrink-0">
+      {/* Sort Dropdown (visible on desktop) */}
+      <div className="relative hidden xl:block shrink-0">
+        <button
+          onClick={() => setSortOpen(!sortOpen)}
+          className="flex items-center gap-2 bg-[#0F0F1A] border border-white/5 rounded-xl px-3.5 py-2 text-xs font-bold text-zinc-400 hover:text-white hover:border-white/10 transition-all whitespace-nowrap"
+        >
+          {sortLabel}
+          <ChevronDown size={13} className={`transition-transform ${sortOpen ? 'rotate-180' : ''}`} />
+        </button>
+        {sortOpen && (
+          <div className="absolute top-full mt-2 right-0 w-48 bg-[#0F0F1A] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
+            {sortOptions.map((opt) => (
+              <button
+                key={opt}
+                onClick={() => { setSortLabel(opt); setSortOpen(false); }}
+                className="w-full text-left px-4 py-2.5 text-xs font-medium text-zinc-400 hover:bg-accent-purple/10 hover:text-white transition-all"
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Right: Auth / Notifications / Cart / Wallet */}
+      <div className="flex items-center justify-end gap-1.5 sm:gap-2.5 shrink-0">
         {!hasAuth ? (
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2.5">
             <button
               onClick={() => login()}
-              className="text-zinc-400 hover:text-white font-black text-[10px] uppercase tracking-widest px-3 sm:px-5 py-2 sm:py-3 transition-all cursor-pointer"
+              className="hidden sm:inline-block text-zinc-400 hover:text-white font-black text-[10px] uppercase tracking-widest px-3 py-2 transition-all cursor-pointer"
             >
               Log In
             </button>
             <button
               onClick={() => login()}
-              className="bg-accent-purple hover:bg-opacity-90 text-white font-black text-[10px] uppercase tracking-widest px-4 sm:px-6 py-2 sm:py-3 rounded-xl transition-all shadow-[0_0_15px_rgba(157,0,255,0.3)] cursor-pointer"
+              className="bg-accent-purple hover:bg-opacity-90 text-white font-black text-[10px] uppercase tracking-wider px-3 sm:px-4 py-2 rounded-xl transition-all shadow-[0_0_15px_rgba(157,0,255,0.3)] cursor-pointer whitespace-nowrap"
             >
-              Connect Wallet
+              Connect
             </button>
           </div>
         ) : (
           <>
-            <button className="text-zinc-500 hover:text-white transition-colors relative p-1">
-              <Bell size={20} strokeWidth={2} />
-              <div className="absolute top-0 right-0 w-2 h-2 bg-accent-purple rounded-full shadow-[0_0_8px_rgba(157,0,255,0.7)]" />
+            <button className="text-zinc-400 hover:text-white transition-colors relative p-2 rounded-xl hover:bg-white/5">
+              <Bell size={18} strokeWidth={2} />
+              <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-accent-purple rounded-full shadow-[0_0_8px_rgba(157,0,255,0.7)]" />
             </button>
 
             <button 
               onClick={openCart}
-              className="text-zinc-500 hover:text-white transition-colors relative p-1 cursor-pointer"
+              className="text-zinc-400 hover:text-white transition-colors relative p-2 rounded-xl hover:bg-white/5 cursor-pointer"
+              title="View cart"
             >
-              <ShoppingCart size={20} strokeWidth={2} />
-              <div className="absolute top-0 right-0 w-2 h-2 bg-accent-purple rounded-full shadow-[0_0_8px_rgba(157,0,255,0.7)]" />
+              <ShoppingCart size={18} strokeWidth={2} />
             </button>
 
             {/* Wallet Dropdown */}
@@ -208,19 +205,20 @@ export const MarketTopBar = () => {
                   e.stopPropagation();
                   setDropdownOpen((o) => !o);
                 }}
-                className="flex items-center gap-2 sm:gap-3 bg-[#0F0F1A] border border-white/5 rounded-xl px-3 sm:px-4 py-2 hover:bg-white/5 cursor-pointer transition-all"
+                className="flex items-center gap-2 bg-[#0F0F1A] border border-white/5 rounded-xl px-2.5 sm:px-3.5 py-1.5 sm:py-2 hover:bg-white/5 cursor-pointer transition-all"
               >
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg overflow-hidden border border-white/10 shrink-0">
+                <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg overflow-hidden border border-white/10 shrink-0">
                   <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="Wallet" className="w-full h-full object-contain" />
                 </div>
-                <div className="flex flex-col items-start leading-none text-left max-w-[90px] sm:max-w-none">
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">
+                <div className="hidden sm:flex flex-col items-start leading-none text-left">
+                  <span className="text-[8px] font-bold uppercase tracking-wider text-zinc-500 mb-0.5">
                     {role ?? 'wallet'}
                   </span>
-                  <span className="text-xs sm:text-sm font-black tracking-tight text-white/90 truncate">{abbrev}</span>
+                  <span className="text-xs font-bold tracking-tight text-white/90 truncate">{abbrev}</span>
                 </div>
+                <span className="sm:hidden text-xs font-bold font-mono text-white/90">{abbrev}</span>
                 <ChevronDown
-                  size={13}
+                  size={12}
                   className={`text-zinc-500 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`}
                 />
               </button>

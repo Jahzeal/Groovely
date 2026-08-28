@@ -266,12 +266,12 @@ export default function LibraryPage() {
         {/* ========================================================================= */}
         {/* MAIN SCROLLABLE CONTENT AREA                                              */}
         {/* ========================================================================= */}
-        <main className="flex-1 overflow-y-auto pb-28 sm:pb-24 px-4 sm:px-8 md:px-10 pt-6 md:pt-8 bg-[#192134]">
-          <div className="max-w-[1200px]">
-
-            {/* ===================================================================== */}
-            {/* TABS (Frame 222) & SORT BUTTON (Frame 223) ROW                        */}
-            {/* ===================================================================== */}
+        <main className="flex-1 overflow-y-auto bg-[#192134] flex flex-col">
+          <div className="flex-1 flex flex-col justify-between max-w-[1200px] w-full mx-auto px-4 sm:px-8 md:px-10 pt-6 md:pt-8 min-h-[calc(100vh-140px)]">
+            <div>
+              {/* ===================================================================== */}
+              {/* TABS (Frame 222) & SORT BUTTON (Frame 223) ROW                        */}
+              {/* ===================================================================== */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
 
               {/* Tab Filters (Frame 222) */}
@@ -432,11 +432,12 @@ export default function LibraryPage() {
                 </Link>
               </div>
             )}
+          </div>
 
             {/* ===================================================================== */}
-            {/* DESKTOP FOOTER (Figma Text input container: 1256x56px, border-t #232B3E)*/}
+            {/* FOOTER                                                                */}
             {/* ===================================================================== */}
-            <footer className="mt-16 pt-6 border-t border-[#232B3E] flex flex-col md:flex-row justify-between items-center gap-4 text-[#CACACA]">
+            <footer className="mt-auto pt-8 pb-28 sm:pb-32 border-t border-[#232B3E] flex flex-col md:flex-row justify-between items-center gap-4 text-[#CACACA]">
               <div className="flex flex-wrap items-center justify-center gap-x-2.5 text-sm font-['Space_Grotesk',sans-serif]">
                 <a href="#" className="hover:text-white transition-colors">About Groovely</a>
                 <span className="w-1 h-1 bg-[#CACACA] rounded-full" />
@@ -456,7 +457,6 @@ export default function LibraryPage() {
                 <a href="#" className="hover:text-white transition-colors" aria-label="Instagram"><Instagram size={16} /></a>
               </div>
             </footer>
-
           </div>
         </main>
       </div>

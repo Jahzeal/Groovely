@@ -317,6 +317,20 @@ export class ProfileService {
     return profile;
   }
 
+  async searchUsers(query: string, limit: number = 8) {
+    if (!query || !query.trim()) return [];
+    const clean = query.replace(/^@/, '').trim().toLowerCase();
+    const result = await this.db.query(
+      `SELECT id, username, display_name, avatar_url, wallet, role 
+       FROM users 
+       WHERE (LOWER(REPLACE(username, '@', '')) LIKE $1 OR LOWER(display_name) LIKE $1)
+       ORDER BY CASE WHEN LOWER(REPLACE(username, '@', '')) LIKE $2 THEN 0 ELSE 1 END, username ASC 
+       LIMIT $3`,
+      [`%${clean}%`, `${clean}%`, limit]
+    );
+    return result.rows;
+  }
+
   async getPublicProfile(username: string) {
     const cleanUsername = username ? username.replace(/^@/, '').trim().toLowerCase() : '';
     const result = await this.db.query(
