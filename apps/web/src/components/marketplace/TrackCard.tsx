@@ -168,12 +168,18 @@ export const TrackCard = ({ id, title, creator, image, audioUrl, licenseTypes, p
 
           {/* Price + Buy */}
           <div className="flex items-center gap-1.5 shrink-0">
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-accent-purple/30 border border-accent-purple/50 flex items-center justify-center">
-                <span className="text-[6px] sm:text-[7px] text-accent-purple font-black">Ξ</span>
+            {Number(price) === 0 || price === '0.00' || currency === '$0' || currency === '$0.00' || currency === 'Free' ? (
+              <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                Free
+              </span>
+            ) : (
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-accent-purple/30 border border-accent-purple/50 flex items-center justify-center">
+                  <span className="text-[6px] sm:text-[7px] text-accent-purple font-black">Ξ</span>
+                </div>
+                <span className="text-[11px] sm:text-xs font-black text-white">{currency}</span>
               </div>
-              <span className="text-[11px] sm:text-xs font-black text-white">{currency}</span>
-            </div>
+            )}
             {!isUploader && (
               <button
                 onClick={(e) => {

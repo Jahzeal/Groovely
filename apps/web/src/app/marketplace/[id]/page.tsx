@@ -1,121 +1,96 @@
 'use client';
 
-import React from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import React, { useState } from 'react';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { MarketTopBar } from '@/components/marketplace/MarketTopBar';
 import { TrackCard } from '@/components/marketplace/TrackCard';
 import { MusicPlayer } from '@/components/marketplace/MusicPlayer';
+import { CartProvider } from '@/components/marketplace/CartContext';
 import { useMusicPlayer } from '@/components/marketplace/MusicPlayerContext';
 import { MintModal, EditionInfo } from '@/components/marketplace/MintModal';
 import { ShareModal } from '@/components/marketplace/ShareModal';
-import { Button } from '@/components/ui/Button';
-import {
-  ChevronLeft,
-  ShoppingCart,
-  Search,
-  Bell,
-  ChevronDown,
-  Play,
-  Pause,
-  Share2,
-  ExternalLink,
-  Copy,
-  Info,
-  Check,
-  Download
+import { 
+  Play, 
+  Pause, 
+  Share2, 
+  ExternalLink, 
+  Copy, 
+  Check, 
+  ShoppingCart, 
+  Download, 
+  Headphones, 
+  Disc, 
+  Heart,
+  Sparkles,
+  ShieldCheck,
+  Zap
 } from 'lucide-react';
-import { CartProvider, useCart } from '@/components/marketplace/CartContext';
-import { use } from 'react';
+import { Button } from '@/components/ui/Button';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
 import { apiFetch, resolveIpfsUrl } from '@/lib/api';
+import toast from 'react-hot-toast';
 
-export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function TrackDetailPage() {
+  const params = useParams();
+  const id = params?.id as string;
   const router = useRouter();
-  const { id } = use(params);
-  const { playTrack, currentTrack, isPlaying, addPurchasedTrack } = useMusicPlayer();
-  
-  const [trackData, setTrackData] = React.useState<any>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const [isPurchased, setIsPurchased] = React.useState(false);
-  const [mintModalOpen, setMintModalOpen] = React.useState(false);
-  const [shareModalOpen, setShareModalOpen] = React.useState(false);
-  const [audioDuration, setAudioDuration] = React.useState<string>('Loading...');
-  const [currentUserId, setCurrentUserId] = React.useState<number | null>(null);
 
+  const [trackData, setTrackData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [audioDuration, setAudioDuration] = useState('0:00');
+  const [mintModalOpen, setMintModalOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+
+  const { playTrack, currentTrack, isPlaying, isTrackPurchased } = useMusicPlayer();
+
+  // Load duration when audio url is available
   React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('grooveli_user_id');
-      if (stored) setCurrentUserId(Number(stored));
-    }
-  }, []);
+    if (!trackData?.track?.audio_url) return;
+    const url = resolveIpfsUrl(trackData.track.audio_url);
+    if (!url) return;
 
-  const isUploader = currentUserId !== null && (trackData?.track?.user_id === currentUserId || trackData?.creator?.id === currentUserId);
-
-  React.useEffect(() => {
-    const rawAudioUrl = trackData?.track?.audio_url;
-    const audioUrl = resolveIpfsUrl(rawAudioUrl);
-    if (audioUrl) {
-      const audio = new Audio();
-      audio.crossOrigin = "anonymous";
-      audio.preload = "metadata";
-      audio.src = audioUrl.includes('?') ? `${audioUrl}&t=${Date.now()}` : `${audioUrl}?t=${Date.now()}`;
-      
-      const onLoadedMetadata = () => {
-        const d = audio.duration;
-        if (d && !isNaN(d)) {
-          const minutes = Math.floor(d / 60);
-          const seconds = Math.floor(d % 60);
-          setAudioDuration(`${minutes}:${seconds.toString().padStart(2, '0')}`);
-        } else {
-          setAudioDuration('N/A');
-        }
-      };
-
-      const onError = () => {
-        setAudioDuration('N/A');
-      };
-
-      audio.addEventListener('loadedmetadata', onLoadedMetadata);
-      audio.addEventListener('error', onError);
-      audio.load();
-
-      return () => {
-        audio.removeEventListener('loadedmetadata', onLoadedMetadata);
-        audio.removeEventListener('error', onError);
-      };
-    } else {
-      setAudioDuration('N/A');
-    }
+    const audio = new Audio(url);
+    audio.addEventListener('loadedmetadata', () => {
+      const minutes = Math.floor(audio.duration / 60);
+      const seconds = Math.floor(audio.duration % 60);
+      setAudioDuration(`${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
+    });
   }, [trackData]);
 
-  // Fetch purchase status to lift 40s limit if already owned
+  // Load saved state from API
   React.useEffect(() => {
-    if (isUploader) {
-      setIsPurchased(true);
-      addPurchasedTrack(id);
-      return;
-    }
-
-    const storedWallet = typeof window !== 'undefined'
-      ? (localStorage.getItem('groovely_wallet') || localStorage.getItem('grooveli_wallet') || '')
-      : '';
-    const queryStr = storedWallet ? `?wallet=${encodeURIComponent(storedWallet)}` : '';
-
-    apiFetch(`/api/tracks/${id}/purchased${queryStr}`, { skipAuthRedirect: true })
-      .then(async (res) => {
+    if (!id) return;
+    async function checkSaved() {
+      try {
+        const res = await apiFetch(`/api/fan/saved`);
         if (res && res.ok) {
-          const data = await res.json();
-          if (data?.data?.purchased) {
-            setIsPurchased(true);
-            addPurchasedTrack(id);
+          const json = await res.json();
+          const items = json?.data?.tracks || json?.data || [];
+          if (Array.isArray(items)) {
+            setIsSaved(items.some((it: any) => String(it.id) === String(id)));
           }
         }
-      })
-      .catch(() => {});
-  }, [id, isUploader]); // eslint-disable-line
+      } catch (_) {}
+    }
+    checkSaved();
+  }, [id]);
+
+  const handleToggleSave = async () => {
+    try {
+      const method = isSaved ? 'DELETE' : 'POST';
+      const res = await apiFetch(`/api/fan/saved/${id}`, { method });
+      if (res && res.ok) {
+        setIsSaved(!isSaved);
+        toast.success(!isSaved ? 'Saved to your favorites!' : 'Removed from favorites');
+      }
+    } catch (_) {
+      toast.error('Failed to update favorites');
+    }
+  };
 
   React.useEffect(() => {
     async function fetchTrack() {
@@ -144,8 +119,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
     const checkMintAction = () => {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('action') === 'mint') {
+      const p = new URLSearchParams(window.location.search);
+      if (p.get('action') === 'mint') {
         setMintModalOpen(true);
         window.history.replaceState({}, '', `/marketplace/${id}`);
       }
@@ -159,17 +134,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     };
   }, [id]);
 
-  const handleSearch = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && searchQuery.trim()) {
-      router.push(`/marketplace?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
-
   const track = trackData?.track;
   const creator = trackData?.creator;
   const more_from_creator = trackData?.more_from_creator;
 
-  // Build editions list from database or fallback (hook is always called at top level)
+  // Build editions list from database or fallback
   const editionsList: EditionInfo[] = React.useMemo(() => {
     if (!trackData) return [];
     const isFree = track?.payment_model === 'none' || track?.license_price === '0.00' || Number(track?.license_price) === 0;
@@ -204,7 +173,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     ];
   }, [trackData, track]);
 
-  // Map backend fields to the UI needs (hook is always called at top level)
+  // Map backend fields to UI
   const displayTrack = React.useMemo(() => {
     if (!track || !creator) return null;
     const isFree = track.payment_model === 'none' || track.license_price === '0.00' || Number(track.license_price) === 0;
@@ -223,7 +192,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       audio_url: resolveIpfsUrl(track.audio_url),
       description: track.description || 'No description provided.',
       price: finalPrice,
-      priceUsd: (parseFloat(finalPrice) * 2400).toFixed(2), // Mock conversion
       bpm: track.bpm || 'N/A',
       key: track.key || 'N/A',
       duration: audioDuration,
@@ -251,6 +219,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     );
   }
 
+  const isPurchased = isTrackPurchased(id);
+  const currentUserId = typeof window !== 'undefined'
+    ? (Number(localStorage.getItem('grooveli_user_id')) || Number(localStorage.getItem('groovely_user_id')) || null)
+    : null;
+  const isUploader = currentUserId !== null && Number(track.user_id || creator.id) === currentUserId;
+  const isFree = displayTrack.price === '0.00' || track.payment_model === 'none';
+
   return (
     <CartProvider>
       <div className="flex min-h-screen bg-[#050510] text-white font-sans selection:bg-accent-cyan selection:text-black">
@@ -261,148 +236,206 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
           <main className="flex-1 overflow-y-auto flex flex-col justify-between min-h-[calc(100vh-140px)]">
             <div>
-              {/* Spotify / Apple Music Style Crisp Hero Banner */}
-              <div className="relative min-h-[380px] sm:min-h-[420px] w-full overflow-hidden flex items-end p-6 sm:p-10 border-b border-white/5">
-              {/* Ambient Blur Backdrop */}
-              <img 
-                src={displayTrack.image} 
-                alt="" 
-                className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-30 scale-110 pointer-events-none"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#050510] via-[#050510]/70 to-black/40" />
+              {/* Spotify / Apple Music Style Responsive Hero Banner */}
+              <div className="relative w-full overflow-hidden p-4 sm:p-8 md:p-10 border-b border-white/5 bg-[#070a14]">
+                {/* Ambient Blur Backdrop */}
+                <img 
+                  src={displayTrack.image} 
+                  alt="" 
+                  className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-25 scale-110 pointer-events-none"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#070a14] via-[#070a14]/80 to-transparent" />
 
-              {/* Foreground Content: Crisp 1:1 HD Cover Art Card */}
-              <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-end gap-6 sm:gap-8 w-full max-w-7xl mx-auto">
-                <div className="w-48 h-48 sm:w-60 sm:h-60 rounded-3xl overflow-hidden border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.8)] shrink-0 bg-[#0F0F1A]">
-                  <img 
-                    src={displayTrack.image} 
-                    alt={displayTrack.title} 
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+                {/* Hero Layout: Flex row on Desktop, Clean vertical card on Mobile */}
+                <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col md:flex-row items-center md:items-end gap-5 sm:gap-8">
+                  {/* Album Cover Art */}
+                  <div className="w-40 h-40 sm:w-52 sm:h-52 md:w-60 md:h-60 rounded-2xl sm:rounded-3xl overflow-hidden border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.8)] shrink-0 bg-[#0F0F1A] relative group">
+                    <img 
+                      src={displayTrack.image} 
+                      alt={displayTrack.title} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors" />
+                  </div>
 
-                <div className="flex-1 text-center sm:text-left min-w-0">
-                  <span className="inline-block px-3.5 py-1 bg-accent-purple/20 border border-accent-purple/40 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-accent-cyan mb-3">
-                    {displayTrack.fileType || 'WAV'} Track
-                  </span>
-                  <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-white mb-3 truncate leading-none">
-                    {displayTrack.title}
-                  </h1>
-                  <p className="text-sm sm:text-base font-bold text-zinc-400">
-                    by <Link href={`/creator/${creator.username}`} className="text-white hover:text-accent-cyan transition-colors underline font-black">{displayTrack.creator}</Link>
-                  </p>
-                </div>
+                  {/* Title & Metadata */}
+                  <div className="flex-1 text-center md:text-left min-w-0 w-full">
+                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-2 sm:mb-3">
+                      <span className="px-3 py-0.5 bg-accent-purple/20 border border-accent-purple/40 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-accent-cyan">
+                        {displayTrack.fileType || 'WAV'} Track
+                      </span>
+                      {isFree && (
+                        <span className="px-3 py-0.5 bg-emerald-500/20 border border-emerald-500/40 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-emerald-400">
+                          Free Track
+                        </span>
+                      )}
+                    </div>
 
-                <div className="shrink-0 self-center sm:self-end mt-2 sm:mt-0">
-                  <button 
-                    onClick={() => playTrack({
-                       id: displayTrack.id,
-                       title: displayTrack.title,
-                       artist: displayTrack.creator,
-                       image: displayTrack.image,
-                       audioUrl: displayTrack.audio_url,
-                       uploaderId: track.user_id || creator.id,
-                       price: displayTrack.price,
-                       licenseTypes: displayTrack.licenses
-                    })}
-                    className="w-16 h-16 sm:w-20 sm:h-20 bg-accent-purple hover:bg-accent-purple/90 rounded-full flex items-center justify-center shadow-[0_0_35px_rgba(139,92,246,0.6)] hover:scale-105 transition-all cursor-pointer"
-                  >
-                    {currentTrack?.id === displayTrack.id && isPlaying ? (
-                      <Pause size={28} fill="white" className="text-white" />
-                    ) : (
-                      <Play size={28} fill="white" className="text-white ml-1" />
-                    )}
-                  </button>
+                    <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-white mb-2 sm:mb-3 truncate leading-tight">
+                      {displayTrack.title}
+                    </h1>
+
+                    <p className="text-xs sm:text-base font-medium text-zinc-400 mb-4 sm:mb-5">
+                      by <Link href={`/creator/${creator.username}`} className="text-white hover:text-accent-cyan transition-colors font-bold underline">{displayTrack.creator}</Link>
+                    </p>
+
+                    {/* Responsive Action Buttons Row */}
+                    <div className="flex items-center justify-center md:justify-start gap-3 sm:gap-4 flex-wrap">
+                      <button 
+                        onClick={() => playTrack({
+                           id: displayTrack.id,
+                           title: displayTrack.title,
+                           artist: displayTrack.creator,
+                           image: displayTrack.image,
+                           audioUrl: displayTrack.audio_url,
+                           uploaderId: track.user_id || creator.id,
+                           price: displayTrack.price,
+                           payment_model: track.payment_model,
+                           licenseTypes: displayTrack.licenses
+                        })}
+                        className="px-5 sm:px-7 py-3 sm:py-3.5 bg-accent-purple hover:bg-accent-purple/90 rounded-full flex items-center justify-center gap-2.5 shadow-[0_0_30px_rgba(139,92,246,0.5)] hover:scale-105 active:scale-95 transition-all cursor-pointer text-white font-black text-xs sm:text-sm uppercase tracking-wider"
+                      >
+                        {currentTrack?.id === displayTrack.id && isPlaying ? (
+                          <>
+                            <Pause size={18} fill="white" />
+                            <span>Pause</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play size={18} fill="white" className="ml-0.5" />
+                            <span>Play Audio</span>
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        onClick={handleToggleSave}
+                        className={`w-11 h-11 rounded-full border flex items-center justify-center transition-all cursor-pointer ${
+                          isSaved 
+                            ? 'bg-red-500/20 border-red-500/40 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.3)]' 
+                            : 'bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20'
+                        }`}
+                        title={isSaved ? "Saved" : "Save to favorites"}
+                      >
+                        <Heart size={18} fill={isSaved ? "currentColor" : "none"} />
+                      </button>
+
+                      <button
+                        onClick={() => setShareModalOpen(true)}
+                        className="w-11 h-11 rounded-full bg-white/5 border border-white/10 hover:border-white/20 text-white hover:bg-white/10 flex items-center justify-center transition-all cursor-pointer"
+                        title="Share track"
+                      >
+                        <Share2 size={17} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="px-10 py-10 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10">
-              <div className="space-y-12">
-                <section>
-                  <h3 className="text-lg font-black uppercase tracking-widest text-zinc-500 mb-6">Description</h3>
-                  <p className="text-zinc-400 leading-relaxed max-w-3xl">
-                    {displayTrack.description}
-                  </p>
-                </section>
+              {/* Main Content Grid */}
+              <div className="px-4 sm:px-8 md:px-10 py-6 sm:py-10 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 sm:gap-10">
+                <div className="space-y-10">
+                  <section>
+                    <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest text-zinc-500 mb-4">Description</h3>
+                    <p className="text-zinc-400 leading-relaxed text-sm max-w-3xl">
+                      {displayTrack.description}
+                    </p>
+                  </section>
 
-                <section>
-                  <h3 className="text-lg font-black uppercase tracking-widest text-zinc-500 mb-6">Technical Data</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[
-                      { label: 'BPM', value: displayTrack.bpm },
-                      { label: 'Key', value: displayTrack.key },
-                      { label: 'Duration', value: displayTrack.duration },
-                      { label: 'File Type', value: displayTrack.fileType },
-                    ].map((item, i) => (
-                      <div key={i} className="flex items-center gap-3">
-                        <span className="text-[11px] font-bold text-zinc-600 uppercase tracking-wider whitespace-nowrap">{item.label}:</span>
-                        <div className="bg-[#0F0F1A] border border-white/5 rounded-lg px-6 py-2.5 text-xs font-black text-white min-w-[80px] text-center">
-                          {item.value}
+                  <section>
+                    <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest text-zinc-500 mb-4">Technical Data</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {[
+                        { label: 'BPM', value: displayTrack.bpm },
+                        { label: 'Key', value: displayTrack.key },
+                        { label: 'Duration', value: displayTrack.duration },
+                        { label: 'Format', value: displayTrack.fileType },
+                      ].map((item, i) => (
+                        <div key={i} className="flex flex-col gap-1 bg-[#0F0F1A] border border-white/5 rounded-xl p-3 text-center">
+                          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">{item.label}</span>
+                          <span className="text-xs sm:text-sm font-black text-white">{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section className="bg-[#0F0F1A]/60 border border-white/5 rounded-2xl sm:rounded-3xl p-5 sm:p-7 max-w-2xl">
+                    <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest text-zinc-500 mb-6">Creator Info</h3>
+                    <div className="flex items-center gap-4 sm:gap-6">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-zinc-800 overflow-hidden border-2 border-white/10 shrink-0">
+                        <div className="w-full h-full bg-gradient-to-br from-zinc-700 to-zinc-900 flex items-center justify-center text-2xl sm:text-3xl font-black text-white/40">
+                          {displayTrack.creator[0]}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </section>
-
-                <section className="bg-[#0F0F1A]/50 border border-white/5 rounded-3xl p-8 max-w-2xl">
-                  <h3 className="text-lg font-black uppercase tracking-widest text-zinc-500 mb-8">Creator Info</h3>
-                  <div className="flex items-center gap-6">
-                    <div className="w-24 h-24 rounded-full bg-zinc-800 overflow-hidden border-2 border-white/5">
-                      <div className="w-full h-full bg-gradient-to-br from-zinc-700 to-zinc-900 flex items-center justify-center text-4xl font-black text-white/20">
-                        {displayTrack.creator[0]}
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-lg sm:text-xl font-black text-white mb-0.5 truncate">{displayTrack.creator}</h4>
+                        <p className="text-xs text-zinc-500 font-bold mb-3">{displayTrack.handle}</p>
+                        <Link href={`/creator/${creator.username}`}>
+                          <Button variant="secondary" className="px-4 py-1.5 text-xs rounded-xl">
+                            View Profile
+                          </Button>
+                        </Link>
                       </div>
                     </div>
-                    <div>
-                      <h4 className="text-2xl font-black text-white mb-1">{displayTrack.creator}</h4>
-                      <p className="text-zinc-500 font-bold mb-4">{displayTrack.handle}</p>
-                      <Link href={`/creator/${creator.username}`}>
-                        <Button variant="secondary" className="px-5 py-2 text-xs rounded-xl">
-                          View Profile
-                        </Button>
-                      </Link>
+                  </section>
+
+                  <section>
+                    <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest text-zinc-500 mb-6">More from this Creator</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {more_from_creator && more_from_creator.length > 0 ? (
+                        more_from_creator.map((t: any, i: number) => (
+                          <TrackCard 
+                            key={t.id || i}
+                            id={t.id}
+                            title={t.title}
+                            creator={displayTrack.creator}
+                            image={t.cover_url || displayTrack.image}
+                            audioUrl={t.audio_url}
+                            licenseTypes={t.license_types || ['License']}
+                            price={t.price || '0.00'}
+                            currency={t.currency || '$0'}
+                            uploaderId={creator.id}
+                          />
+                        ))
+                      ) : (
+                        <p className="text-zinc-500 italic text-xs">No other tracks found from this creator.</p>
+                      )}
                     </div>
-                  </div>
-                </section>
+                  </section>
+                </div>
 
-                <section>
-                  <h3 className="text-lg font-black uppercase tracking-widest text-zinc-500 mb-8">More from this Creator</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-5">
-                    {more_from_creator && more_from_creator.length > 0 ? (
-                      more_from_creator.map((t: any, i: number) => (
-                        <TrackCard 
-                          key={t.id || i}
-                          id={t.id}
-                          title={t.title}
-                          creator={displayTrack.creator}
-                          image={t.cover_url || displayTrack.image}
-                          audioUrl={t.audio_url}
-                          licenseTypes={t.license_types || ['License']}
-                          price={t.price || '0.00'}
-                          currency={t.currency || '$0'}
-                          uploaderId={creator.id}
-                        />
-                      ))
-                    ) : (
-                      <p className="text-zinc-500 italic">No other tracks found from this creator.</p>
-                    )}
-                  </div>
-                </section>
+                <aside className="space-y-6">
+                  <PurchaseSidebar
+                    track={displayTrack}
+                    isPurchased={isPurchased}
+                    isUploader={isUploader}
+                    isFree={isFree}
+                    editionsList={editionsList}
+                    onBuy={() => setMintModalOpen(true)}
+                    onShare={() => setShareModalOpen(true)}
+                    onExport={() => {
+                      if (isPurchased || isUploader || isFree) {
+                        const url = displayTrack.audio_url;
+                        if (url) {
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `${displayTrack.title}.mp3`;
+                          a.target = '_blank';
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          toast.success('Downloading lossless master audio...');
+                        }
+                      } else {
+                        setMintModalOpen(true);
+                      }
+                    }}
+                  />
+                </aside>
               </div>
-
-              <aside className="space-y-6">
-                <PurchaseSidebar
-                  track={displayTrack}
-                  isPurchased={isPurchased}
-                  isUploader={isUploader}
-                  editionsList={editionsList}
-                  onBuy={() => setMintModalOpen(true)}
-                />
-              </aside>
-            </div>
             </div>
 
-            <footer className="mt-auto px-6 sm:px-10 pt-8 pb-28 sm:pb-32 border-t border-white/5 opacity-60 hover:opacity-100 transition-opacity flex flex-col sm:flex-row justify-between items-center gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
+            <footer className="mt-auto px-4 sm:px-10 pt-8 pb-28 sm:pb-32 border-t border-white/5 opacity-60 hover:opacity-100 transition-opacity flex flex-col sm:flex-row justify-between items-center gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
               <div className="flex gap-6 sm:gap-8">
                 <a href="#" className="hover:text-white transition-colors">About Grooveli</a>
                 <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
@@ -446,71 +479,56 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         }}
         onOpenMintModal={() => setMintModalOpen(true)}
       />
-
-      <style jsx>{`
-        .divider-text {
-          position: relative;
-        }
-        .divider-text::before {
-          content: "";
-          position: absolute;
-          top: 50%;
-          left: 0;
-          right: 0;
-          height: 1px;
-          background: rgba(255, 255, 255, 0.05);
-          z-index: 0;
-        }
-        .divider-text span {
-          position: relative;
-          z-index: 1;
-        }
-      `}</style>
     </CartProvider>
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Purchase Sidebar Component
+// ─────────────────────────────────────────────────────────────────────────────
 
+interface PurchaseSidebarProps {
+  track: any;
+  isPurchased: boolean;
+  isUploader: boolean;
+  isFree: boolean;
+  editionsList: EditionInfo[];
+  onBuy: () => void;
+  onShare: () => void;
+  onExport: () => void;
+}
 
-const PurchaseSidebar = ({
+const PurchaseSidebar: React.FC<PurchaseSidebarProps> = ({
   track,
   isPurchased,
   isUploader,
+  isFree,
   editionsList,
   onBuy,
   onShare,
   onExport,
-}: {
-  track: any;
-  isPurchased?: boolean;
-  isUploader?: boolean;
-  editionsList: EditionInfo[];
-  onBuy?: () => void;
-  onShare?: () => void;
-  onExport?: () => void;
 }) => {
   return (
-    <div className="bg-[#0F0F1A] border border-white/5 rounded-3xl p-8 sticky top-32">
-      {/* Price display */}
-      <div className="flex items-center justify-center gap-2 mb-2">
-        <div className="w-5 h-5 rounded-full bg-accent-purple/30 border border-accent-purple/50 flex items-center justify-center">
-          <span className="text-[10px] text-accent-purple font-black">$</span>
+    <div className="bg-[#0b0e17] border border-white/10 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xl sticky top-24">
+      {/* Price Header */}
+      <div className="mb-6 pb-5 border-b border-white/5">
+        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 block mb-1">
+          {isFree ? 'License Tier' : 'Starting Price'}
+        </span>
+        <div className="flex items-baseline gap-2">
+          {isFree ? (
+            <span className="text-2xl sm:text-3xl font-black text-emerald-400">Free Full Access</span>
+          ) : (
+            <span className="text-3xl font-black text-white font-mono">${track.price} USDC</span>
+          )}
         </div>
-        <span className="text-sm font-bold text-zinc-400">USDC</span>
-      </div>
-
-      <div className="text-center mb-8">
-        <div className="text-4xl font-black tracking-tight text-white mb-1">
-          {track.price || '5.00'}
-        </div>
-        <div className="text-zinc-500 font-bold text-sm">Starting price per edition</div>
       </div>
 
       {isUploader ? (
         /* ── Uploader state ── */
         <div className="mb-6">
-          <div className="flex items-center justify-center gap-2 py-4 bg-accent-cyan/10 border border-accent-cyan/20 rounded-2xl mb-3">
-            <span className="text-sm font-black text-accent-cyan">You Uploaded This Track</span>
+          <div className="flex items-center justify-center gap-2 py-3.5 bg-accent-cyan/10 border border-accent-cyan/20 rounded-2xl mb-2">
+            <span className="text-xs sm:text-sm font-black text-accent-cyan">You Uploaded This Track</span>
           </div>
           <p className="text-center text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
             Owner Access Enabled
@@ -519,19 +537,19 @@ const PurchaseSidebar = ({
       ) : isPurchased ? (
         /* ── Owned state ── */
         <div className="mb-6">
-          <div className="flex items-center justify-center gap-2 py-4 bg-accent-purple/10 border border-accent-purple/20 rounded-2xl mb-3">
+          <div className="flex items-center justify-center gap-2 py-3.5 bg-accent-purple/10 border border-accent-purple/20 rounded-2xl mb-2">
             <Check size={18} className="text-accent-purple" strokeWidth={2.5} />
-            <span className="text-sm font-black text-accent-purple">You Own This Track</span>
+            <span className="text-xs sm:text-sm font-black text-accent-purple">You Own This Track</span>
           </div>
-          <p className="text-center text-[11px] text-zinc-600 font-bold uppercase tracking-wider">
+          <p className="text-center text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
             Unlimited listening · Full license active
           </p>
         </div>
-      ) : track.price === '0.00' || track.payment_model === 'none' ? (
+      ) : isFree ? (
         /* ── Free Track State ── */
         <div className="mb-6">
           <div className="flex items-center justify-center gap-2 py-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl mb-2">
-            <span className="text-sm font-black text-emerald-400">Free Full Access</span>
+            <span className="text-xs sm:text-sm font-black text-emerald-400">Free Full Stream</span>
           </div>
           <p className="text-center text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
             No license fee required · Stream in Full
@@ -542,15 +560,15 @@ const PurchaseSidebar = ({
         <Button
           fullWidth
           onClick={onBuy}
-          className="mb-6 flex items-center justify-center gap-2 shadow-[0_8px_30px_rgba(139,92,246,0.4)] cursor-pointer"
+          className="mb-6 py-3.5 flex items-center justify-center gap-2 text-xs font-black shadow-[0_8px_30px_rgba(139,92,246,0.4)] cursor-pointer"
         >
-          <ShoppingCart size={18} />
+          <ShoppingCart size={16} />
           Mint / Purchase
         </Button>
       )}
 
       {/* Share and Export Action Row */}
-      <div className="grid grid-cols-2 gap-2.5 mb-8">
+      <div className="grid grid-cols-2 gap-2.5 mb-6">
         <button
           onClick={onShare}
           className="py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer hover:border-white/20"
@@ -568,20 +586,22 @@ const PurchaseSidebar = ({
         </button>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div>
-          <div className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600 mb-4 divider-text">
-            <span className="bg-[#0F0F1A] px-4 -mt-px">Editions Available</span>
-          </div>
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 block mb-2.5">
+            Editions Available
+          </span>
           <div className="space-y-2">
             {editionsList.map((ed) => (
-              <div key={ed.editionType} className="flex items-center justify-between bg-[#050510] border border-white/5 rounded-xl py-2.5 px-4 text-xs">
-                <span className="font-bold text-zinc-400 capitalize">{ed.editionType} Edition</span>
-                <div className="flex items-center gap-3">
-                  <span className="text-zinc-600">
+              <div key={ed.editionType} className="flex items-center justify-between bg-[#050510] border border-white/5 rounded-xl py-2 px-3 text-xs">
+                <span className="font-bold text-zinc-400 capitalize text-[11px]">{ed.editionType} Edition</span>
+                <div className="flex items-center gap-2.5">
+                  <span className="text-zinc-500 text-[10px]">
                     {ed.editionType === 'open' || ed.maxSupply === null || ed.maxSupply === 0 || ed.maxSupply >= 1000000 ? 'Unlimited' : `${ed.maxSupply - ed.mintedSupply} left`}
                   </span>
-                  <span className="font-black text-white">${ed.mintPriceUsdc.toFixed(2)}</span>
+                  <span className="font-black text-white text-xs">
+                    {ed.mintPriceUsdc === 0 ? 'Free' : `$${ed.mintPriceUsdc.toFixed(2)}`}
+                  </span>
                 </div>
               </div>
             ))}
@@ -589,33 +609,14 @@ const PurchaseSidebar = ({
         </div>
 
         <div>
-          <div className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600 mb-4 divider-text">
-            <span className="bg-[#0F0F1A] px-4 -mt-px">Royalty (%)</span>
-          </div>
-          <div className="bg-[#050510] border border-white/5 rounded-xl py-4 px-6 text-2xl font-black text-accent-purple text-center">
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 block mb-2">
+            Royalty Split
+          </span>
+          <div className="bg-[#050510] border border-white/5 rounded-xl py-2.5 px-4 text-lg font-black text-accent-purple text-center">
             {track.royalty || '10%'}
           </div>
         </div>
-
-        <div>
-          <div className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600 mb-4 divider-text">
-            <span className="bg-[#0F0F1A] px-4 -mt-px">Licenses</span>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {(track.licenses || ['Standard License']).map((lic: string, i: number) => (
-              <div key={i} className="bg-[#050510] border border-white/5 rounded-xl py-3 px-4 text-center text-xs font-bold text-zinc-400 hover:text-white transition-colors cursor-pointer">
-                {lic}
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
-
-      {!isPurchased && (
-        <p className="mt-6 text-[10px] text-zinc-700 text-center leading-relaxed">
-          Free 40-second preview · Purchase to unlock full track
-        </p>
-      )}
     </div>
   );
 };

@@ -33,6 +33,7 @@ interface MusicPlayerContextType {
   previewLimitReached: boolean;
   dismissPreviewLimit: () => void;
   purchasedTrackIds: Set<string | number>;
+  isTrackPurchased: (id: string | number) => boolean;
   addPurchasedTrack: (id: string | number) => void;
 }
 
@@ -338,6 +339,7 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         previewLimitReached,
         dismissPreviewLimit,
         purchasedTrackIds,
+        isTrackPurchased,
         addPurchasedTrack,
       }}
     >

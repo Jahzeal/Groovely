@@ -229,7 +229,9 @@ export const TrendingPanel = () => {
 
                   {/* Price */}
                   <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/10 shrink-0">
-                    <span className="text-[10px] font-black text-accent-cyan">{track.currency}</span>
+                    <span className={`text-[10px] font-black ${track.currency === 'Free' || track.price === '0.00' || Number(track.price) === 0 ? 'text-emerald-400' : 'text-accent-cyan'}`}>
+                      {track.currency === '$0' || track.currency === '$0.00' || Number(track.price) === 0 ? 'Free' : track.currency}
+                    </span>
                   </div>
                 </div>
               </div>
