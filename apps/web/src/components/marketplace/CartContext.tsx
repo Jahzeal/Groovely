@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 export interface CartItem {
   id: string;
   trackId?: number;
+  uploaderId?: number;
   title: string;
   creator: string;
   image: string;
@@ -15,6 +16,13 @@ export interface CartItem {
   price: number;
   currency?: string;
   editionId?: number;
+  contractEditionId?: number;
+}
+
+export interface PurchaseReceipt {
+  items: CartItem[];
+  txHash: string;
+  totalUsdc: number;
 }
 
 interface CartContextType {
@@ -22,13 +30,14 @@ interface CartContextType {
   isPaymentSuccessOpen: boolean;
   cartItems: CartItem[];
   cartCount: number;
+  lastReceipt?: PurchaseReceipt;
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
   addToCart: (item: CartItem) => void;
   removeFromCart: (id: string) => void;
   clearCart: () => void;
-  completePayment: () => void;
+  completePayment: (receipt?: PurchaseReceipt) => void;
   closePaymentSuccess: () => void;
 }
 
@@ -40,6 +49,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isPaymentSuccessOpen, setIsPaymentSuccessOpen] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [lastReceipt, setLastReceipt] = useState<PurchaseReceipt | undefined>(undefined);
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -68,6 +78,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const toggleCart = () => setIsCartOpen(prev => !prev);
 
   const addToCart = (item: CartItem) => {
+    // Check if user is trying to buy their own track
+    const currentUserId = typeof window !== 'undefined'
+      ? (Number(localStorage.getItem('grooveli_user_id')) || Number(localStorage.getItem('groovely_user_id')) || null)
+      : null;
+
+    if (currentUserId && item.uploaderId && Number(item.uploaderId) === currentUserId) {
+      toast.error('You cannot purchase your own uploaded sound');
+      return;
+    }
+
     if (cartItems.some(i => String(i.id) === String(item.id))) {
       toast('Item is already in your cart', { icon: '🛒' });
       setIsCartOpen(true);
@@ -89,7 +109,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     updateCart([]);
   };
   
-  const completePayment = () => {
+  const completePayment = (receipt?: PurchaseReceipt) => {
+    if (receipt) {
+      setLastReceipt(receipt);
+    }
     clearCart();
     setIsCartOpen(false);
     setIsPaymentSuccessOpen(true);
@@ -103,6 +126,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       isPaymentSuccessOpen,
       cartItems,
       cartCount: cartItems.length,
+      lastReceipt,
       openCart, 
       closeCart, 
       toggleCart,
@@ -114,7 +138,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }}>
       {children}
       <CartOverlay isOpen={isCartOpen} onClose={closeCart} />
-      <PaymentSuccessOverlay isOpen={isPaymentSuccessOpen} onClose={closePaymentSuccess} />
+      <PaymentSuccessOverlay isOpen={isPaymentSuccessOpen} onClose={closePaymentSuccess} receipt={lastReceipt} />
     </CartContext.Provider>
   );
 };

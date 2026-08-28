@@ -29,6 +29,16 @@ export const TrackCard = ({ id, title, creator, image, audioUrl, licenseTypes, p
   const { addToCart } = useCart();
   const { playTrack, currentTrack, isPlaying } = useMusicPlayer();
 
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('grooveli_user_id') || localStorage.getItem('groovely_user_id');
+      if (stored) setCurrentUserId(Number(stored));
+    }
+  }, []);
+
+  const isUploader = currentUserId !== null && uploaderId !== undefined && Number(uploaderId) === currentUserId;
   const isThisTrackPlaying = currentTrack?.id === id && isPlaying;
 
   const handleSave = async (e: React.MouseEvent) => {
@@ -164,26 +174,29 @@ export const TrackCard = ({ id, title, creator, image, audioUrl, licenseTypes, p
               </div>
               <span className="text-[11px] sm:text-xs font-black text-white">{currency}</span>
             </div>
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                addToCart({
-                  id: String(id),
-                  trackId: typeof id === 'number' ? id : parseInt(String(id)) || undefined,
-                  title,
-                  creator,
-                  image,
-                  license: licenseTypes[0] || 'License',
-                  price: 1.0,
-                  currency: currency || '$1.00 USDC'
-                });
-              }}
-              className="w-6 h-6 sm:w-7 sm:h-7 bg-accent-purple hover:bg-accent-purple/80 rounded-lg flex items-center justify-center transition-all duration-300 shadow-[0_0_10px_rgba(139,92,246,0.4)] opacity-100 scale-100 cursor-pointer"
-              title="Add to cart"
-            >
-              <ShoppingCart size={11} className="text-white" />
-            </button>
+            {!isUploader && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  addToCart({
+                    id: String(id),
+                    trackId: typeof id === 'number' ? id : parseInt(String(id)) || undefined,
+                    uploaderId,
+                    title,
+                    creator,
+                    image,
+                    license: licenseTypes[0] || 'License',
+                    price: 1.0,
+                    currency: currency || '$1.00 USDC'
+                  });
+                }}
+                className="w-6 h-6 sm:w-7 sm:h-7 bg-accent-purple hover:bg-accent-purple/80 rounded-lg flex items-center justify-center transition-all duration-300 shadow-[0_0_10px_rgba(139,92,246,0.4)] opacity-100 scale-100 cursor-pointer"
+                title="Add to cart"
+              >
+                <ShoppingCart size={11} className="text-white" />
+              </button>
+            )}
           </div>
         </div>
       </div>

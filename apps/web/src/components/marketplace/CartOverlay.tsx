@@ -1,10 +1,32 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Trash2, Info, Check, Loader2, ShoppingCart } from 'lucide-react';
+import { X, Trash2, Info, Check, Loader2, ShoppingCart, ExternalLink, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useCart } from './CartContext';
 import { useRouter } from 'next/navigation';
+import { useAccount, useConfig, useSwitchChain } from 'wagmi';
+import { polygon, polygonAmoy } from 'wagmi/chains';
+import { useWallets } from '@privy-io/react-auth';
+import { parseUnits } from 'viem';
+import {
+  approveUSDC,
+  mintEdition,
+  waitForTx,
+  checkUSDCAllowance,
+  checkUSDCBalance,
+  parseUSDC,
+  CONTRACT_ADDRESS,
+  POLYGONSCAN_BASE
+} from '@/lib/contracts';
+import { apiFetch, resolveIpfsUrl } from '@/lib/api';
+import { useMusicPlayer } from './MusicPlayerContext';
+import { formatBlockchainError } from '@/lib/blockchainError';
+import toast from 'react-hot-toast';
+
+const isMainnet = process.env.NEXT_PUBLIC_CHAIN_ID === '137';
+const targetChain = isMainnet ? polygon : polygonAmoy;
+const targetChainName = isMainnet ? 'Polygon Mainnet' : 'Polygon Amoy Testnet';
 
 interface CartOverlayProps {
   isOpen: boolean;
@@ -15,27 +37,176 @@ export const CartOverlay = ({ isOpen, onClose }: CartOverlayProps) => {
   const { cartItems, removeFromCart, clearCart, completePayment } = useCart();
   const [currency, setCurrency] = useState<'USDC' | 'POL'>('USDC');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string>('');
+  
   const router = useRouter();
+  const config = useConfig();
+  const { address, chain } = useAccount();
+  const { switchChainAsync } = useSwitchChain();
+  const { wallets } = useWallets();
+  const { addPurchasedTrack } = useMusicPlayer();
 
   if (!isOpen) return null;
 
-  const handlePay = () => {
-    setIsProcessing(true);
-    setTimeout(() => {
-      setIsProcessing(false);
-      completePayment();
-    }, 1500);
-  };
-
   const subtotal = cartItems.reduce((acc, item) => acc + (Number(item.price) || 1.0), 0);
   const total = subtotal;
+
+  const handlePay = async () => {
+    if (cartItems.length === 0) return;
+
+    if (!address) {
+      toast.error('Please connect your Web3 wallet to complete checkout');
+      return;
+    }
+
+    setIsProcessing(true);
+    setStatusMessage('Checking network and wallet...');
+
+    try {
+      // 1. Enforce correct chain
+      const requiredChainId = targetChain.id;
+      const embeddedWallet = wallets.find((w) => w.walletClientType === 'privy');
+
+      if (embeddedWallet) {
+        if (embeddedWallet.chainId !== `eip155:${requiredChainId}`) {
+          try {
+            await embeddedWallet.switchChain(requiredChainId);
+          } catch (err: any) {
+            throw new Error(`Please switch wallet to ${targetChainName}.`);
+          }
+        }
+      } else if (chain?.id !== requiredChainId) {
+        try {
+          await switchChainAsync({ chainId: requiredChainId });
+        } catch (err: any) {
+          throw new Error(`Please switch wallet to ${targetChainName}.`);
+        }
+      }
+
+      // 2. Check USDC Balance
+      setStatusMessage('Checking USDC balance...');
+      const requiredUsdcRaw = parseUSDC(total);
+      const balance = await checkUSDCBalance(config, address);
+
+      if (balance < requiredUsdcRaw) {
+        throw new Error(
+          `Insufficient USDC balance. You need at least $${total.toFixed(2)} USDC, but your wallet has $${(Number(balance) / 1e6).toFixed(2)} USDC.`
+        );
+      }
+
+      // 3. Check / Approve USDC Allowance
+      setStatusMessage('Checking USDC approval...');
+      const allowance = await checkUSDCAllowance(config, address);
+
+      if (allowance < requiredUsdcRaw) {
+        setStatusMessage('Approving USDC on Polygon...');
+        const maxAllowance = parseUnits('1000000', 6);
+        const approveTx = await approveUSDC(config, maxAllowance);
+        setStatusMessage('Waiting for approval confirmation...');
+        await waitForTx(config, approveTx);
+      }
+
+      // 4. Sequential Minting for Cart Items
+      let lastTxHash = '';
+      const purchasedReceiptItems = [];
+
+      for (let i = 0; i < cartItems.length; i++) {
+        const item = cartItems[i];
+        setStatusMessage(`Minting track ${i + 1} of ${cartItems.length}: "${item.title}"...`);
+
+        // Resolve edition IDs if needed
+        let editionId = item.editionId;
+        let contractEditionId = item.contractEditionId;
+
+        if (!editionId || !contractEditionId) {
+          try {
+            const trackRes = await apiFetch(`/api/track/${item.trackId || item.id}`);
+            if (trackRes && trackRes.ok) {
+              const trackData = await trackRes.json();
+              const editions = trackData.editions || trackData.data?.editions || [];
+              if (editions.length > 0) {
+                editionId = editions[0].id;
+                contractEditionId = editions[0].contract_edition_id ?? editions[0].contractEditionId ?? 7;
+              }
+            }
+          } catch (e) {
+            console.error('Failed to resolve edition details for item', item.title, e);
+          }
+        }
+
+        if (!contractEditionId) {
+          contractEditionId = 7; // Fallback standard contract edition token ID
+        }
+
+        // On-chain mint transaction
+        const mintTx = await mintEdition(config, contractEditionId, 1);
+        lastTxHash = mintTx;
+
+        setStatusMessage(`Confirming transaction for "${item.title}"...`);
+        const receipt = await waitForTx(config, mintTx);
+
+        let derivedTokenId = contractEditionId;
+        try {
+          const transferLog = receipt.logs.find(
+            (log) => log.topics[0] === '0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62'
+          );
+          if (transferLog && transferLog.topics[3]) {
+            derivedTokenId = parseInt(transferLog.topics[3], 16);
+          }
+        } catch (_) {}
+
+        // Backend Confirmation in Database
+        try {
+          await apiFetch('/api/mint/confirm', {
+            method: 'POST',
+            skipAuthRedirect: true,
+            body: JSON.stringify({
+              edition_id: editionId || 29,
+              tx_hash: mintTx,
+              token_id: derivedTokenId,
+              buyer_wallet: address,
+              license_type: 'standard',
+            }),
+          });
+        } catch (syncErr) {
+          console.warn('Backend sync notice:', syncErr);
+        }
+
+        // Add to local purchased state
+        if (item.trackId) {
+          addPurchasedTrack(Number(item.trackId));
+        }
+
+        purchasedReceiptItems.push({
+          ...item,
+          editionId,
+          contractEditionId: derivedTokenId
+        });
+      }
+
+      toast.success('All items minted successfully!');
+      completePayment({
+        items: purchasedReceiptItems.length > 0 ? purchasedReceiptItems : cartItems,
+        txHash: lastTxHash,
+        totalUsdc: total
+      });
+
+    } catch (err: any) {
+      console.error('Cart checkout error:', err);
+      const formatted = formatBlockchainError(err, { action: 'mint', requiredUsdc: total });
+      toast.error(formatted.message || 'Checkout failed. Please try again.');
+    } finally {
+      setIsProcessing(false);
+      setStatusMessage('');
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 md:p-10">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/70 backdrop-blur-md transition-opacity"
-        onClick={onClose}
+        className="absolute inset-0 bg-black/75 backdrop-blur-md transition-opacity"
+        onClick={isProcessing ? undefined : onClose}
       />
 
       {/* Content Container */}
@@ -50,8 +221,9 @@ export const CartOverlay = ({ isOpen, onClose }: CartOverlayProps) => {
             </span>
           </div>
           <button 
+            disabled={isProcessing}
             onClick={onClose}
-            className="flex items-center gap-2 text-zinc-400 hover:text-white transition-all group cursor-pointer"
+            className="flex items-center gap-2 text-zinc-400 hover:text-white transition-all group cursor-pointer disabled:opacity-50"
           >
             <span className="text-xs font-black uppercase tracking-widest group-hover:mr-0.5 transition-all">Close</span>
             <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-all">
@@ -68,7 +240,7 @@ export const CartOverlay = ({ isOpen, onClose }: CartOverlayProps) => {
             <div className="p-6 sm:p-8 border-b lg:border-b-0 lg:border-r border-white/5">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">Your Selection</h3>
-                {cartItems.length > 0 && (
+                {cartItems.length > 0 && !isProcessing && (
                   <button 
                     onClick={clearCart}
                     className="flex items-center gap-1.5 text-zinc-500 hover:text-red-400 text-xs font-bold transition-colors cursor-pointer"
@@ -97,7 +269,7 @@ export const CartOverlay = ({ isOpen, onClose }: CartOverlayProps) => {
                 ) : (
                   cartItems.map((item) => (
                     <div key={item.id} className="flex items-center gap-3 sm:gap-4 group bg-[#121829] border border-white/5 rounded-2xl p-3 sm:p-4 hover:border-accent-purple/30 transition-all">
-                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden shadow-md shrink-0 bg-black/40">
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden shadow-md shrink-0 bg-black/40 border border-white/5">
                         <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
                       </div>
                       
@@ -114,13 +286,15 @@ export const CartOverlay = ({ isOpen, onClose }: CartOverlayProps) => {
                           <span className="text-sm font-black text-accent-cyan">${Number(item.price).toFixed(2)} USDC</span>
                         </div>
                         
-                        <button 
-                          onClick={() => removeFromCart(item.id)}
-                          className="w-8 h-8 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 flex items-center justify-center text-red-400 hover:text-red-300 transition-all cursor-pointer"
-                          title="Remove item"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        {!isProcessing && (
+                          <button 
+                            onClick={() => removeFromCart(item.id)}
+                            className="w-8 h-8 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 flex items-center justify-center text-red-400 hover:text-red-300 transition-all cursor-pointer"
+                            title="Remove item"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))
@@ -175,6 +349,14 @@ export const CartOverlay = ({ isOpen, onClose }: CartOverlayProps) => {
                     <span className="text-accent-cyan">${total.toFixed(2)} USDC</span>
                   </div>
                 </div>
+
+                {/* Live Processing Indicator */}
+                {isProcessing && statusMessage && (
+                  <div className="mt-4 p-3 rounded-xl bg-accent-purple/10 border border-accent-purple/30 flex items-center gap-2 text-xs text-accent-cyan font-bold animate-pulse">
+                    <Loader2 size={14} className="animate-spin text-accent-purple shrink-0" />
+                    <span className="truncate">{statusMessage}</span>
+                  </div>
+                )}
               </div>
 
               {/* Checkout Action */}
@@ -191,18 +373,21 @@ export const CartOverlay = ({ isOpen, onClose }: CartOverlayProps) => {
                   {isProcessing ? (
                     <>
                       <Loader2 size={16} className="animate-spin" />
-                      <span>Processing Checkout...</span>
+                      <span>{statusMessage || 'Processing Web3 Checkout...'}</span>
                     </>
                   ) : (
                     <>
-                      <Check size={16} strokeWidth={3} />
-                      <span>Checkout ({cartItems.length} {cartItems.length === 1 ? 'Item' : 'Items'})</span>
+                      <Wallet size={16} />
+                      <span>Mint & Purchase · ${total.toFixed(2)} USDC</span>
                     </>
                   )}
                 </button>
+                <p className="text-[10px] text-center text-zinc-500 font-bold uppercase tracking-wider mt-3">
+                  Secured on Polygon Bor Blockchain
+                </p>
               </div>
-            </div>
 
+            </div>
           </div>
         </div>
 

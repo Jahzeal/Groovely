@@ -1,117 +1,155 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, CheckCircle2, ChevronDown, ChevronUp, ExternalLink, Library, ArrowLeft } from 'lucide-react';
+import { X, CheckCircle2, ChevronDown, ChevronUp, ExternalLink, Library, ArrowLeft, Disc } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useRouter } from 'next/navigation';
+import { POLYGONSCAN_BASE } from '@/lib/contracts';
+import { CartItem } from './CartContext';
 
 interface PaymentSuccessOverlayProps {
   isOpen: boolean;
   onClose: () => void;
+  receipt?: {
+    items: CartItem[];
+    txHash: string;
+    totalUsdc: number;
+  };
 }
 
-export const PaymentSuccessOverlay = ({ isOpen, onClose }: PaymentSuccessOverlayProps) => {
+export const PaymentSuccessOverlay = ({ isOpen, onClose, receipt }: PaymentSuccessOverlayProps) => {
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const router = useRouter();
 
   if (!isOpen) return null;
 
+  const items = receipt?.items || [];
+  const total = receipt?.totalUsdc || 0;
+  const txHash = receipt?.txHash || '';
+  const explorerUrl = txHash ? `${POLYGONSCAN_BASE}/tx/${txHash}` : '#';
+
+  const handleGoToLibrary = () => {
+    onClose();
+    router.push('/library');
+  };
+
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-6">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/80 backdrop-blur-xl animate-in fade-in duration-500"
+        className="absolute inset-0 bg-black/85 backdrop-blur-xl animate-in fade-in duration-300"
         onClick={onClose}
       />
 
       {/* Content Container */}
-      <div className="relative w-full max-w-lg bg-[#050510] border border-white/10 rounded-[40px] p-10 overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in duration-500">
+      <div className="relative w-full max-w-lg bg-[#070a14] border border-white/10 rounded-[36px] p-6 sm:p-8 overflow-hidden shadow-[0_0_80px_rgba(139,92,246,0.3)] animate-in fade-in zoom-in duration-300">
         
         {/* Glow Effects */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-accent-purple/20 blur-[100px] pointer-events-none" />
         
         <div className="relative flex flex-col items-center text-center">
           {/* Success Icon */}
-          <div className="w-24 h-24 rounded-full bg-accent-purple/10 border border-accent-purple/20 flex items-center justify-center mb-8 relative">
+          <div className="w-20 h-20 rounded-full bg-accent-purple/10 border border-accent-purple/30 flex items-center justify-center mb-6 relative">
             <div className="absolute inset-0 rounded-full border-2 border-accent-purple/50 animate-ping opacity-20" />
-            <CheckCircle2 size={48} className="text-accent-purple" strokeWidth={1.5} />
+            <CheckCircle2 size={40} className="text-accent-purple" strokeWidth={2} />
           </div>
 
-          <h2 className="text-3xl font-black text-white mb-2 tracking-tighter uppercase italic">Payment Successful</h2>
-          <p className="text-zinc-500 text-sm font-bold mb-10 tracking-wide uppercase">Your transaction has been confirmed</p>
+          <h2 className="text-2xl sm:text-3xl font-black text-white mb-1.5 tracking-tight uppercase">
+            Payment Successful!
+          </h2>
+          <p className="text-zinc-400 text-xs font-bold mb-6 tracking-wider uppercase">
+            Your on-chain license has been confirmed
+          </p>
 
-          {/* Purchased Item Card */}
-          <div className="w-full bg-[#0F0F1A] border border-white/5 rounded-3xl p-5 flex items-center justify-between mb-8 group hover:border-white/10 transition-all">
-            <div className="flex items-center gap-4 text-left">
-              <div className="w-14 h-14 rounded-xl overflow-hidden shadow-2xl">
-                <img 
-                  src="https://images.unsplash.com/photo-1514525253361-bee8d48800d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" 
-                  alt="Track" 
-                  className="w-full h-full object-cover" 
-                />
-              </div>
-              <div>
-                <h4 className="font-black text-white text-sm tracking-tight">Slow Lights on Third Street</h4>
-                <p className="text-[10px] font-bold text-zinc-600">by Midnight Vibe</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="flex items-center gap-1.5 justify-end">
-                <div className="w-4 h-4 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-                  <span className="text-[8px] font-black text-white/50 lowercase">eth</span>
-                </div>
-                <span className="text-sm font-black text-white">0.002</span>
-              </div>
-              <p className="text-[9px] font-bold text-zinc-700">(0.002)</p>
-            </div>
-          </div>
-
-          {/* Transaction Details Dropdown */}
-          <div className="w-full mb-10">
-            <button 
-              onClick={() => setDetailsOpen(!detailsOpen)}
-              className="flex items-center justify-center gap-3 w-full py-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-all group"
-            >
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 group-hover:text-white transition-colors">Transaction Details</span>
-              {detailsOpen ? <ChevronUp size={14} className="text-zinc-500" /> : <ChevronDown size={14} className="text-zinc-500" />}
-            </button>
-            
-            <div className={`overflow-hidden transition-all duration-500 ease-in-out ${detailsOpen ? 'max-h-40 opacity-100 mt-4' : 'max-h-0 opacity-0'}`}>
-              <div className="bg-[#050510] border border-white/5 rounded-2xl p-4 space-y-3 text-left">
-                <div className="flex justify-between items-center text-[10px]">
-                  <span className="font-bold text-zinc-600 uppercase tracking-widest">Tx Hash:</span>
-                  <div className="flex items-center gap-2 text-zinc-400 hover:text-white cursor-pointer transition-colors">
-                    <span className="font-mono">0x7a...f92c</span>
-                    <ExternalLink size={10} />
+          {/* Purchased Items List */}
+          <div className="w-full max-h-56 overflow-y-auto space-y-2.5 mb-6 pr-1 custom-scrollbar">
+            {items.map((item, idx) => (
+              <div
+                key={item.id || idx}
+                className="w-full bg-[#0d1222] border border-white/5 rounded-2xl p-3 flex items-center justify-between group hover:border-accent-purple/30 transition-all text-left"
+              >
+                <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
+                  <div className="w-12 h-12 rounded-xl overflow-hidden shadow-md bg-black/40 shrink-0 border border-white/10">
+                    <img 
+                      src={item.image} 
+                      alt={item.title} 
+                      className="w-full h-full object-cover" 
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-black text-white text-xs tracking-tight truncate">{item.title}</h4>
+                    <p className="text-[11px] font-medium text-zinc-400 truncate">{item.creator}</p>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-accent-cyan">
+                      {item.license || 'Licensed Edition'}
+                    </span>
                   </div>
                 </div>
-                <div className="flex justify-between items-center text-[10px]">
-                  <span className="font-bold text-zinc-600 uppercase tracking-widest">Network:</span>
-                  <span className="text-zinc-400 font-black">Polygon Mainnet</span>
-                </div>
-                <div className="flex justify-between items-center text-[10px]">
-                  <span className="font-bold text-zinc-600 uppercase tracking-widest">Gas Fee:</span>
-                  <span className="text-zinc-400 font-black">0.024 MATIC</span>
+
+                <div className="text-right shrink-0">
+                  <span className="text-xs font-black text-white">${Number(item.price || 1).toFixed(2)} USDC</span>
                 </div>
               </div>
-            </div>
+            ))}
           </div>
 
-          {/* Main Actions */}
-          <div className="grid grid-cols-2 gap-4 w-full">
+          {/* Transaction Summary Details */}
+          <div className="w-full mb-6">
+            <button 
+              onClick={() => setDetailsOpen(!detailsOpen)}
+              className="flex items-center justify-center gap-2 w-full py-2.5 bg-white/5 hover:bg-white/10 rounded-xl transition-all cursor-pointer group"
+            >
+              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 group-hover:text-white transition-colors">
+                Transaction Details
+              </span>
+              {detailsOpen ? <ChevronUp size={14} className="text-zinc-400" /> : <ChevronDown size={14} className="text-zinc-400" />}
+            </button>
+            
+            {detailsOpen && (
+              <div className="bg-[#050811] border border-white/5 rounded-2xl p-4 mt-2.5 space-y-2.5 text-left text-xs animate-in fade-in duration-200">
+                {txHash && (
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-zinc-500 uppercase tracking-wider text-[10px]">Tx Hash:</span>
+                    <a
+                      href={explorerUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-accent-cyan hover:underline font-mono text-[11px]"
+                    >
+                      <span>{txHash.slice(0, 8)}...{txHash.slice(-6)}</span>
+                      <ExternalLink size={11} />
+                    </a>
+                  </div>
+                )}
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-zinc-500 uppercase tracking-wider text-[10px]">Network:</span>
+                  <span className="text-zinc-300 font-bold text-[11px]">Polygon Network</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-zinc-500 uppercase tracking-wider text-[10px]">Total Paid:</span>
+                  <span className="text-accent-cyan font-black text-xs">${total.toFixed(2)} USDC</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="grid grid-cols-2 gap-3 w-full">
             <Button 
               variant="secondary" 
               fullWidth 
               onClick={onClose}
-              className="py-4 border border-white/5 hover:border-white/10 flex items-center justify-center gap-2 group"
+              className="py-3 text-xs font-bold border border-white/10 hover:border-white/20 flex items-center justify-center gap-2 cursor-pointer"
             >
-              <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-              Back to Market
+              <ArrowLeft size={14} />
+              <span>Back to Market</span>
             </Button>
             <Button 
               fullWidth 
-              className="py-4 bg-accent-purple shadow-[0_15px_30px_-5px_rgba(157,0,255,0.4)] flex items-center justify-center gap-2 group"
+              onClick={handleGoToLibrary}
+              className="py-3 text-xs font-black bg-accent-purple hover:bg-accent-purple/90 shadow-[0_0_20px_rgba(139,92,246,0.4)] flex items-center justify-center gap-2 cursor-pointer text-white"
             >
-              Go to Library
-              <Library size={16} className="group-hover:scale-110 transition-transform" />
+              <span>Go to Library</span>
+              <Library size={14} />
             </Button>
           </div>
         </div>
