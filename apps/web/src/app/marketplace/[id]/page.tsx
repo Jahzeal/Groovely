@@ -95,15 +95,17 @@ export default function TrackDetailPage() {
   React.useEffect(() => {
     async function fetchTrack() {
       try {
-        const res = await apiFetch(`/api/market/tracks/${id}`);
-        if (res && res.ok) {
-          const json = await res.json();
-          if (json.success) {
-            setTrackData(json.data);
-          } else {
-            setError(json.message || 'Track not found');
+        const { data } = await cachedApiFetch(`/api/market/tracks/${id}`, {
+          onBackgroundUpdate: (fresh) => {
+            if (fresh?.success && fresh.data) {
+              setTrackData(fresh.data);
+            }
           }
-        } else {
+        });
+
+        if (data && data.success) {
+          setTrackData(data.data);
+        } else if (!data) {
           setError('Failed to fetch track details');
         }
       } catch (err) {
@@ -141,12 +143,14 @@ export default function TrackDetailPage() {
   // Build editions list from database or fallback
   const editionsList: EditionInfo[] = React.useMemo(() => {
     if (!trackData) return [];
-    const isFree = track?.payment_model === 'none' || track?.license_price === '0.00' || Number(track?.license_price) === 0;
+    const isExplicitlyFree = track?.payment_model === 'none';
 
     if (trackData.editions && trackData.editions.length > 0) {
       return trackData.editions.map((e: any) => {
         const rawEdPrice = Number(e.mint_price_usdc);
-        const edPrice = isFree ? 0 : (!isNaN(rawEdPrice) ? rawEdPrice : (Number(track?.license_price) || 0));
+        const edPrice = isExplicitlyFree 
+          ? 0 
+          : (!isNaN(rawEdPrice) && rawEdPrice > 0 ? rawEdPrice : (Number(track?.license_price) || Number(track?.price) || 1.0));
         return {
           id: e.id,
           contractEditionId: Number(e.contract_edition_id) || 1,
@@ -159,7 +163,7 @@ export default function TrackDetailPage() {
       });
     }
 
-    const fallbackPrice = isFree ? 0 : (parseFloat(track?.license_price || track?.price || '1.00') || 0);
+    const fallbackPrice = isExplicitlyFree ? 0 : (parseFloat(track?.license_price || track?.price || '1.00') || 1.0);
     return [
       {
         id: track?.id || 0,
@@ -176,13 +180,13 @@ export default function TrackDetailPage() {
   // Map backend fields to UI
   const displayTrack = React.useMemo(() => {
     if (!track || !creator) return null;
-    const isFree = track.payment_model === 'none' || track.license_price === '0.00' || Number(track.license_price) === 0;
-    const startingPriceVal = isFree ? 0 : (
+    const isExplicitlyFree = track.payment_model === 'none';
+    const startingPriceVal = isExplicitlyFree ? 0 : (
       editionsList.length > 0
         ? Math.min(...editionsList.map(e => e.mintPriceUsdc))
-        : (parseFloat(track.license_price || track.price || '1.00') || 0)
+        : (parseFloat(track.license_price || track.price || '1.00') || 1.0)
     );
-    const finalPrice = isFree ? '0.00' : (isNaN(startingPriceVal) ? '1.00' : startingPriceVal.toFixed(2));
+    const finalPrice = isExplicitlyFree || startingPriceVal === 0 ? '0.00' : startingPriceVal.toFixed(2);
 
     return {
       ...track,
@@ -224,7 +228,7 @@ export default function TrackDetailPage() {
     ? (Number(localStorage.getItem('grooveli_user_id')) || Number(localStorage.getItem('groovely_user_id')) || null)
     : null;
   const isUploader = currentUserId !== null && Number(track.user_id || creator.id) === currentUserId;
-  const isFree = displayTrack.price === '0.00' || track.payment_model === 'none';
+  const isFree = track.payment_model === 'none' || (editionsList.length > 0 && editionsList.every(e => e.mintPriceUsdc === 0));
 
   return (
     <CartProvider>
@@ -236,8 +240,93 @@ export default function TrackDetailPage() {
 
           <main className="flex-1 overflow-y-auto flex flex-col justify-between min-h-[calc(100vh-140px)]">
             <div>
-              {/* Spotify / Apple Music Style Responsive Hero Banner */}
-              <div className="relative w-full overflow-hidden p-4 sm:p-8 md:p-10 border-b border-white/5 bg-[#070a14]">
+              {/* ── Mobile View: Full-Bleed Edge-to-Edge Cinematic Banner (< md) ── */}
+              <div className="md:hidden relative w-full h-[340px] sm:h-[400px] overflow-hidden bg-[#070a14]">
+                {/* Full-width Cover Image */}
+                <img 
+                  src={displayTrack.image} 
+                  alt={displayTrack.title} 
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                
+                {/* Bottom & Top Gradient Overlays for Cinematic Contrast */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#050510] via-[#050510]/75 to-black/20" />
+
+                {/* Bottom-Aligned Track Metadata & Actions */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 flex flex-col items-start z-10">
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <span className="px-2.5 py-0.5 bg-accent-purple/30 border border-accent-purple/50 rounded-full text-[9px] font-black uppercase tracking-wider text-accent-cyan backdrop-blur-md">
+                      {displayTrack.fileType || 'WAV'} Track
+                    </span>
+                    {isFree && (
+                      <span className="px-2.5 py-0.5 bg-emerald-500/30 border border-emerald-500/50 rounded-full text-[9px] font-black uppercase tracking-wider text-emerald-400 backdrop-blur-md">
+                        Free Track
+                      </span>
+                    )}
+                  </div>
+
+                  <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white mb-1.5 leading-tight line-clamp-2 drop-shadow-md">
+                    {displayTrack.title}
+                  </h1>
+
+                  <p className="text-xs font-medium text-zinc-300 mb-4 drop-shadow">
+                    by <Link href={`/creator/${creator.username}`} className="text-white hover:text-accent-cyan transition-colors font-bold underline">{displayTrack.creator}</Link>
+                  </p>
+
+                  {/* Mobile Actions Row */}
+                  <div className="flex items-center gap-3 w-full">
+                    <button 
+                      onClick={() => playTrack({
+                         id: displayTrack.id,
+                         title: displayTrack.title,
+                         artist: displayTrack.creator,
+                         image: displayTrack.image,
+                         audioUrl: displayTrack.audio_url,
+                         uploaderId: track.user_id || creator.id,
+                         price: displayTrack.price,
+                         payment_model: track.payment_model,
+                         licenseTypes: displayTrack.licenses
+                      })}
+                      className="flex-1 py-3 px-5 bg-accent-purple hover:bg-accent-purple/90 rounded-2xl flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(139,92,246,0.5)] active:scale-98 transition-all cursor-pointer text-white font-black text-xs uppercase tracking-wider"
+                    >
+                      {currentTrack?.id === displayTrack.id && isPlaying ? (
+                        <>
+                          <Pause size={16} fill="white" />
+                          <span>Pause</span>
+                        </>
+                      ) : (
+                        <>
+                          <Play size={16} fill="white" className="ml-0.5" />
+                          <span>Play Track</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={handleToggleSave}
+                      className={`w-11 h-11 rounded-2xl border backdrop-blur-md flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                        isSaved 
+                          ? 'bg-red-500/25 border-red-500/50 text-red-400' 
+                          : 'bg-black/50 border-white/20 text-white hover:bg-black/70'
+                      }`}
+                      title={isSaved ? "Saved" : "Save to favorites"}
+                    >
+                      <Heart size={18} fill={isSaved ? "currentColor" : "none"} />
+                    </button>
+
+                    <button
+                      onClick={() => setShareModalOpen(true)}
+                      className="w-11 h-11 rounded-2xl bg-black/50 border border-white/20 backdrop-blur-md text-white hover:bg-black/70 flex items-center justify-center transition-all cursor-pointer shrink-0"
+                      title="Share track"
+                    >
+                      <Share2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Desktop View: 1:1 HD Square Card with Ambient Blur (md+) ── */}
+              <div className="hidden md:flex relative w-full overflow-hidden p-8 md:p-10 border-b border-white/5 bg-[#070a14]">
                 {/* Ambient Blur Backdrop */}
                 <img 
                   src={displayTrack.image} 
@@ -246,10 +335,9 @@ export default function TrackDetailPage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#070a14] via-[#070a14]/80 to-transparent" />
 
-                {/* Hero Layout: Flex row on Desktop, Clean vertical card on Mobile */}
-                <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col md:flex-row items-center md:items-end gap-5 sm:gap-8">
+                <div className="relative z-10 w-full max-w-7xl mx-auto flex items-end gap-8">
                   {/* Album Cover Art */}
-                  <div className="w-40 h-40 sm:w-52 sm:h-52 md:w-60 md:h-60 rounded-2xl sm:rounded-3xl overflow-hidden border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.8)] shrink-0 bg-[#0F0F1A] relative group">
+                  <div className="w-56 h-56 lg:w-64 lg:h-64 rounded-3xl overflow-hidden border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.8)] shrink-0 bg-[#0F0F1A] relative group">
                     <img 
                       src={displayTrack.image} 
                       alt={displayTrack.title} 
@@ -259,28 +347,28 @@ export default function TrackDetailPage() {
                   </div>
 
                   {/* Title & Metadata */}
-                  <div className="flex-1 text-center md:text-left min-w-0 w-full">
-                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-2 sm:mb-3">
-                      <span className="px-3 py-0.5 bg-accent-purple/20 border border-accent-purple/40 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-accent-cyan">
+                  <div className="flex-1 text-left min-w-0">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="px-3 py-0.5 bg-accent-purple/20 border border-accent-purple/40 rounded-full text-[10px] font-black uppercase tracking-wider text-accent-cyan">
                         {displayTrack.fileType || 'WAV'} Track
                       </span>
                       {isFree && (
-                        <span className="px-3 py-0.5 bg-emerald-500/20 border border-emerald-500/40 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-emerald-400">
+                        <span className="px-3 py-0.5 bg-emerald-500/20 border border-emerald-500/40 rounded-full text-[10px] font-black uppercase tracking-wider text-emerald-400">
                           Free Track
                         </span>
                       )}
                     </div>
 
-                    <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-white mb-2 sm:mb-3 truncate leading-tight">
+                    <h1 className="text-4xl lg:text-5xl font-black tracking-tight text-white mb-2 truncate leading-tight">
                       {displayTrack.title}
                     </h1>
 
-                    <p className="text-xs sm:text-base font-medium text-zinc-400 mb-4 sm:mb-5">
+                    <p className="text-base font-medium text-zinc-400 mb-6">
                       by <Link href={`/creator/${creator.username}`} className="text-white hover:text-accent-cyan transition-colors font-bold underline">{displayTrack.creator}</Link>
                     </p>
 
-                    {/* Responsive Action Buttons Row */}
-                    <div className="flex items-center justify-center md:justify-start gap-3 sm:gap-4 flex-wrap">
+                    {/* Action Buttons Row */}
+                    <div className="flex items-center gap-4">
                       <button 
                         onClick={() => playTrack({
                            id: displayTrack.id,
@@ -293,7 +381,7 @@ export default function TrackDetailPage() {
                            payment_model: track.payment_model,
                            licenseTypes: displayTrack.licenses
                         })}
-                        className="px-5 sm:px-7 py-3 sm:py-3.5 bg-accent-purple hover:bg-accent-purple/90 rounded-full flex items-center justify-center gap-2.5 shadow-[0_0_30px_rgba(139,92,246,0.5)] hover:scale-105 active:scale-95 transition-all cursor-pointer text-white font-black text-xs sm:text-sm uppercase tracking-wider"
+                        className="px-7 py-3.5 bg-accent-purple hover:bg-accent-purple/90 rounded-full flex items-center justify-center gap-2.5 shadow-[0_0_30px_rgba(139,92,246,0.5)] hover:scale-105 active:scale-95 transition-all cursor-pointer text-white font-black text-sm uppercase tracking-wider"
                       >
                         {currentTrack?.id === displayTrack.id && isPlaying ? (
                           <>

@@ -10,7 +10,7 @@ import { TrackCard } from '@/components/marketplace/TrackCard';
 import { MusicPlayer } from '@/components/marketplace/MusicPlayer';
 import { Twitter, Instagram } from '@/components/ui/SocialIcons';
 import { Send, Disc, Loader2 } from 'lucide-react';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, cachedApiFetch } from '@/lib/api';
 import { CartProvider } from '@/components/marketplace/CartContext';
 import { useSearchParams } from 'next/navigation';
 
@@ -58,15 +58,17 @@ function MarketplaceContent() {
   useEffect(() => {
     async function fetchForYou() {
       try {
-        const res = await apiFetch('/api/market/for-you?limit=10');
-        if (res && res.ok) {
-          const data = await res.json();
-          if (data.success && data.data) {
-            const tracks = data.data.tracks || data.data.recommendations || data.data.data || (Array.isArray(data.data) ? data.data : []);
-            setForYou(tracks);
-          } else if (Array.isArray(data)) {
-            setForYou(data);
+        const { data } = await cachedApiFetch('/api/market/for-you?limit=10', {
+          onBackgroundUpdate: (fresh) => {
+            if (fresh?.success && fresh.data) {
+              const tracks = fresh.data.tracks || fresh.data.recommendations || fresh.data.data || (Array.isArray(fresh.data) ? fresh.data : []);
+              setForYou(tracks);
+            }
           }
+        });
+        if (data) {
+          const tracks = data.data?.tracks || data.data?.recommendations || data.data?.data || (Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []));
+          setForYou(tracks);
         }
       } catch (error) {
         console.error('Failed to fetch marketplace for-you', error);
@@ -77,15 +79,17 @@ function MarketplaceContent() {
 
     async function fetchAllTracks() {
       try {
-        const res = await apiFetch('/api/market/category/all?limit=20');
-        if (res && res.ok) {
-          const data = await res.json();
-          if (data.success && data.data) {
-            const tracks = data.data.tracks || data.data.data || (Array.isArray(data.data) ? data.data : []);
-            setAllTracks(tracks);
-          } else if (Array.isArray(data)) {
-            setAllTracks(data);
+        const { data } = await cachedApiFetch('/api/market/category/all?limit=20', {
+          onBackgroundUpdate: (fresh) => {
+            if (fresh?.success && fresh.data) {
+              const tracks = fresh.data.tracks || fresh.data.data || (Array.isArray(fresh.data) ? fresh.data : []);
+              setAllTracks(tracks);
+            }
           }
+        });
+        if (data) {
+          const tracks = data.data?.tracks || data.data?.data || (Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []));
+          setAllTracks(tracks);
         }
       } catch (error) {
         console.error('Failed to fetch all tracks', error);
@@ -96,15 +100,17 @@ function MarketplaceContent() {
 
     async function fetchMusicTracks() {
       try {
-        const res = await apiFetch('/api/market/category/music?limit=20');
-        if (res && res.ok) {
-          const data = await res.json();
-          if (data.success && data.data) {
-            const tracks = data.data.tracks || data.data.data || (Array.isArray(data.data) ? data.data : []);
-            setMusicTracks(tracks);
-          } else if (Array.isArray(data)) {
-            setMusicTracks(data);
+        const { data } = await cachedApiFetch('/api/market/category/music?limit=20', {
+          onBackgroundUpdate: (fresh) => {
+            if (fresh?.success && fresh.data) {
+              const tracks = fresh.data.tracks || fresh.data.data || (Array.isArray(fresh.data) ? fresh.data : []);
+              setMusicTracks(tracks);
+            }
           }
+        });
+        if (data) {
+          const tracks = data.data?.tracks || data.data?.data || (Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []));
+          setMusicTracks(tracks);
         }
       } catch (error) {
         console.error('Failed to fetch music tracks', error);
@@ -115,15 +121,17 @@ function MarketplaceContent() {
 
     async function fetchPodcastTracks() {
       try {
-        const res = await apiFetch('/api/market/category/podcast?limit=20');
-        if (res && res.ok) {
-          const data = await res.json();
-          if (data.success && data.data) {
-            const tracks = data.data.tracks || data.data.data || (Array.isArray(data.data) ? data.data : []);
-            setPodcastTracks(tracks);
-          } else if (Array.isArray(data)) {
-            setPodcastTracks(data);
+        const { data } = await cachedApiFetch('/api/market/category/podcast?limit=20', {
+          onBackgroundUpdate: (fresh) => {
+            if (fresh?.success && fresh.data) {
+              const tracks = fresh.data.tracks || fresh.data.data || (Array.isArray(fresh.data) ? fresh.data : []);
+              setPodcastTracks(tracks);
+            }
           }
+        });
+        if (data) {
+          const tracks = data.data?.tracks || data.data?.data || (Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []));
+          setPodcastTracks(tracks);
         }
       } catch (error) {
         console.error('Failed to fetch podcast tracks', error);
@@ -134,15 +142,17 @@ function MarketplaceContent() {
 
     async function fetchSkitTracks() {
       try {
-        const res = await apiFetch('/api/market/category/skit?limit=20');
-        if (res && res.ok) {
-          const data = await res.json();
-          if (data.success && data.data) {
-            const tracks = data.data.tracks || data.data.data || (Array.isArray(data.data) ? data.data : []);
-            setSkitTracks(tracks);
-          } else if (Array.isArray(data)) {
-            setSkitTracks(data);
+        const { data } = await cachedApiFetch('/api/market/category/skit?limit=20', {
+          onBackgroundUpdate: (fresh) => {
+            if (fresh?.success && fresh.data) {
+              const tracks = fresh.data.tracks || fresh.data.data || (Array.isArray(fresh.data) ? fresh.data : []);
+              setSkitTracks(tracks);
+            }
           }
+        });
+        if (data) {
+          const tracks = data.data?.tracks || data.data?.data || (Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []));
+          setSkitTracks(tracks);
         }
       } catch (error) {
         console.error('Failed to fetch skit tracks', error);
@@ -153,15 +163,17 @@ function MarketplaceContent() {
 
     async function fetchBeatsTracks() {
       try {
-        const res = await apiFetch('/api/market/category/beats?limit=20');
-        if (res && res.ok) {
-          const data = await res.json();
-          if (data.success && data.data) {
-            const tracks = data.data.tracks || data.data.data || (Array.isArray(data.data) ? data.data : []);
-            setBeatsTracks(tracks);
-          } else if (Array.isArray(data)) {
-            setBeatsTracks(data);
+        const { data } = await cachedApiFetch('/api/market/category/beats?limit=20', {
+          onBackgroundUpdate: (fresh) => {
+            if (fresh?.success && fresh.data) {
+              const tracks = fresh.data.tracks || fresh.data.data || (Array.isArray(fresh.data) ? fresh.data : []);
+              setBeatsTracks(tracks);
+            }
           }
+        });
+        if (data) {
+          const tracks = data.data?.tracks || data.data?.data || (Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []));
+          setBeatsTracks(tracks);
         }
       } catch (error) {
         console.error('Failed to fetch beats tracks', error);

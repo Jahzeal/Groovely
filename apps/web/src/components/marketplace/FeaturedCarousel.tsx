@@ -110,18 +110,32 @@ export const FeaturedCarousel = () => {
           const items = json.data?.tracks || json.tracks || (Array.isArray(json.data) ? json.data : []) || (Array.isArray(json) ? json : []);
           
           if (Array.isArray(items) && items.length > 0) {
-            setFeatured(items.map((item: any) => ({
-              id: item.id,
-              uploaderId: item.user_id,
-              title: item.title,
-              creator: item.artist_name || item.artist_username || 'Grooveli Creator',
-              image: resolveIpfsUrl(item.cover_url || item.coverImage) || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=1200&q=80',
-              audioUrl: item.audio_url,
-              licenseType: item.payment_model === 'free' ? 'Free License' : 'Commercial License',
-              price: item.license_price ? `${item.license_price} USDC` : '$1.00 USDC',
-              currency: item.license_price ? `$${item.license_price}` : '$1.00',
-              licenseTypes: item.usage_rights || [item.payment_model === 'free' ? 'Free License' : 'Commercial License']
-            })));
+            setFeatured(items.map((item: any) => {
+              const isFree = item.payment_model === 'none' ||
+                item.price === 0 || item.price === '0' || item.price === '0.00' ||
+                item.license_price === 0 || item.license_price === '0' || item.license_price === '0.00';
+
+              const displayPrice = isFree
+                ? 'Free'
+                : (item.license_price ? `$${item.license_price} USDC` : (item.price ? `$${item.price} USDC` : '$1.00 USDC'));
+
+              const displayCurrency = isFree
+                ? 'Free'
+                : (item.license_price ? `$${item.license_price}` : (item.price ? `$${item.price}` : '$1.00'));
+
+              return {
+                id: item.id,
+                uploaderId: item.user_id,
+                title: item.title,
+                creator: item.artist_name || item.artist_username || 'Grooveli Creator',
+                image: resolveIpfsUrl(item.cover_url || item.coverImage) || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=1200&q=80',
+                audioUrl: item.audio_url,
+                licenseType: isFree ? 'Free License' : (item.payment_model === 'royalty' ? 'Royalty License' : 'Commercial License'),
+                price: displayPrice,
+                currency: displayCurrency,
+                licenseTypes: item.usage_rights || [isFree ? 'Free License' : 'Commercial License']
+              };
+            }));
           }
         }
       } catch (err) {
@@ -431,14 +445,24 @@ export const FeaturedCarousel = () => {
                   <p className="text-[11px] font-bold text-white">{t.price}</p>
                 </div>
 
-                {/* Buy Action */}
-                <Link
-                  href={`/marketplace/${t.id}`}
-                  className="flex items-center gap-1.5 bg-white text-black hover:bg-zinc-200 font-black text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg"
-                >
-                  <ShoppingCart size={13} />
-                  <span>Buy {t.currency}</span>
-                </Link>
+                {/* Buy / Stream Action */}
+                {t.price === 'Free' ? (
+                  <Link
+                    href={`/marketplace/${t.id}`}
+                    className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg"
+                  >
+                    <Headphones size={13} />
+                    <span>Stream Free</span>
+                  </Link>
+                ) : (
+                  <Link
+                    href={`/marketplace/${t.id}`}
+                    className="flex items-center gap-1.5 bg-white text-black hover:bg-zinc-200 font-black text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg"
+                  >
+                    <ShoppingCart size={13} />
+                    <span>Buy {t.currency}</span>
+                  </Link>
+                )}
               </div>
             </div>
           </div>
