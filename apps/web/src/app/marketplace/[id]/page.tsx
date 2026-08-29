@@ -28,7 +28,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { apiFetch, resolveIpfsUrl } from '@/lib/api';
+import { apiFetch, cachedApiFetch, resolveIpfsUrl } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 export default function TrackDetailPage() {
