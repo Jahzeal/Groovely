@@ -96,7 +96,7 @@ export default function TrackDetailPage() {
     async function fetchTrack() {
       try {
         const { data } = await cachedApiFetch(`/api/market/tracks/${id}`, {
-          onBackgroundUpdate: (fresh) => {
+          onBackgroundUpdate: (fresh: any) => {
             if (fresh?.success && fresh.data) {
               setTrackData(fresh.data);
             }

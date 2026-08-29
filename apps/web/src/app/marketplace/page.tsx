@@ -59,7 +59,7 @@ function MarketplaceContent() {
     async function fetchForYou() {
       try {
         const { data } = await cachedApiFetch('/api/market/for-you?limit=10', {
-          onBackgroundUpdate: (fresh) => {
+          onBackgroundUpdate: (fresh: any) => {
             if (fresh?.success && fresh.data) {
               const tracks = fresh.data.tracks || fresh.data.recommendations || fresh.data.data || (Array.isArray(fresh.data) ? fresh.data : []);
               setForYou(tracks);
@@ -80,7 +80,7 @@ function MarketplaceContent() {
     async function fetchAllTracks() {
       try {
         const { data } = await cachedApiFetch('/api/market/category/all?limit=20', {
-          onBackgroundUpdate: (fresh) => {
+          onBackgroundUpdate: (fresh: any) => {
             if (fresh?.success && fresh.data) {
               const tracks = fresh.data.tracks || fresh.data.data || (Array.isArray(fresh.data) ? fresh.data : []);
               setAllTracks(tracks);
@@ -101,7 +101,7 @@ function MarketplaceContent() {
     async function fetchMusicTracks() {
       try {
         const { data } = await cachedApiFetch('/api/market/category/music?limit=20', {
-          onBackgroundUpdate: (fresh) => {
+          onBackgroundUpdate: (fresh: any) => {
             if (fresh?.success && fresh.data) {
               const tracks = fresh.data.tracks || fresh.data.data || (Array.isArray(fresh.data) ? fresh.data : []);
               setMusicTracks(tracks);
@@ -122,7 +122,7 @@ function MarketplaceContent() {
     async function fetchPodcastTracks() {
       try {
         const { data } = await cachedApiFetch('/api/market/category/podcast?limit=20', {
-          onBackgroundUpdate: (fresh) => {
+          onBackgroundUpdate: (fresh: any) => {
             if (fresh?.success && fresh.data) {
               const tracks = fresh.data.tracks || fresh.data.data || (Array.isArray(fresh.data) ? fresh.data : []);
               setPodcastTracks(tracks);

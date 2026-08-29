@@ -86,7 +86,7 @@ export async function cachedApiFetch<T = any>(
   options: {
     ttlMs?: number;
     skipAuthRedirect?: boolean;
-    onBackgroundUpdate?: (freshData: T) => void;
+    onBackgroundUpdate?: (freshData: any) => void;
   } = {}
 ): Promise<{ data: T | null; fromCache: boolean }> {
   const cached = getCachedData<T>(endpoint);
