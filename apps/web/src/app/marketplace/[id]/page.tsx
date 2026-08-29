@@ -181,12 +181,15 @@ export default function TrackDetailPage() {
   const displayTrack = React.useMemo(() => {
     if (!track || !creator) return null;
     const isExplicitlyFree = track.payment_model === 'none';
+    const dbPrice = parseFloat(track.license_price) || parseFloat(track.price) || 0;
+    const validEditionPrices = editionsList.map(e => e.mintPriceUsdc).filter(p => p > 0);
+    const lowestEditionPrice = validEditionPrices.length > 0 ? Math.min(...validEditionPrices) : 0;
+    
+    // Priority: Free Model (0.00) -> Edition Price -> DB Price -> $1.00 Safety Fallback
     const startingPriceVal = isExplicitlyFree ? 0 : (
-      editionsList.length > 0
-        ? Math.min(...editionsList.map(e => e.mintPriceUsdc))
-        : (parseFloat(track.license_price || track.price || '1.00') || 1.0)
+      lowestEditionPrice > 0 ? lowestEditionPrice : (dbPrice > 0 ? dbPrice : 1.0)
     );
-    const finalPrice = isExplicitlyFree || startingPriceVal === 0 ? '0.00' : startingPriceVal.toFixed(2);
+    const finalPrice = isExplicitlyFree ? '0.00' : startingPriceVal.toFixed(2);
 
     return {
       ...track,
@@ -228,7 +231,7 @@ export default function TrackDetailPage() {
     ? (Number(localStorage.getItem('grooveli_user_id')) || Number(localStorage.getItem('groovely_user_id')) || null)
     : null;
   const isUploader = currentUserId !== null && Number(track.user_id || creator.id) === currentUserId;
-  const isFree = track.payment_model === 'none' || (editionsList.length > 0 && editionsList.every(e => e.mintPriceUsdc === 0));
+  const isFree = track.payment_model === 'none';
 
   return (
     <CartProvider>
@@ -480,8 +483,8 @@ export default function TrackDetailPage() {
                             image={t.cover_url || displayTrack.image}
                             audioUrl={t.audio_url}
                             licenseTypes={t.license_types || ['License']}
-                            price={t.price || '0.00'}
-                            currency={t.currency || '$0'}
+                            price={t.price && Number(t.price) > 0 ? String(t.price) : '1.00'}
+                            currency={t.currency && t.currency !== '$0' && t.currency !== '$0.00' ? t.currency : `$${t.price && Number(t.price) > 0 ? Number(t.price).toFixed(2) : '1.00'}`}
                             uploaderId={creator.id}
                           />
                         ))
@@ -696,14 +699,6 @@ const PurchaseSidebar: React.FC<PurchaseSidebarProps> = ({
           </div>
         </div>
 
-        <div>
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 block mb-2">
-            Royalty Split
-          </span>
-          <div className="bg-[#050510] border border-white/5 rounded-xl py-2.5 px-4 text-lg font-black text-accent-purple text-center">
-            {track.royalty || '10%'}
-          </div>
-        </div>
       </div>
     </div>
   );

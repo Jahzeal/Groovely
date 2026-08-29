@@ -195,7 +195,21 @@ export class MarketService {
      `;
 
     const result = await this.db.query(queryText, params);
-    return result.rows;
+    return result.rows.map(t => {
+      const isFreeModel = t.payment_model === 'none';
+      const parsedLicPrice = Number(t.license_price);
+      const parsedTrackPrice = Number(t.price);
+      const effectivePrice = isFreeModel ? '0.00' : (
+        !isNaN(parsedLicPrice) && parsedLicPrice > 0 ? parsedLicPrice.toFixed(2) : (
+          !isNaN(parsedTrackPrice) && parsedTrackPrice > 0 ? parsedTrackPrice.toFixed(2) : '1.00'
+        )
+      );
+      return {
+        ...t,
+        price: effectivePrice,
+        currency: isFreeModel ? 'Free' : `$${effectivePrice}`,
+      };
+    });
   }
 
   async getTrackDetails(trackId: number) {
@@ -239,6 +253,7 @@ export class MarketService {
         t.cover_url,
         t.price,
         t.license_price,
+        t.payment_model,
         t.currency,
         t.usage_rights as license_types
        FROM tracks t
@@ -265,6 +280,40 @@ export class MarketService {
       [trackId]
     );
 
+    const isFreeModel = track.payment_model === 'none';
+    const parsedLicPrice = Number(track.license_price);
+    const parsedTrackPrice = Number(track.price);
+    const effectivePrice = isFreeModel ? '0.00' : (
+      !isNaN(parsedLicPrice) && parsedLicPrice > 0 ? parsedLicPrice.toFixed(2) : (
+        !isNaN(parsedTrackPrice) && parsedTrackPrice > 0 ? parsedTrackPrice.toFixed(2) : '1.00'
+      )
+    );
+
+    const editionsFormatted = editionResult.rows.map(e => {
+      const rawEdPrice = Number(e.mint_price_usdc);
+      const edPrice = isFreeModel ? 0 : (!isNaN(rawEdPrice) && rawEdPrice > 0 ? rawEdPrice : Number(effectivePrice));
+      return {
+        ...e,
+        mint_price_usdc: edPrice,
+      };
+    });
+
+    const moreFormatted = moreResult.rows.map(m => {
+      const isFree = m.payment_model === 'none';
+      const pLic = Number(m.license_price);
+      const pTrk = Number(m.price);
+      const eff = isFree ? '0.00' : (
+        !isNaN(pLic) && pLic > 0 ? pLic.toFixed(2) : (
+          !isNaN(pTrk) && pTrk > 0 ? pTrk.toFixed(2) : '1.00'
+        )
+      );
+      return {
+        ...m,
+        price: eff,
+        currency: isFree ? 'Free' : `$${eff}`,
+      };
+    });
+
     return {
       track: {
         id: track.id,
@@ -276,10 +325,11 @@ export class MarketService {
         category: track.category,
         bpm: track.bpm,
         key: track.key,
-        price: track.license_price || track.price || '5.00',
-        license_price: track.license_price,
+        price: effectivePrice,
+        license_price: track.license_price || effectivePrice,
+        payment_model: track.payment_model || (isFreeModel ? 'none' : 'fixed'),
         royalty_percentage: track.royalty_percentage,
-        currency: track.currency,
+        currency: isFreeModel ? 'Free' : `$${effectivePrice}`,
         license_types: track.license_types,
         created_at: track.created_at
       },
@@ -288,8 +338,8 @@ export class MarketService {
         name: track.creator_name,
         username: track.creator_username
       },
-      more_from_creator: moreResult.rows,
-      editions: editionResult.rows
+      more_from_creator: moreFormatted,
+      editions: editionsFormatted
     };
   }
 }

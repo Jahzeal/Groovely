@@ -35,6 +35,9 @@ interface MusicPlayerContextType {
   purchasedTrackIds: Set<string | number>;
   isTrackPurchased: (id: string | number) => boolean;
   addPurchasedTrack: (id: string | number) => void;
+  isPlayerMinimized: boolean;
+  setIsPlayerMinimized: (minimized: boolean) => void;
+  togglePlayerMinimized: () => void;
 }
 
 const PREVIEW_LIMIT_SECONDS = 40;
@@ -51,6 +54,7 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [volume, setVolume] = useState(0.7);
   const [previewLimitReached, setPreviewLimitReached] = useState(false);
   const [purchasedTrackIds, setPurchasedTrackIds] = useState<Set<string | number>>(new Set());
+  const [isPlayerMinimized, setIsPlayerMinimized] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const streamRecordedRef = useRef<string | number | null>(null);
@@ -216,8 +220,9 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setQueue(newQueue);
     }
 
-    // Reset preview limit when switching tracks
+    // Reset preview limit & unminimize when switching/playing tracks
     setPreviewLimitReached(false);
+    setIsPlayerMinimized(false);
 
     if (currentTrack?.id === track.id) {
       togglePlay();
@@ -341,6 +346,9 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         purchasedTrackIds,
         isTrackPurchased,
         addPurchasedTrack,
+        isPlayerMinimized,
+        setIsPlayerMinimized,
+        togglePlayerMinimized: () => setIsPlayerMinimized(prev => !prev),
       }}
     >
       {children}

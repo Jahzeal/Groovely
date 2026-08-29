@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef } from 'react';
-import { SkipBack, Play, Pause, SkipForward, Volume2, Lock, ShoppingCart, Share2 } from 'lucide-react';
+import { SkipBack, Play, Pause, SkipForward, Volume2, Lock, ShoppingCart, Share2, ChevronDown, ChevronUp, Music2 } from 'lucide-react';
 import { useMusicPlayer } from './MusicPlayerContext';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -23,6 +23,8 @@ export const MusicPlayer = () => {
     playPrevious,
     previewLimitReached,
     purchasedTrackIds,
+    isPlayerMinimized,
+    togglePlayerMinimized,
   } = useMusicPlayer();
 
   const barRef = useRef<HTMLDivElement>(null);
@@ -66,6 +68,61 @@ export const MusicPlayer = () => {
   // Progress percentage capped at preview limit visually for non-purchased
   const previewLimitPct = duration ? (PREVIEW_LIMIT / duration) * 100 : 0;
   const displayProgress = isPurchased ? progress : Math.min(progress, previewLimitPct + 0.5);
+
+  // If minimized, render sleek floating mini-player pill button in bottom right
+  if (isPlayerMinimized) {
+    return (
+      <div className="fixed bottom-5 right-5 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+        <div className="bg-[#0A0A14]/95 border border-[#8A2BE2]/40 backdrop-blur-2xl shadow-[0_10px_30px_rgba(138,43,226,0.25)] rounded-full p-2 pl-2.5 pr-4 flex items-center gap-3 group transition-all hover:border-[#8A2BE2] hover:shadow-[0_10px_35px_rgba(138,43,226,0.4)]">
+          {/* Animated Thumbnail */}
+          <div 
+            onClick={togglePlayerMinimized}
+            className="relative w-9 h-9 rounded-full overflow-hidden border border-white/20 shrink-0 cursor-pointer"
+          >
+            <img 
+              src={currentTrack.image} 
+              alt={currentTrack.title} 
+              className={`w-full h-full object-cover ${isPlaying ? 'animate-spin-slow' : ''}`}
+              style={{ animationDuration: '8s' }}
+            />
+            <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
+          </div>
+
+          {/* Track info snippet */}
+          <div 
+            onClick={togglePlayerMinimized}
+            className="cursor-pointer max-w-[120px] sm:max-w-[160px] min-w-0"
+          >
+            <p className="text-xs font-black text-white truncate leading-tight group-hover:text-[#8A2BE2] transition-colors">
+              {currentTrack.title}
+            </p>
+            <p className="text-[10px] text-zinc-400 truncate leading-tight mt-0.5">
+              {currentTrack.artist}
+            </p>
+          </div>
+
+          {/* Quick Play/Pause */}
+          <button
+            onClick={togglePlay}
+            className="w-7 h-7 bg-[#8A2BE2] hover:bg-[#7c4dff] rounded-full flex items-center justify-center text-white shrink-0 shadow-md transition-all active:scale-95 cursor-pointer ml-1"
+            aria-label={isPlaying ? "Pause" : "Play"}
+          >
+            {isPlaying ? <Pause size={13} fill="white" /> : <Play size={13} fill="white" className="translate-x-0.5" />}
+          </button>
+
+          {/* Expand Button */}
+          <button
+            onClick={togglePlayerMinimized}
+            className="p-1 text-zinc-400 hover:text-white transition-colors cursor-pointer shrink-0"
+            title="Expand Player Bar"
+            aria-label="Expand Player"
+          >
+            <ChevronUp size={18} />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -140,6 +197,16 @@ export const MusicPlayer = () => {
               </span>
             )}
           </div>
+
+          {/* Mobile Hide/Minimize Button */}
+          <button
+            onClick={togglePlayerMinimized}
+            className="md:hidden text-zinc-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5 cursor-pointer shrink-0"
+            title="Hide Player"
+            aria-label="Hide Player"
+          >
+            <ChevronDown size={18} />
+          </button>
         </div>
 
         {/* Center: Controls + Progress Bar on md+ */}
@@ -240,9 +307,9 @@ export const MusicPlayer = () => {
           </div>
         </div>
 
-        {/* Right: Volume & Actions (Desktop only) */}
-        <div className="hidden md:flex items-center justify-end gap-4 w-48 lg:w-72 shrink-0">
-          <div className="flex items-center gap-2.5 w-28 lg:w-32">
+        {/* Right: Volume, Actions & Hide/Minimize Button (Desktop) */}
+        <div className="hidden md:flex items-center justify-end gap-3 w-48 lg:w-72 shrink-0">
+          <div className="flex items-center gap-2.5 w-24 lg:w-28">
             <button 
               onClick={() => setVolume(volume === 0 ? 0.7 : 0)}
               className="text-zinc-400 hover:text-white transition-colors cursor-pointer"
@@ -282,6 +349,16 @@ export const MusicPlayer = () => {
             title="Share track"
           >
             <Share2 size={16} />
+          </button>
+
+          {/* Desktop Hide/Minimize Player Button */}
+          <button
+            onClick={togglePlayerMinimized}
+            className="text-zinc-400 hover:text-white hover:bg-white/10 p-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 text-xs font-bold"
+            title="Hide / Minimize player bar"
+            aria-label="Hide player"
+          >
+            <ChevronDown size={18} />
           </button>
         </div>
 
