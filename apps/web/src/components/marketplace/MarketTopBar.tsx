@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown, Bell, ShoppingCart, Copy, LogOut, User, Settings, CheckCheck, ExternalLink, Menu } from 'lucide-react';
 import { useCart } from './CartContext';
-import { handleLogout } from '@/lib/api';
+import { handleLogout, apiFetch } from '@/lib/api';
 import { useLogout, usePrivy } from '@privy-io/react-auth';
 import { useAccount, useBalance, useReadContract } from 'wagmi';
 import { USDC_ADDRESS } from '@/lib/contracts';
