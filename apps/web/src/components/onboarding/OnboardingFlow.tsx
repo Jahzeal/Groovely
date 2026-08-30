@@ -152,24 +152,27 @@ export const OnboardingFlow = () => {
     const smartWallet = user.linkedAccounts.find(
       (account) => account.type === 'smart_wallet'
     );
-    const walletAddr = smartWallet?.address || user.wallet?.address;
-    
-    if (!walletAddr) {
+    const walletAddr = smartWallet?.address || user.wallet?.address || '';
+    const userEmail = user.google?.email || user.email?.address || '';
+
+    if (!walletAddr && !userEmail) {
       return;
     }
 
     // If user already has a token, sync their newly initialized Privy wallet to backend
     const token = localStorage.getItem('grooveli_token') || localStorage.getItem('groovely_token');
     if (token) {
-      const storedWallet = localStorage.getItem('grooveli_wallet') || localStorage.getItem('groovely_wallet');
-      if (!storedWallet || storedWallet !== walletAddr) {
-        localStorage.setItem('grooveli_wallet', walletAddr);
-        localStorage.setItem('groovely_wallet', walletAddr);
-        apiFetch('/api/users/me', {
-          method: 'PUT',
-          body: JSON.stringify({ wallet: walletAddr }),
-          skipAuthRedirect: true
-        }).catch(() => {});
+      if (walletAddr) {
+        const storedWallet = localStorage.getItem('grooveli_wallet') || localStorage.getItem('groovely_wallet');
+        if (!storedWallet || storedWallet !== walletAddr) {
+          localStorage.setItem('grooveli_wallet', walletAddr);
+          localStorage.setItem('groovely_wallet', walletAddr);
+          apiFetch('/api/users/me', {
+            method: 'PUT',
+            body: JSON.stringify({ wallet: walletAddr }),
+            skipAuthRedirect: true
+          }).catch(() => {});
+        }
       }
       return;
     }
@@ -335,25 +338,23 @@ export const OnboardingFlow = () => {
         throw new Error('Could not determine wallet address');
       }
 
-      // 3. Fetch Nonce
-      console.log('Step 3: Fetching nonce...');
-      const nonceRes = await apiFetch(`/api/auth/nonce/${walletAddr}`, { skipAuthRedirect: true });
-      if (!nonceRes || !nonceRes.ok) throw new Error('Failed to fetch nonce');
-      const { nonce, message } = await nonceRes.json();
-      console.log('Step 3 SUCCESS. Nonce data:', { nonce, messageLength: message?.length });
+      // 3. Fetch Nonce & Sign Message (Optional verification layer)
+      let signature: string | undefined = undefined;
+      try {
+        const nonceRes = await apiFetch(`/api/auth/nonce/${walletAddr}`, { skipAuthRedirect: true });
+        if (nonceRes && nonceRes.ok) {
+          const { message } = await nonceRes.json();
+          if (message) {
+            signature = await signMessageAsync({ message }).catch(() => undefined);
+          }
+        }
+      } catch (_) {
+        // Continue if wallet signature is rejected or unsupported
+      }
 
-      // 4. Sign Message
-      console.log('Step 4: Requesting signature from wallet...');
-      const signature = await signMessageAsync({ message });
-      console.log('Step 4 SUCCESS. Signature received substring:', signature?.substring(0, 10));
-
-      // 5. Connect Backend
-      console.log('Step 5: Sending auth request to backend...');
-      
-      let connectRes;
-
+      // 4. Connect Backend
       const payloadRole = role === 'creator' ? 'creator' : 'fan';
-      connectRes = await apiFetch('/api/auth/signup/wallet', {
+      const connectRes = await apiFetch('/api/auth/signup/wallet', {
         method: 'POST',
         body: JSON.stringify({ walletAddress: walletAddr, role: payloadRole, signature }),
         skipAuthRedirect: true,
@@ -363,18 +364,35 @@ export const OnboardingFlow = () => {
       const authData = await connectRes.json();
 
       if (!connectRes.ok) throw new Error(authData.error || authData.message || 'Authentication failed');
-      console.log('Step 5 SUCCESS. authData:', { isNewUser: authData.isNewUser, userId: authData.userId });
 
-      // 6. Store JWT
-      localStorage.setItem('grooveli_token', authData.token);
-      localStorage.setItem('grooveli_user_id', authData.userId);
-      localStorage.setItem('grooveli_wallet', walletAddr || '');
+      // 5. Store JWT & User Keys
+      const actualToken = authData.token || authData.data?.token;
+      const actualUserId = authData.userId || String(authData.data?.user?.id || authData.user?.id);
+      const actualWallet = walletAddr || authData.user?.wallet || authData.data?.user?.wallet;
+      const actualRole = payloadRole || authData.user?.role || authData.data?.user?.role;
 
-      // Move to Step 3 if new, else dashboard
+      if (!actualToken) throw new Error('Failed to retrieve authentication token from backend');
+
+      localStorage.setItem('grooveli_token', actualToken);
+      localStorage.setItem('groovely_token', actualToken);
+      localStorage.setItem('grooveli_user_id', String(actualUserId));
+      localStorage.setItem('groovely_user_id', String(actualUserId));
+      localStorage.setItem('grooveli_wallet', actualWallet || '');
+      localStorage.setItem('groovely_wallet', actualWallet || '');
+      localStorage.setItem('grooveli_role', actualRole);
+      localStorage.setItem('groovely_role', actualRole);
+
+      // Move to Step 3 if new, else destination page
       if (authData.isNewUser) {
         setStep(3);
+        toast.success('Successfully connected!');
       } else {
-        router.push('/dashboard');
+        toast.success('Welcome back!');
+        if (actualRole === 'fan') {
+          router.push('/explore');
+        } else {
+          router.push('/dashboard');
+        }
       }
     } catch (err: any) {
       console.error('Connection error step trace:', err);

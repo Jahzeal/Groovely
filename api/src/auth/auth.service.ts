@@ -7,7 +7,8 @@ export class AuthService {
   constructor(private db: DatabaseService) {}
 
   async findUserByWallet(walletAddress: string) {
-    const result = await this.db.query('SELECT * FROM users WHERE wallet = $1', [
+    if (!walletAddress) return null;
+    const result = await this.db.query('SELECT * FROM users WHERE LOWER(wallet) = LOWER($1)', [
       walletAddress,
     ]);
     return result.rows[0];

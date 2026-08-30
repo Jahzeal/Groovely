@@ -54,6 +54,16 @@ export default function LoginPage() {
           });
           if (loginRes && loginRes.ok) {
             authData = await loginRes.json();
+          } else {
+            // If user exists in Privy but not in DB yet, auto-provision account via signup/google
+            const signupRes = await apiFetch('/api/auth/signup/google', {
+              method: 'POST',
+              body: JSON.stringify({ email: userEmail, role: 'fan', walletAddress: walletAddr || undefined }),
+              skipAuthRedirect: true,
+            });
+            if (signupRes && signupRes.ok) {
+              authData = await signupRes.json();
+            }
           }
         }
 
@@ -117,59 +127,58 @@ export default function LoginPage() {
 
   const handleConnectWallet = async () => {
     if (!wallet) return;
+
+    if (wallet === 'walletconnect') {
+      login({ loginMethods: ['wallet'] });
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
       console.log('Starting connection for wallet:', wallet);
-      console.log('Available connectors:', connectors.map(c => ({ id: c.id, name: c.name })));
 
-      // 1. Discovery
       const target = wallet?.toLowerCase() || '';
       let connector = connectors.find((c: any) => {
-        const cName = c.name.toLowerCase();
-        const cId = c.id.toLowerCase();
+        const cName = (c.name || '').toLowerCase();
+        const cId = (c.id || '').toLowerCase();
         return cId.includes(target) || cName.includes(target);
       });
 
-      if (!connector && target === 'metamask') {
+      if (!connector && (target === 'metamask' || target === 'phantom')) {
         connector = connectors.find((c: any) => c.id === 'injected');
       }
 
-      if (connectors.length === 0) {
-        throw new Error('No web3 wallets detected. Please install MetaMask or another compatible wallet.');
+      if (!connector) {
+        // Fallback to Privy modal if extension is not directly detected
+        login({ loginMethods: ['wallet'] });
+        setLoading(false);
+        return;
       }
 
-      if (!connector) connector = connectors[0];
-      
-      console.log('Selected connector:', connector?.id, connector?.name);
-
-      // 2. Connect
       let walletAddr = address;
-      
-      // If already connected to a different connector, or not connected at all
-      if (!isConnected || (connector && connector.id !== 'injected' && isConnected)) {
-        try {
-          console.log('Attempting to connect via connectAsync...');
-          const connectResult = await connectAsync({ connector });
-          console.log('Connect result:', connectResult);
+
+      try {
+        if (isConnected) {
+          try { await disconnect(); } catch (_) {}
+        }
+        const connectResult = await connectAsync({ connector });
+        // @ts-ignore
+        walletAddr = connectResult.accounts?.[0] || connectResult.account;
+      } catch (error: any) {
+        if (error.name === 'ConnectorAlreadyConnectedError') {
+          const accounts = await connector.getAccounts();
           // @ts-ignore
-          walletAddr = connectResult.accounts[0];
-        } catch (error: any) {
-          if (error.name === 'ConnectorAlreadyConnectedError') {
-            console.log('Connector already connected, fetching accounts...');
-            const accounts = await connector.getAccounts();
-            // @ts-ignore
-            walletAddr = accounts[0];
-          } else {
-            throw error;
-          }
+          walletAddr = accounts[0];
+        } else {
+          throw error;
         }
       }
 
       console.log('Wallet address determined:', walletAddr);
-      if (!walletAddr) throw new Error('Could not determine wallet address');
+      if (!walletAddr) throw new Error('Could not determine wallet address. Please try again.');
 
-      // 3. Authenticate with backend
+      // Authenticate with backend
       console.log('Authenticating with backend...');
       const connectRes = await apiFetch(`/api/auth/login/wallet`, {
         method: 'POST',
@@ -179,11 +188,11 @@ export default function LoginPage() {
 
       if (!connectRes) throw new Error('Could not connect to authentication server');
       const authData = await connectRes.json();
-      
+
       if (!connectRes.ok) {
         const errStr = (authData.error || authData.message || '').toLowerCase();
         const isNotFound = connectRes.status === 401 || errStr.includes('no account found') || errStr.includes('not found') || errStr.includes('sign up first');
-        
+
         if (isNotFound) {
           setUnregisteredAddr(walletAddr);
           setShowNotFoundModal(true);
@@ -192,8 +201,11 @@ export default function LoginPage() {
         throw new Error(authData.error || authData.message || 'Authentication failed');
       }
 
-      // 4. Store JWT
-      const { token, user } = authData.data;
+      const token = authData.token || authData.data?.token;
+      const user = authData.user || authData.data?.user;
+
+      if (!token || !user) throw new Error('Invalid authentication response from server');
+
       console.log('Login successful, storing credentials');
       localStorage.setItem('groovely_token', token);
       localStorage.setItem('grooveli_token', token);
@@ -204,7 +216,6 @@ export default function LoginPage() {
       localStorage.setItem('groovely_role', user.role ?? '');
       localStorage.setItem('grooveli_role', user.role ?? '');
 
-      // Redirect based on query parameter or user role
       const searchParams = new URLSearchParams(window.location.search);
       const redirectParam = searchParams.get('redirect');
 

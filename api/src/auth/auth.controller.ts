@@ -44,16 +44,25 @@ export class AuthController {
     const { walletAddress, role } = body;
     const existingUser = await this.authService.findUserByWallet(walletAddress);
     if (existingUser) {
-      throw new ConflictException(
-        'An account with this wallet already exists. Please login instead.',
-      );
+      const loginResult = await this.authService.walletAuth(walletAddress, existingUser.role);
+      return {
+        success: true,
+        token: loginResult.token,
+        userId: String(loginResult.user.id),
+        isNewUser: false,
+        user: loginResult.user,
+        data: {
+          token: loginResult.token,
+          user: loginResult.user,
+        },
+      };
     }
     const result = await this.authService.walletAuth(walletAddress, role);
     return {
       success: true,
       token: result.token,
       userId: String(result.user.id),
-      isNewUser: result.isNewUser,
+      isNewUser: true,
       user: result.user,
       data: {
         token: result.token,
@@ -68,16 +77,25 @@ export class AuthController {
     const { email, role, walletAddress } = body;
     const existingUser = await this.authService.findUserByEmail(email);
     if (existingUser) {
-      throw new ConflictException(
-        'An account with this email already exists. Please login instead.',
-      );
+      const loginResult = await this.authService.googleAuth(email, existingUser.role, walletAddress);
+      return {
+        success: true,
+        token: loginResult.token,
+        userId: String(loginResult.user.id),
+        isNewUser: false,
+        user: loginResult.user,
+        data: {
+          token: loginResult.token,
+          user: loginResult.user,
+        },
+      };
     }
     const result = await this.authService.googleAuth(email, role, walletAddress);
     return {
       success: true,
       token: result.token,
       userId: String(result.user.id),
-      isNewUser: result.isNewUser,
+      isNewUser: true,
       user: result.user,
       data: {
         token: result.token,
@@ -101,7 +119,7 @@ export class AuthController {
       success: true,
       token: result.token,
       userId: String(result.user.id),
-      isNewUser: result.isNewUser,
+      isNewUser: false,
       user: result.user,
       data: {
         token: result.token,
@@ -125,7 +143,7 @@ export class AuthController {
       success: true,
       token: result.token,
       userId: String(result.user.id),
-      isNewUser: result.isNewUser,
+      isNewUser: false,
       user: result.user,
       data: {
         token: result.token,

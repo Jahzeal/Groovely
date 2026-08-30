@@ -22,7 +22,8 @@ import {
   UserCheck
 } from 'lucide-react';
 import { handleLogout, apiFetch } from '@/lib/api';
-import { useLogout } from '@privy-io/react-auth';
+import { useLogout, usePrivy } from '@privy-io/react-auth';
+import { useAccount } from 'wagmi';
 
 interface NavItemProps {
   icon: React.ElementType;
@@ -72,7 +73,8 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
   const [mounted, setMounted] = useState(false);
   const [token, setToken] = React.useState<string | null>(null);
   const [role, setRole] = React.useState<'creator' | 'fan'>(initialRole || 'creator');
-  const { logout } = useLogout();
+  const { logout, authenticated, ready: privyReady } = usePrivy();
+  const { isConnected: wagmiConnected, address: wagmiAddress } = useAccount();
 
   const [inviteCount, setInviteCount] = useState(0);
 
@@ -95,7 +97,7 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
         setRole(storedRole);
       }
     }
-  }, [initialRole]);
+  }, [initialRole, authenticated, wagmiConnected]);
 
   useEffect(() => {
     if (!token) return;
@@ -125,12 +127,14 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
 
   const isPublicRoute = pathname?.startsWith('/marketplace') || pathname?.startsWith('/explore') || pathname?.includes('/login') || pathname?.includes('/onboarding') || pathname === '/';
 
+  const isLoggedIn = Boolean(token || (privyReady && authenticated) || (wagmiConnected && !!wagmiAddress));
+
   useEffect(() => {
-    if (mounted && !token && !isPublicRoute) {
-      // If we're in the dashboard and there's no token, redirect to login
+    if (mounted && !isLoggedIn && !isPublicRoute) {
+      // If we're in the dashboard and there's no token/auth, redirect to login
       router.push('/login');
     }
-  }, [pathname, router, token, isPublicRoute, mounted]);
+  }, [pathname, router, isLoggedIn, isPublicRoute, mounted]);
 
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
@@ -151,7 +155,7 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
   }, [pathname]);
 
   if (!mounted) return null;
-  if (!token && isPublicRoute) {
+  if (!isLoggedIn && isPublicRoute) {
     return null;
   }
 
