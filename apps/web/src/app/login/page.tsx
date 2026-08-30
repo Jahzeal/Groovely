@@ -164,15 +164,28 @@ export default function LoginPage() {
         }
         const connectResult = await connectAsync({ connector });
         // @ts-ignore
-        walletAddr = connectResult.accounts?.[0] || connectResult.account;
+        walletAddr = connectResult.accounts?.[0] || connectResult.account || (await connector.getAccounts?.())?.[0];
       } catch (error: any) {
-        if (error.name === 'ConnectorAlreadyConnectedError') {
+        if (error.name === 'ConnectorAlreadyConnectedError' || error.message?.includes('already connected')) {
           const accounts = await connector.getAccounts();
           // @ts-ignore
           walletAddr = accounts[0];
         } else {
           throw error;
         }
+      }
+
+      if (!walletAddr) {
+        // Fallback retry: wait 300ms for wallet extension state to settle and query connector accounts
+        await new Promise(resolve => setTimeout(resolve, 300));
+        try {
+          const accounts = await connector.getAccounts();
+          walletAddr = accounts?.[0];
+        } catch (_) {}
+      }
+
+      if (!walletAddr) {
+        walletAddr = address;
       }
 
       console.log('Wallet address determined:', walletAddr);

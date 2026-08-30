@@ -40,8 +40,60 @@ export const MarketTopBar = () => {
             setWalletAddress(payload.wallet);
           }
         } catch {}
-      } else if (privyAuthenticated && user?.wallet?.address) {
-        setWalletAddress(user.wallet.address);
+      } else if (privyAuthenticated && user) {
+        // Automatically sync backend authentication to retrieve user role & JWT token
+        const syncBackendAuth = async () => {
+          const userEmail = user.google?.email || user.email?.address;
+          const walletAddr = user.wallet?.address;
+          let res: any = null;
+
+          if (userEmail) {
+            res = await apiFetch('/api/auth/login/google', {
+              method: 'POST',
+              body: JSON.stringify({ email: userEmail, walletAddress: walletAddr }),
+              skipAuthRedirect: true,
+            });
+            if (!res || !res.ok) {
+              res = await apiFetch('/api/auth/signup/google', {
+                method: 'POST',
+                body: JSON.stringify({ email: userEmail, role: 'fan', walletAddress: walletAddr }),
+                skipAuthRedirect: true,
+              });
+            }
+          } else if (walletAddr) {
+            res = await apiFetch('/api/auth/login/wallet', {
+              method: 'POST',
+              body: JSON.stringify({ walletAddress: walletAddr }),
+              skipAuthRedirect: true,
+            });
+          }
+
+          if (res && res.ok) {
+            const data = await res.json();
+            const authToken = data.token || data.data?.token;
+            const authUser = data.user || data.data?.user;
+            if (authToken && authUser) {
+              localStorage.setItem('groovely_token', authToken);
+              localStorage.setItem('grooveli_token', authToken);
+              localStorage.setItem('groovely_user_id', String(authUser.id));
+              localStorage.setItem('grooveli_user_id', String(authUser.id));
+              localStorage.setItem('groovely_role', authUser.role || 'fan');
+              localStorage.setItem('grooveli_role', authUser.role || 'fan');
+              if (authUser.wallet) {
+                localStorage.setItem('groovely_wallet', authUser.wallet);
+                localStorage.setItem('grooveli_wallet', authUser.wallet);
+                setWalletAddress(authUser.wallet);
+              }
+              setRole(authUser.role);
+              setIsAuthenticated(true);
+            }
+          }
+        };
+
+        if (user.wallet?.address) {
+          setWalletAddress(user.wallet.address);
+        }
+        syncBackendAuth();
       } else {
         setIsAuthenticated(false);
         setWalletAddress(null);

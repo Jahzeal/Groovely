@@ -72,8 +72,8 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [token, setToken] = React.useState<string | null>(null);
-  const [role, setRole] = React.useState<'creator' | 'fan'>(initialRole || 'creator');
-  const { logout, authenticated, ready: privyReady } = usePrivy();
+  const [role, setRole] = React.useState<'creator' | 'fan'>(initialRole || 'fan');
+  const { logout, authenticated, ready: privyReady, user } = usePrivy();
   const { isConnected: wagmiConnected, address: wagmiAddress } = useAccount();
 
   const [inviteCount, setInviteCount] = useState(0);
@@ -95,7 +95,29 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
       }
       if (storedRole === 'fan' || storedRole === 'creator') {
         setRole(storedRole);
+      } else {
+        setRole('fan');
       }
+    }
+
+    // Fetch user profile from backend to ensure role is 100% accurate
+    const syncProfileRole = async () => {
+      try {
+        const res = await apiFetch('/api/users/me', { skipAuthRedirect: true });
+        if (res && res.ok) {
+          const data = await res.json();
+          const backendRole = data.user?.role || data.data?.role || data.role;
+          if (backendRole === 'fan' || backendRole === 'creator') {
+            setRole(backendRole);
+            localStorage.setItem('groovely_role', backendRole);
+            localStorage.setItem('grooveli_role', backendRole);
+          }
+        }
+      } catch (_) {}
+    };
+
+    if (activeToken || authenticated) {
+      syncProfileRole();
     }
   }, [initialRole, authenticated, wagmiConnected]);
 
