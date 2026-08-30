@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { handleLogout, apiFetch } from '@/lib/api';
 import { useLogout, usePrivy } from '@privy-io/react-auth';
-import { useAccount } from 'wagmi';
+import { useAccount, useDisconnect } from 'wagmi';
 
 interface NavItemProps {
   icon: React.ElementType;
@@ -75,6 +75,7 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
   const [role, setRole] = React.useState<'creator' | 'fan'>(initialRole || 'fan');
   const { logout, authenticated, ready: privyReady, user } = usePrivy();
   const { isConnected: wagmiConnected, address: wagmiAddress } = useAccount();
+  const { disconnect: wagmiDisconnect } = useDisconnect();
 
   const [inviteCount, setInviteCount] = useState(0);
 
@@ -143,7 +144,8 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
   const isDashboard = !isMarket && (activePage === 'dashboard' || pathname === '/dashboard');
 
   const handleSignOut = async () => {
-    await logout();   // Clear Privy session so wallet doesn't auto-reconnect
+    try { await logout(); } catch (_) {}
+    try { await wagmiDisconnect(); } catch (_) {}
     handleLogout();   // Clear app tokens and redirect to /login
   };
 

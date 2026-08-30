@@ -3,7 +3,7 @@ import { Search, ChevronDown, Bell, ShoppingCart, Copy, LogOut, User, Settings, 
 import { useCart } from './CartContext';
 import { handleLogout, apiFetch } from '@/lib/api';
 import { useLogout, usePrivy } from '@privy-io/react-auth';
-import { useAccount, useBalance, useReadContract } from 'wagmi';
+import { useAccount, useBalance, useReadContract, useDisconnect } from 'wagmi';
 import { USDC_ADDRESS } from '@/lib/contracts';
 import { formatUnits } from 'viem';
 import Link from 'next/link';
@@ -17,6 +17,7 @@ export const MarketTopBar = () => {
   const { logout } = useLogout();
   const { user, authenticated: privyAuthenticated, login } = usePrivy();
   const { address: wagmiAddress, isConnected: wagmiConnected } = useAccount();
+  const { disconnect: wagmiDisconnect } = useDisconnect();
   const [searchQuery, setSearchQuery] = useState('');
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
@@ -360,7 +361,14 @@ export const MarketTopBar = () => {
                     <div className="h-px bg-white/5 mx-5 my-1" />
 
                     <button
-                      onClick={async () => { await logout(); handleLogout(); }}
+                      onClick={async () => {
+                        setDropdownOpen(false);
+                        try { await logout(); } catch (_) {}
+                        try { await wagmiDisconnect(); } catch (_) {}
+                        setIsAuthenticated(false);
+                        setWalletAddress(null);
+                        handleLogout();
+                      }}
                       className="w-full flex items-center gap-3 px-5 py-3 text-sm font-bold text-red-500 hover:bg-red-500/10 transition-all"
                     >
                       <LogOut size={16} />
