@@ -459,6 +459,8 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   const audioContextRef = useRef<AudioContext | null>(null);
   const animFrameRef = useRef<number | null>(null);
 
+  const voiceAudioElementRef = useRef<HTMLAudioElement | null>(null);
+
   function handleVoiceStreamReceived(data: { userId: number; audioData: string }) {
     if (!data.audioData) return;
     try {
@@ -481,10 +483,13 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
           source.start(0);
         })
         .catch(() => {
-          // Fallback to HTMLAudioElement
+          // Re-use single HTMLAudioElement ref to avoid WebMediaPlayer leaks (crbug.com/1144736)
           try {
-            const fallbackAudio = new Audio(data.audioData);
-            fallbackAudio.volume = 1.0;
+            if (!voiceAudioElementRef.current) {
+              voiceAudioElementRef.current = new Audio();
+            }
+            const fallbackAudio = voiceAudioElementRef.current;
+            fallbackAudio.src = data.audioData;
             fallbackAudio.play().catch(() => {});
           } catch (fErr) {}
         });
