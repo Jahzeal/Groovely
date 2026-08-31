@@ -1,9 +1,9 @@
 import toast from 'react-hot-toast';
 
 const rawEnvUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
-export const API_BASE = (rawEnvUrl && rawEnvUrl.length > 0 && !rawEnvUrl.includes('groovelinetwork.com'))
-  ? rawEnvUrl
-  : 'https://groovely-ttyi.onrender.com';
+export const API_BASE = typeof window !== 'undefined'
+  ? (rawEnvUrl && !rawEnvUrl.includes('groovelinetwork.com') ? rawEnvUrl : '')
+  : (rawEnvUrl || 'https://groovely-ttyi.onrender.com');
 
 export async function apiFetch(endpoint: string, options: RequestInit & { skipAuthRedirect?: boolean } = {}) {
   const token = typeof window !== 'undefined'
@@ -147,13 +147,22 @@ export function handleLogout() {
   }
 }
 
-export function resolveIpfsUrl(url: string | undefined): string {
-  if (!url) return '';
-  if (url.startsWith('ipfs://')) {
-    const cid = url.replace('ipfs://', '');
-    // Filter out mock/invalid CIDs (real CID v0 is 46 chars, CID v1 is 59 chars)
-    if (cid.length < 40) return '';
+export function resolveIpfsUrl(url: string | undefined | null): string {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+
+  if (trimmed.startsWith('ipfs://')) {
+    const cid = trimmed.replace('ipfs://', '').trim();
+    if (!cid) return '';
     return `https://gateway.pinata.cloud/ipfs/${cid}`;
   }
-  return url;
+
+  if (trimmed.startsWith('ipfs/')) {
+    const cid = trimmed.replace('ipfs/', '').trim();
+    if (!cid) return '';
+    return `https://gateway.pinata.cloud/ipfs/${cid}`;
+  }
+
+  return trimmed;
 }

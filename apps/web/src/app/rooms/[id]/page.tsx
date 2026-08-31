@@ -8,7 +8,7 @@ import {
   Users, MessageSquare, Radio, Share2, Sparkles, Heart, Flame, Hand, 
   ArrowLeft, Check, Copy, ChevronDown, Plus, Upload, Loader2
 } from 'lucide-react';
-import { apiFetch, cachedApiFetch } from '@/lib/api';
+import { apiFetch, cachedApiFetch, resolveIpfsUrl } from '@/lib/api';
 import { useRoomSocket } from '@/hooks/useRoomSocket';
 import toast from 'react-hot-toast';
 
@@ -17,8 +17,13 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   const roomId = resolvedParams?.id;
   const router = useRouter();
 
-  // Current logged in user ID from localStorage
-  const currentUserId = typeof window !== 'undefined' ? Number(localStorage.getItem('groovely_user_id') || localStorage.getItem('grooveli_user_id') || 1) : 1;
+  // Current logged in user ID from localStorage (null if unauthenticated)
+  const currentUserId = typeof window !== 'undefined'
+    ? (() => {
+        const stored = localStorage.getItem('groovely_user_id') || localStorage.getItem('grooveli_user_id');
+        return stored ? Number(stored) : null;
+      })()
+    : null;
 
   const [room, setRoom] = useState<any>(null);
   const [playlist, setPlaylist] = useState<any[]>([]);
@@ -155,8 +160,10 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     }
   }, []);
 
-  // WebSockets Hook Integration
-  const socketRole = (userRole === 'creator' || (currentUserId && room?.host_id && currentUserId === room.host_id)) ? 'host' : 'listener';
+  // WebSockets Hook Integration & Room Host Authorization
+  const isRoomHost = Boolean(currentUserId && room?.host_id && String(currentUserId) === String(room.host_id));
+  const isHostOrCreator = isRoomHost;
+  const socketRole = isRoomHost ? 'host' : 'listener';
   const {
     isConnected: isSocketConnected,
     participants,
@@ -167,7 +174,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     emitPlaybackControl,
     emitSendMessage,
     emitRaiseHand,
-  } = useRoomSocket(roomId, currentUserId, socketRole);
+  } = useRoomSocket(roomId, currentUserId ?? undefined, socketRole);
 
   // Live Player State
   const [isPlaying, setIsPlaying] = useState(false);
@@ -282,7 +289,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   // Fetch fresh Creator & Library Tracks whenever Playlist modal opens (Creator Only)
   useEffect(() => {
     if (!isPlaylistModalOpen) return;
-    if (userRole !== 'creator' && currentUserId !== room?.host_id) return;
+    if (!isHostOrCreator) return;
 
     async function loadFreshLibraryTracks() {
       try {
@@ -328,12 +335,65 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     loadFreshLibraryTracks();
   }, [isPlaylistModalOpen]);
 
-  // Sync WebSockets playback state changes to local player
+  // Sync WebSockets playback state changes & track switching to local player for all room listeners
   useEffect(() => {
-    if (playbackState) {
-      setIsPlaying(playbackState.state === 'playing');
-      if (playbackState.positionMs !== undefined) {
-        setCurrentTimeMs(playbackState.positionMs);
+    if (!playbackState) return;
+
+    const targetState = playbackState.state === 'playing';
+    setIsPlaying(targetState);
+
+    if (playbackState.positionMs !== undefined && Math.abs(currentTimeMs - playbackState.positionMs) > 2000) {
+      setCurrentTimeMs(playbackState.positionMs);
+      if (audioRef.current && !isNaN(playbackState.positionMs)) {
+        audioRef.current.currentTime = playbackState.positionMs / 1000;
+      }
+    }
+
+    const newTrackId = playbackState.current_track_id || (playbackState as any).trackId;
+    if (newTrackId && String(currentTrack?.id) !== String(newTrackId)) {
+      const matchInLibrary = libraryTracks.find((t: any) => String(t.id || t.track_id) === String(newTrackId));
+      const matchInPlaylist = playlist.find((t: any) => String(t.id || t.track_id) === String(newTrackId));
+      const targetTrack = matchInLibrary || matchInPlaylist;
+
+      if (targetTrack) {
+        setCurrentTrack(targetTrack);
+        if (audioRef.current) {
+          const audioSrc = resolveIpfsUrl(targetTrack.audio_url || targetTrack.url);
+          if (audioSrc) {
+            audioRef.current.src = audioSrc;
+            if (targetState) {
+              audioRef.current.play().catch((e) => console.warn('Audio play sync error:', e));
+            }
+          }
+        }
+      } else {
+        // Fetch track details from backend API
+        apiFetch(`/api/tracks/${newTrackId}`, { skipAuthRedirect: true })
+          .then(async (res) => {
+            if (res && res.ok) {
+              const body = await res.json();
+              const fetched = body?.data?.track || body?.data || body;
+              if (fetched && (fetched.id || fetched.track_id)) {
+                setCurrentTrack(fetched);
+                if (audioRef.current) {
+                  const audioSrc = resolveIpfsUrl(fetched.audio_url || fetched.url);
+                  if (audioSrc) {
+                    audioRef.current.src = audioSrc;
+                    if (targetState) {
+                      audioRef.current.play().catch((e) => console.warn('Audio play sync error:', e));
+                    }
+                  }
+                }
+              }
+            }
+          })
+          .catch((err) => console.warn('Could not sync track details:', err));
+      }
+    } else if (audioRef.current) {
+      if (targetState && audioRef.current.paused) {
+        audioRef.current.play().catch((e) => console.warn('Audio play sync error:', e));
+      } else if (!targetState && !audioRef.current.paused) {
+        audioRef.current.pause();
       }
     }
   }, [playbackState]);
@@ -375,6 +435,12 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   const animFrameRef = useRef<number | null>(null);
 
   const toggleMicrophone = async () => {
+    const isStageUser = isHostOrCreator || stageSpeakers.some(s => String(s.user_id) === String(currentUserId));
+    if (!isStageUser) {
+      toast.error('Only host, co-hosts, and stage speakers can use the microphone');
+      return;
+    }
+
     if (isMicActive) {
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(track => track.stop());
@@ -419,7 +485,6 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   };
 
   const handleEndRoom = async () => {
-    const isHostOrCreator = userRole === 'creator' || currentUserId === room?.host_id;
     if (isHostOrCreator) {
       if (confirm('Are you sure you want to end this live room for all participants?')) {
         try {
@@ -444,10 +509,17 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   };
 
   // Derive real stage speakers and listeners from WebSockets/DB participants
-  const stageSpeakers = participants.filter(p => p.role === 'host' || p.role === 'cohost' || p.role === 'speaker');
-  const roomListeners = participants.filter(p => p.role === 'listener');
+  const normalizedParticipants = (participants || []).map(p => {
+    if (room?.host_id && String(p.user_id) === String(room.host_id)) {
+      return { ...p, role: 'host' as const, display_name: p.display_name || room?.host_name };
+    }
+    return p;
+  });
 
-  // Fallback to room host if participants state is initializing
+  const stageSpeakers = normalizedParticipants.filter(p => p.role === 'host' || p.role === 'cohost' || p.role === 'speaker');
+  const roomListeners = normalizedParticipants.filter(p => p.role === 'listener' && String(p.user_id) !== String(room?.host_id));
+
+  // Fallback to room host if stage speakers state is initializing
   const displaySpeakers = stageSpeakers.length > 0 ? stageSpeakers : [
     {
       user_id: room?.host_id || 1,
@@ -460,6 +532,10 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   ];
 
   const handleMuteAll = () => {
+    if (!isHostOrCreator) {
+      toast.error('Only the room host can mute all speakers');
+      return;
+    }
     if (isMicActive) {
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(track => track.stop());
@@ -545,7 +621,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
             className="px-5 py-2.5 bg-[#FF0044] hover:bg-[#d60039] text-white font-bold text-xs rounded-xl transition-all shadow-[0_0_20px_rgba(255,0,68,0.4)] flex items-center gap-1.5 cursor-pointer"
           >
             <PhoneOff size={15} />
-            <span>{userRole === 'creator' || currentUserId === room?.host_id ? 'End Room' : 'Leave Room'}</span>
+            <span>{isHostOrCreator ? 'End Room' : 'Leave Room'}</span>
           </button>
         </div>
       </header>
@@ -557,20 +633,36 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
         <div className="lg:col-span-4 flex flex-col items-center space-y-6 bg-[#0F172A] p-6 rounded-3xl border border-[#232B3E]">
           
           {/* Rectangle 6: Album Artwork (320x320px) */}
-          <div className="relative group w-full max-w-[320px] aspect-square rounded-2xl overflow-hidden border border-[#232B3E] shadow-xl">
+          <div className="relative group w-full max-w-[320px] aspect-square rounded-2xl overflow-hidden border border-[#232B3E] shadow-xl bg-[#192134]">
             <img
               src={
-                (room?.cover_url && room.cover_url.trim() !== '') ? room.cover_url : 
-                (room?.host_avatar && room.host_avatar.trim() !== '') ? room.host_avatar : 
-                `https://api.dicebear.com/7.x/avataaars/svg?seed=${room?.host_name || room?.host_username || 'Creator'}`
+                resolveIpfsUrl(
+                  currentTrack?.cover_url ||
+                  currentTrack?.cover_image ||
+                  currentTrack?.image ||
+                  room?.current_track_cover ||
+                  room?.cover_url ||
+                  room?.cover_image ||
+                  room?.image_url ||
+                  room?.cover ||
+                  room?.host_avatar ||
+                  room?.avatar_url
+                ) || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(room?.host_name || room?.host_username || room?.title || 'Creator')}`
               }
               alt="Room Cover Artwork"
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              onError={(e) => {
+                const target = e.currentTarget;
+                const fallback = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(room?.host_name || room?.host_username || room?.title || 'Creator')}`;
+                if (target.src !== fallback) {
+                  target.src = fallback;
+                }
+              }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-transparent to-transparent opacity-80" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-transparent to-transparent opacity-80 pointer-events-none" />
             
             {/* Playing Badge */}
-            <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-bold uppercase tracking-widest text-[#00FF85] flex items-center gap-1.5">
+            <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-bold uppercase tracking-widest text-[#00FF85] flex items-center gap-1.5 z-10">
               <span className="w-2 h-2 rounded-full bg-[#00FF85] animate-ping" />
               <span>{isPlaying ? 'NOW STREAMING' : 'AUDIO PAUSED'}</span>
             </div>
@@ -590,7 +682,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
           <div className="flex items-center justify-center gap-6 pt-2">
             <button 
               onClick={() => {
-                if (userRole !== 'creator' && currentUserId !== room?.host_id) {
+                if (!isHostOrCreator) {
                   toast.error('Only room creators can play or pause the live stream sound');
                   return;
                 }
@@ -603,7 +695,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
                 emitPlaybackControl(nextState ? 'play' : 'pause', currentTrack?.id || room?.current_track_id, currentTimeMs);
               }}
               className={`w-16 h-16 rounded-full text-white flex items-center justify-center transition-all shadow-[0_0_25px_rgba(138,43,226,0.6)] cursor-pointer hover:scale-105 active:scale-95 ${
-                userRole === 'creator' || currentUserId === room?.host_id ? 'bg-[#8A2BE2] hover:bg-[#7823c9]' : 'bg-zinc-700/60 opacity-60 cursor-not-allowed'
+                isHostOrCreator ? 'bg-[#8A2BE2] hover:bg-[#7823c9]' : 'bg-zinc-700/60 opacity-60 cursor-not-allowed'
               }`}
             >
               {isPlaying ? <Pause size={28} fill="currentColor" /> : <Play size={28} fill="currentColor" className="ml-1" />}
@@ -640,7 +732,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
           </div>
 
           {/* Additional Player Actions (Upload, Playlist) - Creator Only */}
-          {(userRole === 'creator' || currentUserId === room?.host_id) && (
+          {isHostOrCreator && (
             <div className="flex items-center justify-between w-full max-w-[320px] pt-4 border-t border-[#232B3E] text-[#CACACA]">
               <input 
                 type="file" 
@@ -671,6 +763,34 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
             </div>
           )}
 
+          {/* Fan Action Toolbar (Raise Hand, Tip Creator) - Fan Only */}
+          {!isHostOrCreator && (
+            <div className="flex items-center justify-between w-full max-w-[320px] pt-4 border-t border-[#232B3E] text-[#CACACA]">
+              <button
+                onClick={() => {
+                  if (typeof emitRaiseHand === 'function') {
+                    emitRaiseHand();
+                    toast.success('Hand raised - Host notified!');
+                  }
+                }}
+                className="bg-[#192134] hover:bg-[#8A2BE2]/20 border border-[#2D3548] hover:border-[#8A2BE2] text-white px-4 py-2 rounded-xl flex items-center gap-2 text-xs font-bold transition-all cursor-pointer shadow-md"
+              >
+                <Hand size={15} className="text-[#00FF85]" />
+                <span>Raise Hand</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  toast.success(`Support ${room?.host_name || 'Creator'} with a Tip!`, { icon: '💜' });
+                }}
+                className="bg-gradient-to-r from-[#8A2BE2] to-[#FF0044] hover:opacity-90 text-white px-4 py-2 rounded-xl flex items-center gap-2 text-xs font-bold transition-all cursor-pointer shadow-[0_0_15px_rgba(138,43,226,0.4)]"
+              >
+                <Sparkles size={15} />
+                <span>Tip Host</span>
+              </button>
+            </div>
+          )}
+
         </div>
 
         {/* ── CENTER COLUMN (4 Cols): ON STAGE & LIVE LISTENERS GRID ── */}
@@ -682,7 +802,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
               <h3 className="text-xs font-bold uppercase tracking-widest text-[#CACACA]">
                 ON STAGE
               </h3>
-              {(userRole === 'creator' || currentUserId === room?.host_id) && (
+              {isHostOrCreator && (
                 <button 
                   onClick={handleMuteAll}
                   className="flex items-center gap-1.5 text-xs font-bold text-accent-purple hover:underline cursor-pointer"
@@ -723,8 +843,18 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
                           <span className="w-1.5 h-1.5 rounded-full bg-[#00FF85] animate-ping" />
                         )}
                       </p>
-                      <span className="text-[10px] font-bold uppercase text-accent-purple bg-[#8A2BE2]/10 px-2 py-0.5 rounded-full border border-[#8A2BE2]/20">
-                        {speaker.role || 'Host'}
+                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
+                        speaker.role === 'host' || String(speaker.user_id) === String(room?.host_id)
+                          ? 'text-[#8A2BE2] bg-[#8A2BE2]/10 border-[#8A2BE2]/30'
+                          : (speaker.user_role === 'creator' || speaker.role === 'speaker' || speaker.role === 'cohost')
+                          ? 'text-cyan-400 bg-cyan-400/10 border-cyan-400/30'
+                          : 'text-zinc-400 bg-zinc-800 border-zinc-700'
+                      }`}>
+                        {speaker.role === 'host' || String(speaker.user_id) === String(room?.host_id)
+                          ? 'HOST'
+                          : (speaker.user_role === 'creator' || speaker.role === 'speaker')
+                          ? 'CREATOR'
+                          : 'FAN'}
                       </span>
                     </div>
                   </div>
@@ -762,8 +892,15 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform"
                       />
                     </div>
-                    <span className="text-xs font-bold text-white truncate max-w-[60px] text-center">
+                    <span className="text-xs font-bold text-white truncate max-w-[70px] text-center">
                       {listener.display_name || listener.username}
+                    </span>
+                    <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${
+                      listener.user_role === 'creator'
+                        ? 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20'
+                        : 'text-zinc-400 bg-zinc-800/80 border-zinc-700/50'
+                    }`}>
+                      {listener.user_role === 'creator' ? 'CREATOR' : 'FAN'}
                     </span>
                   </div>
                 ))
@@ -891,7 +1028,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       </div>
 
       {/* ── ROOM PLAYLIST / LIBRARY TRACK SELECTOR MODAL (Creator Only) ── */}
-      {isPlaylistModalOpen && (userRole === 'creator' || currentUserId === room?.host_id) && (
+      {isPlaylistModalOpen && isHostOrCreator && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0F172A] border border-[#232B3E] rounded-3xl p-6 sm:p-8 max-w-xl w-full space-y-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-[#2D3548] pb-4">

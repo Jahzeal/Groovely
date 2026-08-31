@@ -207,7 +207,7 @@ export class ListeningRoomService {
     if (roomRes.rows.length === 0) throw new NotFoundException('Room not found');
 
     const room = roomRes.rows[0];
-    const isHost = room.host_id === userId;
+    const isHost = Number(room.host_id) === Number(userId);
     const initialRole = isHost ? 'host' : (role || 'listener');
 
     await this.db.query(
@@ -244,7 +244,7 @@ export class ListeningRoomService {
     );
     const userRole = partRes.rows[0]?.role;
 
-    if (room.host_id !== userId && userRole !== 'host' && userRole !== 'cohost') {
+    if (Number(room.host_id) !== Number(userId) && userRole !== 'host' && userRole !== 'cohost') {
       throw new ForbiddenException('Only host and co-hosts can control playback');
     }
 

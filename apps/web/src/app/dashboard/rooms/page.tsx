@@ -18,12 +18,14 @@ import {
   MessageSquare,
   ListMusic
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { TopBar } from '@/components/dashboard/TopBar';
 
 type Step = 'setup' | 'confirm' | 'live' | 'room';
 
 export default function ListeningRoomPage() {
+  const router = useRouter();
   const [step, setStep] = useState<Step>('setup');
   const [roomData, setRoomData] = useState({
     title: '',
@@ -190,7 +192,7 @@ export default function ListeningRoomPage() {
       </h2>
 
       <button 
-        onClick={() => setStep('room')}
+        onClick={() => router.push('/rooms')}
         className="w-full max-w-sm bg-accent-purple hover:bg-opacity-90 text-white font-black py-6 rounded-2xl text-xl uppercase tracking-widest shadow-[0_0_50px_rgba(157,0,255,0.5)] transform hover:scale-105 active:scale-95 transition-all"
       >
         Visit Room

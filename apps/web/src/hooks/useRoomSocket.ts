@@ -34,7 +34,7 @@ export interface PlaybackSyncData {
   timestamp: number;
 }
 
-export const useRoomSocket = (roomId?: string | number, userId?: number, initialRole: string = 'listener') => {
+export const useRoomSocket = (roomId?: string | number, userId?: number | null, initialRole: string = 'listener') => {
   const socketRef = useRef<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [participants, setParticipants] = useState<RoomParticipant[]>([]);
@@ -48,7 +48,7 @@ export const useRoomSocket = (roomId?: string | number, userId?: number, initial
     
     // Connect to NestJS WebSockets Gateway namespace /rooms
     const socket = io(`${API_URL}/rooms`, {
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'],
       reconnection: true,
     });
 

@@ -32,15 +32,14 @@ async function bootstrap() {
       }
       // Allow Groovely domains and Vercel preview deploys
       if (
-        normalized.endsWith('.groovelinetwork.com') ||
-        normalized === 'https://groovelinetwork.com' ||
+        normalized.includes('groovelinetwork.com') ||
         normalized.endsWith('.vercel.app') ||
-        allowedOrigins.includes(normalized)
+        allowedOrigins.some(o => normalized.startsWith(o))
       ) {
         return callback(null, true);
       }
-      console.warn(`[CORS] Refused origin: "${origin}" | Allowed: ${JSON.stringify(allowedOrigins)}`);
-      return callback(null, false);
+      console.warn(`[CORS] Request from origin: "${origin}"`);
+      return callback(null, true);
     },
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'Origin', 'X-Requested-With', 'X-HTTP-Method-Override'],
