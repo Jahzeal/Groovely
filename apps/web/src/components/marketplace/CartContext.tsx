@@ -147,10 +147,11 @@ export const useCart = () => {
   const context = useContext(CartContext);
   if (context === undefined) {
     return {
+      cartItems: [],
       items: [],
       isCartOpen: false,
       isPaymentSuccessOpen: false,
-      lastReceipt: null,
+      lastReceipt: undefined,
       totalPrice: 0,
       cartCount: 0,
       openCart: () => {},
