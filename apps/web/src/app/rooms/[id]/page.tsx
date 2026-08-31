@@ -293,6 +293,19 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     }
   ];
 
+  const handleMuteAll = () => {
+    if (isMicActive) {
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+        mediaStreamRef.current = null;
+      }
+      setIsMicActive(false);
+      setAudioLevel(0);
+    }
+    setParticipants(prev => prev.map(p => ({ ...p, is_muted: true })));
+    toast.success('Muted all stage speakers');
+  };
+
   return (
     <div className="min-h-screen bg-[#0F172A] text-white font-['Space_Grotesk',sans-serif] flex flex-col overflow-x-hidden select-none">
       
@@ -453,7 +466,10 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
               <h3 className="text-xs font-bold uppercase tracking-widest text-[#CACACA]">
                 ON STAGE
               </h3>
-              <button className="flex items-center gap-1.5 text-xs font-bold text-accent-purple hover:underline">
+              <button 
+                onClick={handleMuteAll}
+                className="flex items-center gap-1.5 text-xs font-bold text-accent-purple hover:underline cursor-pointer"
+              >
                 <MicOff size={14} />
                 <span>Mute All</span>
               </button>
@@ -656,6 +672,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
             </button>
           </form>
 
+        </div>
       </div>
 
       {/* ── ROOM PLAYLIST / LIBRARY TRACK SELECTOR MODAL ── */}
