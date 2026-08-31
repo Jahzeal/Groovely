@@ -25,6 +25,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   const [libraryTracks, setLibraryTracks] = useState<any[]>([]);
   const [currentTrack, setCurrentTrack] = useState<any>(null);
   const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
+  const [playlistSearchQuery, setPlaylistSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
 
   // Invite Modal & Search State
@@ -154,7 +155,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   } = useRoomSocket(roomId, currentUserId, 'host');
 
   // Live Player State
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [currentTimeMs, setCurrentTimeMs] = useState(0);
   const [durationMs, setDurationMs] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -607,16 +608,13 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
 
               {/* Add Co-Host Slot */}
               <div 
-                onClick={() => {
-                  toast.success('Invite link copied to clipboard!');
-                  navigator.clipboard.writeText(window.location.href);
-                }}
+                onClick={() => setIsInviteModalOpen(true)}
                 className="flex flex-col items-center gap-2 group cursor-pointer"
               >
-                <div className="w-16 h-16 rounded-full bg-[#192134] border border-dashed border-[#2D3548] group-hover:border-[#8A2BE2] flex items-center justify-center text-zinc-400 group-hover:text-accent-purple transition-colors">
+                <div className="w-16 h-16 rounded-full bg-[#192134] border border-dashed border-[#2D3548] group-hover:border-[#8A2BE2] flex items-center justify-center text-zinc-400 group-hover:text-accent-purple transition-colors shadow-[0_0_15px_rgba(138,43,226,0.2)]">
                   <Plus size={20} />
                 </div>
-                <span className="text-[10px] font-bold text-zinc-500">Invite</span>
+                <span className="text-[10px] font-bold text-zinc-500 group-hover:text-white transition-colors">Invite</span>
               </div>
             </div>
           </div>
@@ -801,45 +799,66 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
               </div>
             </div>
 
+            {/* Search Library Input */}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search tracks in your library..."
+                value={playlistSearchQuery}
+                onChange={(e) => setPlaylistSearchQuery(e.target.value)}
+                className="w-full bg-[#192134] border border-[#2D3548] focus:border-[#8A2BE2] rounded-2xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none transition-colors"
+              />
+            </div>
+
             {/* Track List */}
             <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1 custom-scrollbar">
-              {libraryTracks.length > 0 ? (
-                libraryTracks.map((track: any) => (
-                  <div
-                    key={track.id}
-                    onClick={() => {
-                      setCurrentTrack(track);
-                      setIsPlaying(true);
-                      if (audioRef.current && (track.audio_url || track.url)) {
-                        audioRef.current.src = track.audio_url || track.url;
-                        audioRef.current.play().catch(e => console.warn('Audio playback error:', e));
-                      }
-                      emitPlaybackControl('play', track.id, 0);
-                      setIsPlaylistModalOpen(false);
-                      toast.success(`Now streaming live: ${track.title}`);
-                    }}
-                    className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-4 cursor-pointer group ${currentTrack?.id === track.id ? 'bg-[#8A2BE2]/15 border-[#8A2BE2]' : 'bg-[#192134] border-[#2D3548] hover:border-[#8A2BE2]'}`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <img
-                        src={track.cover_url || track.image || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=300&q=80'}
-                        alt={track.title}
-                        className="w-12 h-12 rounded-xl object-cover border border-[#2D3548] shrink-0"
-                      />
-                      <div className="min-w-0">
-                        <p className="text-sm font-bold text-white group-hover:text-accent-purple truncate transition-colors">{track.title}</p>
-                        <p className="text-xs text-zinc-400 truncate">{track.artist_name || track.creator || 'Creator'}</p>
-                      </div>
-                    </div>
-
-                    <button
-                      className="px-4 py-2 bg-[#8A2BE2] hover:bg-[#7823c9] text-white text-xs font-bold rounded-xl transition-all shadow-[0_0_15px_rgba(138,43,226,0.4)] flex items-center gap-1.5 shrink-0 cursor-pointer"
+              {libraryTracks.filter((t: any) => {
+                const q = playlistSearchQuery.trim().toLowerCase();
+                if (!q) return true;
+                return (t.title || '').toLowerCase().includes(q) || (t.artist_name || t.creator || '').toLowerCase().includes(q);
+              }).length > 0 ? (
+                libraryTracks
+                  .filter((t: any) => {
+                    const q = playlistSearchQuery.trim().toLowerCase();
+                    if (!q) return true;
+                    return (t.title || '').toLowerCase().includes(q) || (t.artist_name || t.creator || '').toLowerCase().includes(q);
+                  })
+                  .map((track: any) => (
+                    <div
+                      key={track.id}
+                      onClick={() => {
+                        setCurrentTrack(track);
+                        setIsPlaying(true);
+                        if (audioRef.current && (track.audio_url || track.url)) {
+                          audioRef.current.src = track.audio_url || track.url;
+                          audioRef.current.play().catch(e => console.warn('Audio playback error:', e));
+                        }
+                        emitPlaybackControl('play', track.id, 0);
+                        setIsPlaylistModalOpen(false);
+                        toast.success(`Now streaming live: ${track.title}`);
+                      }}
+                      className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-4 cursor-pointer group ${currentTrack?.id === track.id ? 'bg-[#8A2BE2]/15 border-[#8A2BE2]' : 'bg-[#192134] border-[#2D3548] hover:border-[#8A2BE2]'}`}
                     >
-                      <Play size={14} fill="currentColor" />
-                      <span>Play in Room</span>
-                    </button>
-                  </div>
-                ))
+                      <div className="flex items-center gap-3 min-w-0">
+                        <img
+                          src={track.cover_url || track.image || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=300&q=80'}
+                          alt={track.title}
+                          className="w-12 h-12 rounded-xl object-cover border border-[#2D3548] shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-white group-hover:text-accent-purple truncate transition-colors">{track.title}</p>
+                          <p className="text-xs text-zinc-400 truncate">{track.artist_name || track.creator || 'Creator'}</p>
+                        </div>
+                      </div>
+
+                      <button
+                        className="px-4 py-2 bg-[#8A2BE2] hover:bg-[#7823c9] text-white text-xs font-bold rounded-xl transition-all shadow-[0_0_15px_rgba(138,43,226,0.4)] flex items-center gap-1.5 shrink-0 cursor-pointer"
+                      >
+                        <Play size={14} fill="currentColor" />
+                        <span>Play in Room</span>
+                      </button>
+                    </div>
+                  ))
               ) : (
                 <div className="text-center py-10 bg-[#192134] rounded-2xl border border-[#2D3548] p-6">
                   <ListMusic className="w-8 h-8 text-zinc-500 mx-auto mb-2" />
