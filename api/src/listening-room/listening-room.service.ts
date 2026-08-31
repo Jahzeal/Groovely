@@ -105,16 +105,16 @@ export class ListeningRoomService {
   async getRoomDetails(roomId: number) {
     const roomRes = await this.db.query(
       `SELECT r.*, 
-              u.display_name as host_name, 
-              u.username as host_username, 
-              u.avatar_url as host_avatar, 
+              COALESCE(u.display_name, 'Creator Host') as host_name, 
+              COALESCE(u.username, 'host') as host_username, 
+              COALESCE(u.avatar_url, 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80') as host_avatar, 
               u.wallet as host_wallet,
               t.title as current_track_title,
               t.cover_url as current_track_cover,
               t.audio_url as current_track_audio,
               t.artist_name as current_track_artist
        FROM listening_rooms r
-       JOIN users u ON r.host_id = u.id
+       LEFT JOIN users u ON r.host_id = u.id
        LEFT JOIN tracks t ON r.current_track_id = t.id
        WHERE r.id = $1`,
       [roomId]
@@ -129,20 +129,20 @@ export class ListeningRoomService {
     // Fetch active participants
     const participantsRes = await this.db.query(
       `SELECT p.*, 
-              u.display_name, 
-              u.username, 
+              COALESCE(u.display_name, 'Participant') as display_name, 
+              COALESCE(u.username, 'user') as username, 
               u.avatar_url, 
               u.wallet, 
               u.role as user_role
        FROM listening_room_participants p
-       JOIN users u ON p.user_id = u.id
+       LEFT JOIN users u ON p.user_id = u.id
        WHERE p.room_id = $1 AND p.left_at IS NULL
        ORDER BY CASE p.role 
          WHEN 'host' THEN 1 
          WHEN 'cohost' THEN 2 
          WHEN 'speaker' THEN 3 
          ELSE 4 
-       END, p.joined_at ASC`,
+       END ASC`,
       [roomId]
     );
 

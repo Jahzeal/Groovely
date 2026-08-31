@@ -159,14 +159,18 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
           }
         }
 
-        // Fetch User Library Tracks for Playlist Selector
-        const tracksRes = await cachedApiFetch('/api/tracks');
-        if (tracksRes?.data) {
-          const fetchedTracks = Array.isArray(tracksRes.data) ? tracksRes.data : (tracksRes.data.data || []);
-          setLibraryTracks(fetchedTracks);
-          if (!currentTrack && fetchedTracks.length > 0) {
-            setCurrentTrack(fetchedTracks[0]);
+        // Fetch User Library / Marketplace Tracks for Playlist Selector
+        try {
+          const tracksRes = await cachedApiFetch('/api/market/trending');
+          if (tracksRes?.data) {
+            const fetchedTracks = Array.isArray(tracksRes.data) ? tracksRes.data : (tracksRes.data.tracks || tracksRes.data.data || []);
+            setLibraryTracks(fetchedTracks);
+            if (!currentTrack && fetchedTracks.length > 0) {
+              setCurrentTrack(fetchedTracks[0]);
+            }
           }
+        } catch (tErr) {
+          console.warn('Could not fetch marketplace trending tracks:', tErr);
         }
       } catch (err) {
         console.error('Failed to load room details:', err);
