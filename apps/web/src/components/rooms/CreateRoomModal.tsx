@@ -171,7 +171,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
         title: title.trim(),
         description: description.trim(),
         genre,
-        cover_url: coverUrl || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=600&q=80',
+        cover_url: coverUrl || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80',
         room_type: roomType,
         max_listeners: hasListenerLimit ? Number(maxListeners) : 500,
         is_recorded: isRecorded,
@@ -220,7 +220,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
 
   // Sample playlist cover art for Review Step 2 (matching Figma spec 46x46px thumbnails)
   const sampleCovers = [
-    coverUrl || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=200&q=80',
+    coverUrl || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=200&q=80',
     'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=200&q=80',
     'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=200&q=80',
     'https://images.unsplash.com/photo-1478737270197-497851a1f29d?auto=format&fit=crop&w=200&q=80'
@@ -676,7 +676,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
                     realTracks.slice(0, 4).map((track, i) => (
                       <div key={track.id || i} className="w-[46px] h-[46px] rounded-[8px] overflow-hidden bg-[#192134] border border-white/10 shrink-0">
                         <img 
-                          src={track.cover_url || track.image || coverUrl || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=300&q=80'} 
+                          src={track.cover_url || track.image || coverUrl || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=300&q=80'} 
                           alt={track.title} 
                           className="w-full h-full object-cover" 
                         />
@@ -685,7 +685,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
                   ) : (
                     <div className="w-[46px] h-[46px] rounded-[8px] overflow-hidden bg-[#192134] border border-white/10 shrink-0">
                       <img 
-                        src={coverUrl || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=300&q=80'} 
+                        src={coverUrl || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=300&q=80'} 
                         alt="Room Cover" 
                         className="w-full h-full object-cover" 
                       />
@@ -756,7 +756,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
               {/* Ellipse 1: 100x100px Circle Badge */}
               <div className="relative w-[100px] h-[100px] rounded-full bg-[#192134] border-2 border-[#8A2BE2] p-1 flex items-center justify-center shadow-[0_0_30px_rgba(138,43,226,0.5)]">
                 <img
-                  src={coverUrl || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=300&q=80'}
+                  src={coverUrl || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=300&q=80'}
                   alt="Room Cover"
                   className="w-full h-full rounded-full object-cover"
                 />

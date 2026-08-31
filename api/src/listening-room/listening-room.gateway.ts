@@ -115,4 +115,16 @@ export class ListeningRoomGateway implements OnGatewayConnection, OnGatewayDisco
     this.server.to(`room:${roomId}`).emit('participant_role_updated', res);
     return res;
   }
+
+  @SubscribeMessage('end_room')
+  async handleEndRoom(
+    @MessageBody() payload: { roomId: number; hostId: number }
+  ) {
+    const { roomId, hostId } = payload;
+    const res = await this.roomService.endRoom(roomId, hostId);
+
+    // Broadcast room_ended event to all participants in room
+    this.server.to(`room:${roomId}`).emit('room_ended', { roomId, endedBy: hostId });
+    return res;
+  }
 }

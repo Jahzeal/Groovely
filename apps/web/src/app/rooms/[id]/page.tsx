@@ -108,7 +108,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
         id: Date.now(),
         title: trackTitle,
         artist_name: 'You (Creator)',
-        cover_url: 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=600&q=80',
+        cover_url: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80',
         audio_url: audioObjectUrl,
         duration: '03:30',
         isLocalUpload: true,
@@ -171,9 +171,11 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     messages,
     setMessages,
     playbackState,
+    isRoomEnded,
     emitPlaybackControl,
     emitSendMessage,
     emitRaiseHand,
+    emitEndRoom,
   } = useRoomSocket(roomId, currentUserId ?? undefined, socketRole);
 
   // Live Player State
@@ -398,6 +400,25 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     }
   }, [playbackState]);
 
+  // Listen for WebSockets room_ended event to notify fans and redirect
+  useEffect(() => {
+    if (isRoomEnded && !isHostOrCreator) {
+      toast.error('The host has ended this live room session.', {
+        id: 'room-ended-notification',
+        duration: 5000,
+      });
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      }
+      setTimeout(() => {
+        router.push('/rooms');
+      }, 1500);
+    }
+  }, [isRoomEnded, isHostOrCreator, router]);
+
   // Handle Sending Chat Messages over WebSockets
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -488,6 +509,9 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     if (isHostOrCreator) {
       if (confirm('Are you sure you want to end this live room for all participants?')) {
         try {
+          if (typeof emitEndRoom === 'function') {
+            emitEndRoom();
+          }
           await apiFetch(`/api/rooms/${roomId}/end`, { method: 'POST' });
         } catch (err) {
           console.warn('Backend end room warning:', err);
@@ -635,6 +659,8 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
           {/* Rectangle 6: Album Artwork (320x320px) */}
           <div className="relative group w-full max-w-[320px] aspect-square rounded-2xl overflow-hidden border border-[#232B3E] shadow-xl bg-[#192134]">
             <img
+              crossOrigin="anonymous"
+              referrerPolicy="no-referrer"
               src={
                 resolveIpfsUrl(
                   currentTrack?.cover_url ||
@@ -827,6 +853,8 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
                   >
                     <div className={`relative w-16 h-16 rounded-full p-1 border-2 transition-all duration-150 ${isCurrentUser && isMicActive && audioLevel > 10 ? 'border-[#00FF85] shadow-[0_0_25px_rgba(0,255,133,0.8)] scale-110' : 'border-[#4E0AA6] shadow-[0_0_15px_rgba(78,10,166,0.5)]'}`}>
                       <img
+                        crossOrigin="anonymous"
+                        referrerPolicy="no-referrer"
                         src={speaker.avatar_url || speaker.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${speaker.display_name || speaker.username || 'Speaker'}`}
                         alt={speaker.display_name || speaker.name}
                         className="w-full h-full rounded-full object-cover"
@@ -887,6 +915,8 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
                   <div key={i} className="flex flex-col items-center gap-1.5 group cursor-pointer">
                     <div className="w-14 h-14 rounded-full border border-[#4E0AA6]/50 overflow-hidden bg-[#192134]">
                       <img
+                        crossOrigin="anonymous"
+                        referrerPolicy="no-referrer"
                         src={listener.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${listener.display_name || listener.username || i}`}
                         alt={listener.display_name || listener.username}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform"
@@ -1103,7 +1133,9 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <img
-                          src={track.cover_url || track.image || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=300&q=80'}
+                          crossOrigin="anonymous"
+                          referrerPolicy="no-referrer"
+                          src={track.cover_url || track.image || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=300&q=80'}
                           alt={track.title}
                           className="w-12 h-12 rounded-xl object-cover border border-[#2D3548] shrink-0"
                         />
@@ -1220,6 +1252,8 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <img
+                            crossOrigin="anonymous"
+                            referrerPolicy="no-referrer"
                             src={creator.avatar_url || creator.profile_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
                             alt={creator.display_name || creator.name}
                             className="w-9 h-9 rounded-full object-cover border border-[#2D3548] shrink-0"

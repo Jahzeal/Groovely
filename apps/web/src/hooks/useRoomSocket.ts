@@ -40,6 +40,7 @@ export const useRoomSocket = (roomId?: string | number, userId?: number | null, 
   const [participants, setParticipants] = useState<RoomParticipant[]>([]);
   const [messages, setMessages] = useState<RoomMessage[]>([]);
   const [playbackState, setPlaybackState] = useState<PlaybackSyncData | null>(null);
+  const [isRoomEnded, setIsRoomEnded] = useState(false);
 
   useEffect(() => {
     if (!roomId) return;
@@ -127,6 +128,10 @@ export const useRoomSocket = (roomId?: string | number, userId?: number | null, 
       }));
     });
 
+    socket.on('room_ended', () => {
+      setIsRoomEnded(true);
+    });
+
     return () => {
       if (userId) {
         socket.emit('leave_room', { roomId: Number(roomId), userId });
@@ -180,6 +185,15 @@ export const useRoomSocket = (roomId?: string | number, userId?: number | null, 
     }
   }, [roomId, userId]);
 
+  const emitEndRoom = useCallback(() => {
+    if (socketRef.current && roomId && userId) {
+      socketRef.current.emit('end_room', {
+        roomId: Number(roomId),
+        hostId: userId,
+      });
+    }
+  }, [roomId, userId]);
+
   return {
     socket: socketRef.current,
     isConnected,
@@ -188,9 +202,11 @@ export const useRoomSocket = (roomId?: string | number, userId?: number | null, 
     messages,
     setMessages,
     playbackState,
+    isRoomEnded,
     emitPlaybackControl,
     emitSendMessage,
     emitRaiseHand,
     emitSetParticipantRole,
+    emitEndRoom,
   };
 };
