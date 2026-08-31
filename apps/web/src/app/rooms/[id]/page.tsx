@@ -456,6 +456,8 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const voiceAudioContextRef = useRef<AudioContext | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const animFrameRef = useRef<number | null>(null);
 
   function handleVoiceStreamReceived(data: { userId: number; audioData: string }) {
     if (!data.audioData) return;
