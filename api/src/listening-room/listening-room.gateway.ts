@@ -101,6 +101,24 @@ export class ListeningRoomGateway implements OnGatewayConnection, OnGatewayDisco
     return syncData;
   }
 
+  @SubscribeMessage('toggle_mute')
+  async handleToggleMute(
+    @MessageBody() payload: { roomId: number; userId: number; isMuted: boolean }
+  ) {
+    const { roomId, userId, isMuted } = payload;
+    this.server.to(`room:${roomId}`).emit('participant_mute_updated', { userId, isMuted });
+    return { event: 'mute_toggled', userId, isMuted };
+  }
+
+  @SubscribeMessage('voice_stream')
+  handleVoiceStream(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { roomId: number; userId: number; audioData: string }
+  ) {
+    const { roomId, userId, audioData } = payload;
+    client.to(`room:${roomId}`).emit('voice_stream_received', { userId, audioData });
+  }
+
   @SubscribeMessage('send_message')
   async handleSendMessage(
     @MessageBody() payload: { roomId: number; userId: number; content: string; messageType?: string; metadata?: any }

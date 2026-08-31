@@ -176,7 +176,9 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     emitSendMessage,
     emitRaiseHand,
     emitEndRoom,
-  } = useRoomSocket(roomId, currentUserId ?? undefined, socketRole);
+    emitToggleMute,
+    emitVoiceStream,
+  } = useRoomSocket(roomId, currentUserId ?? undefined, socketRole, handleVoiceStreamReceived);
 
   // Live Player State
   const [isPlaying, setIsPlaying] = useState(false);
@@ -448,21 +450,31 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
 
 
 
-  // Browser Microphone & WebAudio WebRTC State
+  // Browser Microphone & WebAudio WebRTC Live Voice Streaming State
   const [isMicActive, setIsMicActive] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
   const mediaStreamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const animFrameRef = useRef<number | null>(null);
 
-  const toggleMicrophone = async () => {
-    const isStageUser = isHostOrCreator || stageSpeakers.some(s => String(s.user_id) === String(currentUserId));
-    if (!isStageUser) {
-      toast.error('Only host, co-hosts, and stage speakers can use the microphone');
-      return;
+  function handleVoiceStreamReceived(data: { userId: number; audioData: string }) {
+    if (!data.audioData) return;
+    try {
+      const audio = new Audio(data.audioData);
+      audio.volume = 1.0;
+      audio.play().catch(e => console.warn('Voice chunk playback notice:', e));
+    } catch (e) {
+      console.warn('Voice stream playback decode error:', e);
     }
+  }
 
+  const toggleMicrophone = async () => {
     if (isMicActive) {
+      if (mediaRecorderRef.current) {
+        try { mediaRecorderRef.current.stop(); } catch (e) {}
+        mediaRecorderRef.current = null;
+      }
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(track => track.stop());
         mediaStreamRef.current = null;
@@ -470,6 +482,9 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       setIsMicActive(false);
       setAudioLevel(0);
+      if (typeof emitToggleMute === 'function') {
+        emitToggleMute(true);
+      }
       toast.success('Microphone muted');
     } else {
       try {
@@ -496,7 +511,38 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
         };
 
         checkAudioLevel();
+
+        // Initialize MediaRecorder for WebSockets voice chunk streaming to all room listeners
+        try {
+          let mimeType = 'audio/webm;codecs=opus';
+          if (!MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+            mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+          }
+          const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+          mediaRecorderRef.current = mediaRecorder;
+
+          mediaRecorder.ondataavailable = async (event) => {
+            if (event.data && event.data.size > 0) {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                const base64data = reader.result as string;
+                if (base64data && typeof emitVoiceStream === 'function') {
+                  emitVoiceStream(base64data);
+                }
+              };
+              reader.readAsDataURL(event.data);
+            }
+          };
+
+          mediaRecorder.start(250);
+        } catch (recErr) {
+          console.warn('MediaRecorder voice stream notice:', recErr);
+        }
+
         setIsMicActive(true);
+        if (typeof emitToggleMute === 'function') {
+          emitToggleMute(false);
+        }
         toast.success('Microphone active - You are live on stage!');
       } catch (err) {
         console.error('Microphone access error:', err);
@@ -921,29 +967,41 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
             {/* Listener Avatar Cards Grid */}
             <div className="grid grid-cols-4 sm:grid-cols-4 gap-4 max-h-[420px] overflow-y-auto pr-1 custom-scrollbar">
               {roomListeners.length > 0 ? (
-                roomListeners.map((listener: any, i: number) => (
-                  <div key={i} className="flex flex-col items-center gap-1.5 group cursor-pointer">
-                    <div className="w-14 h-14 rounded-full border border-[#4E0AA6]/50 overflow-hidden bg-[#192134]">
-                      <img
-                        crossOrigin="anonymous"
-                        referrerPolicy="no-referrer"
-                        src={listener.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${listener.display_name || listener.username || i}`}
-                        alt={listener.display_name || listener.username}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform"
-                      />
+                roomListeners.map((listener: any, i: number) => {
+                  const isCurrentFan = Boolean(listener.user_id && currentUserId && String(listener.user_id) === String(currentUserId));
+                  const fanActiveMute = isCurrentFan ? !isMicActive : (listener.is_muted || listener.isMuted);
+
+                  return (
+                    <div 
+                      key={i} 
+                      onClick={isCurrentFan ? toggleMicrophone : undefined}
+                      className={`flex flex-col items-center gap-1.5 group ${isCurrentFan ? 'cursor-pointer' : 'cursor-default'}`}
+                    >
+                      <div className={`relative w-14 h-14 rounded-full border-2 p-0.5 transition-all ${isCurrentFan && isMicActive && audioLevel > 10 ? 'border-[#00FF85] shadow-[0_0_20px_rgba(0,255,133,0.8)]' : 'border-[#4E0AA6]/50 bg-[#192134]'}`}>
+                        <img
+                          crossOrigin="anonymous"
+                          referrerPolicy="no-referrer"
+                          src={listener.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${listener.display_name || listener.username || i}`}
+                          alt={listener.display_name || listener.username}
+                          className="w-full h-full rounded-full object-cover group-hover:scale-105 transition-transform"
+                        />
+                        <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-[#0F172A] flex items-center justify-center transition-colors ${fanActiveMute ? 'bg-[#FF0044] text-white' : 'bg-[#00FF85] text-black font-bold'}`}>
+                          {fanActiveMute ? <MicOff size={10} /> : <Mic size={10} />}
+                        </div>
+                      </div>
+                      <span className="text-xs font-bold text-white truncate max-w-[70px] text-center">
+                        {listener.display_name || listener.username}
+                      </span>
+                      <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${
+                        listener.user_role === 'creator'
+                          ? 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20'
+                          : 'text-zinc-400 bg-zinc-800/80 border-zinc-700/50'
+                      }`}>
+                        {listener.user_role === 'creator' ? 'CREATOR' : 'FAN'}
+                      </span>
                     </div>
-                    <span className="text-xs font-bold text-white truncate max-w-[70px] text-center">
-                      {listener.display_name || listener.username}
-                    </span>
-                    <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${
-                      listener.user_role === 'creator'
-                        ? 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20'
-                        : 'text-zinc-400 bg-zinc-800/80 border-zinc-700/50'
-                    }`}>
-                      {listener.user_role === 'creator' ? 'CREATOR' : 'FAN'}
-                    </span>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="col-span-4 py-8 text-center bg-[#0F172A]/40 rounded-2xl border border-[#232B3E]">
                   <p className="text-xs text-zinc-400 font-medium">Be the first listener to join this room!</p>
