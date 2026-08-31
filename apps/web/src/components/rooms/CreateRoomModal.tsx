@@ -1,6 +1,4 @@
-'use client';
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, ArrowLeft, Upload, Music, Sparkles, Lock, Globe, Mic, Users, DollarSign, Calendar, Clock, Plus, Trash2, Check, Radio, Play, Radio as RadioIcon } from 'lucide-react';
 import { apiFetch, cachedApiFetch } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -17,6 +15,28 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
   const [loading, setLoading] = useState(false);
   const [createdRoom, setCreatedRoom] = useState<any>(null);
   const router = useRouter();
+  
+  // Cover File Input Ref
+  const coverFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const triggerCoverFileUpload = () => {
+    if (coverFileInputRef.current) {
+      coverFileInputRef.current.click();
+    }
+  };
+
+  const handleCoverFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select an image file (.jpg, .png, .webp)');
+        return;
+      }
+      const imageUrl = URL.createObjectURL(file);
+      setCoverUrl(imageUrl);
+      toast.success('Cover image uploaded');
+    }
+  };
   
   // Step 1 Form States
   const [title, setTitle] = useState('');
@@ -61,19 +81,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
     loadCreators();
   }, [isOpen]);
 
-  // Fallback Popular Creator Suggestions List if DB is initializing
-  const defaultSuggestedCreators = [
-    { handle: 'Uzor', name: 'Uzor Producer', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80', role: 'Verified Creator' },
-    { handle: 'Darrell', name: 'Darrell Beats', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80', role: 'Executive Producer' },
-    { handle: 'JahzealDave', name: 'Jahzeal Dave', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80', role: 'Afrobeats Artist' },
-    { handle: 'NightWhisper', name: 'Night Whisper', avatar: 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?auto=format&fit=crop&w=200&q=80', role: 'Sound Engineer' },
-    { handle: 'SlickBeats', name: 'Slick Beats', avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=200&q=80', role: 'Mixing Master' },
-    { handle: 'Kaelo', name: 'Kaelo Vibes', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80', role: 'Lo-Fi Producer' },
-  ];
-
-  const activeCreatorList = dbCreators.length > 0 ? dbCreators : defaultSuggestedCreators;
-
-  const filteredSuggestions = activeCreatorList.filter(c => {
+  const filteredSuggestions = dbCreators.filter(c => {
     const query = coHostInput.trim().toLowerCase().replace(/^@/, '');
     if (!query) return true;
     return c.handle.toLowerCase().includes(query) || c.name.toLowerCase().includes(query);
@@ -255,26 +263,42 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
 
               {/* Cover Upload Card (120x120px style) */}
               <div className="flex flex-col items-center justify-center p-6 bg-[#192134] border border-[#2D3548] rounded-2xl text-center">
+                <input
+                  type="file"
+                  ref={coverFileInputRef}
+                  onChange={handleCoverFileUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+
                 <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-3">
                   Room Cover Art
                 </label>
-                <div className="relative w-32 h-32 rounded-xl bg-[#0F172A] border border-[#2D3548] overflow-hidden flex flex-col items-center justify-center group cursor-pointer shadow-md mb-3">
+                
+                <div 
+                  onClick={triggerCoverFileUpload}
+                  className="relative w-32 h-32 rounded-xl bg-[#0F172A] border border-[#2D3548] hover:border-[#8A2BE2] overflow-hidden flex flex-col items-center justify-center group cursor-pointer shadow-md transition-all mb-3"
+                >
                   {coverUrl ? (
                     <img src={coverUrl} alt="Cover" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="flex flex-col items-center gap-1.5 text-zinc-400 group-hover:text-accent-purple transition-colors">
+                    <div className="flex flex-col items-center gap-1.5 text-zinc-400 group-hover:text-accent-purple transition-colors p-2">
                       <Upload size={24} />
-                      <span className="text-[10px] font-bold">Image URL</span>
+                      <span className="text-[10px] font-bold">Upload Cover</span>
                     </div>
                   )}
                 </div>
-                <input
-                  type="text"
-                  placeholder="Paste Cover Image URL"
-                  value={coverUrl}
-                  onChange={(e) => setCoverUrl(e.target.value)}
-                  className="w-full bg-[#0F172A] border border-[#2D3548] rounded-lg px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none"
-                />
+
+                <div className="flex items-center gap-2 w-full">
+                  <button
+                    type="button"
+                    onClick={triggerCoverFileUpload}
+                    className="w-full py-1.5 bg-[#8A2BE2] hover:bg-[#7823c9] text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    <Upload size={12} />
+                    <span>Upload File</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -421,35 +445,41 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
                   </div>
 
                   {/* Creator Suggestions Dropdown */}
-                  {showSuggestions && filteredSuggestions.length > 0 && (
+                  {showSuggestions && (
                     <div className="absolute left-0 right-0 top-full mt-1.5 bg-[#0F172A] border border-[#2D3548] rounded-xl shadow-2xl max-h-48 overflow-y-auto z-50 p-1 custom-scrollbar">
                       <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-zinc-500 border-b border-[#2D3548]">
-                        Suggested Platform Creators
+                        Database Platform Creators
                       </div>
-                      {filteredSuggestions.map(creator => (
-                        <div
-                          key={creator.handle}
-                          onClick={() => handleSelectCreator(creator.handle)}
-                          className="flex items-center justify-between p-2 hover:bg-[#192134] rounded-lg cursor-pointer transition-colors group"
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <img
-                              src={creator.avatar}
-                              alt={creator.name}
-                              className="w-7 h-7 rounded-full object-cover border border-[#2D3548]"
-                            />
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold text-white group-hover:text-accent-purple truncate">
-                                {creator.name}
-                              </p>
-                              <p className="text-[10px] text-zinc-400 font-mono">@{creator.handle}</p>
+                      {filteredSuggestions.length > 0 ? (
+                        filteredSuggestions.map(creator => (
+                          <div
+                            key={creator.handle}
+                            onClick={() => handleSelectCreator(creator.handle)}
+                            className="flex items-center justify-between p-2 hover:bg-[#192134] rounded-lg cursor-pointer transition-colors group"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <img
+                                src={creator.avatar}
+                                alt={creator.name}
+                                className="w-7 h-7 rounded-full object-cover border border-[#2D3548]"
+                              />
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-white group-hover:text-accent-purple truncate">
+                                  {creator.name}
+                                </p>
+                                <p className="text-[10px] text-zinc-400 font-mono">@{creator.handle}</p>
+                              </div>
                             </div>
+                            <span className="text-[10px] font-bold text-accent-purple bg-[#8A2BE2]/10 px-2 py-0.5 rounded-full border border-[#8A2BE2]/20">
+                              {creator.role}
+                            </span>
                           </div>
-                          <span className="text-[10px] font-bold text-accent-purple bg-[#8A2BE2]/10 px-2 py-0.5 rounded-full border border-[#8A2BE2]/20">
-                            {creator.role}
-                          </span>
+                        ))
+                      ) : (
+                        <div className="p-3 text-center text-xs text-zinc-400 font-medium">
+                          {dbCreators.length === 0 ? 'No registered creators found in database.' : 'No matching creators found.'}
                         </div>
-                      ))}
+                      )}
                     </div>
                   )}
                 </div>

@@ -35,58 +35,9 @@ export default function ListeningRoomsPage() {
     fetchRooms();
   }, []);
 
-  const featuredCreatorRooms = [
-    {
-      id: 101,
-      title: 'Midnight Lo-Fi & Unreleased Stems',
-      description: 'Listening to unreleased lo-fi beats, stems breakdown, and web3 music producer chat.',
-      host_name: 'Uzor Producer',
-      host_username: 'Uzor',
-      cover_url: 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=600&q=80',
-      genre: 'Lo-Fi / Chill',
-      active_listeners: 142,
-      room_type: 'public',
-    },
-    {
-      id: 102,
-      title: 'Afrobeats Studio Recording Session',
-      description: 'Live studio session cooking up new Afrobeats riddims. Open mic for guest co-hosts.',
-      host_name: 'Darrell Beats',
-      host_username: 'Darrell',
-      cover_url: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=600&q=80',
-      genre: 'Afrobeat',
-      active_listeners: 89,
-      room_type: 'public',
-    },
-    {
-      id: 103,
-      title: 'Amapiano Bassline Masterclass',
-      description: 'Deconstructing 24-bit log drum basslines, arrangement tips, and live audience Q&A.',
-      host_name: 'Night Whisper',
-      host_username: 'NightWhisper',
-      cover_url: 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?auto=format&fit=crop&w=600&q=80',
-      genre: 'Amapiano',
-      active_listeners: 215,
-      room_type: 'public',
-    },
-    {
-      id: 104,
-      title: 'Hip-Hop Vocal Mixing & Master Review',
-      description: 'Listening to community track submissions and giving live feedback on mixing.',
-      host_name: 'Slick Beats',
-      host_username: 'SlickBeats',
-      cover_url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=600&q=80',
-      genre: 'Hip Hop',
-      active_listeners: 67,
-      room_type: 'public',
-    },
-  ];
-
   const genres = ['All', 'Afrobeat', 'Hip Hop', 'Amapiano', 'R&B', 'Lo-Fi / Chill', 'Podcast / Discussion', 'Studio Session'];
 
-  const allDisplayRooms = [...rooms, ...featuredCreatorRooms.filter(f => !rooms.some((r: any) => Number(r.id) === Number(f.id)))];
-
-  const filteredRooms = allDisplayRooms.filter(r => {
+  const filteredRooms = rooms.filter(r => {
     if (selectedGenre !== 'All' && r.genre?.toLowerCase() !== selectedGenre.toLowerCase()) {
       return false;
     }
