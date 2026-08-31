@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React, { useState, useEffect, useRef, use } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, ListMusic, 
   Mic, MicOff, Volume2, VolumeX, Send, Lock, Unlock, PhoneOff, 
@@ -11,9 +11,9 @@ import {
 import { apiFetch, cachedApiFetch } from '@/lib/api';
 import toast from 'react-hot-toast';
 
-export default function LiveRoomPage() {
-  const params = useParams();
-  const roomId = params?.id;
+export default function LiveRoomPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
+  const roomId = resolvedParams?.id;
   const router = useRouter();
 
   const [room, setRoom] = useState<any>(null);
