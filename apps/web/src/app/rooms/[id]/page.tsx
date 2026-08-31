@@ -36,16 +36,21 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
 
   useEffect(() => {
     if (!isInviteModalOpen) return;
+    const query = inviteSearchQuery.trim().replace(/^@/, '');
+    const endpoint = query ? `/api/fan/creators?q=${encodeURIComponent(query)}` : '/api/fan/creators';
+
     async function fetchInviteCreators() {
       try {
-        const { data } = await cachedApiFetch('/api/fan/creators');
+        const { data } = await cachedApiFetch(endpoint);
         if (data?.creators) setInviteCreators(data.creators);
       } catch (err) {
         console.warn('Failed to fetch creators for invite modal:', err);
       }
     }
-    fetchInviteCreators();
-  }, [isInviteModalOpen]);
+
+    const timer = setTimeout(fetchInviteCreators, 200);
+    return () => clearTimeout(timer);
+  }, [isInviteModalOpen, inviteSearchQuery]);
 
   const handleCopyLink = () => {
     if (typeof window !== 'undefined') {

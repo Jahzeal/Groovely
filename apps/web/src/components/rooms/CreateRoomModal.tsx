@@ -62,9 +62,12 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
   // Fetch Real Creator Profiles from PostgreSQL Database API
   useEffect(() => {
     if (!isOpen) return;
+    const query = coHostInput.trim().replace(/^@/, '');
+    const endpoint = query ? `/api/fan/creators?q=${encodeURIComponent(query)}` : '/api/fan/creators';
+
     async function loadCreators() {
       try {
-        const { data } = await cachedApiFetch('/api/fan/creators');
+        const { data } = await cachedApiFetch(endpoint);
         if (data?.creators && Array.isArray(data.creators)) {
           const mapped = data.creators.map((u: any) => ({
             handle: u.username || u.name?.replace(/\s+/g, '') || `user${u.id}`,
@@ -78,8 +81,10 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
         console.warn('Could not fetch DB creators for suggestions:', err);
       }
     }
-    loadCreators();
-  }, [isOpen]);
+
+    const timer = setTimeout(loadCreators, 200);
+    return () => clearTimeout(timer);
+  }, [isOpen, coHostInput]);
 
   const filteredSuggestions = dbCreators.filter(c => {
     const query = coHostInput.trim().toLowerCase().replace(/^@/, '');

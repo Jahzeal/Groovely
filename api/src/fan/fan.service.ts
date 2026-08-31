@@ -57,9 +57,8 @@ export class FanService {
     return result.rows;
   }
 
-  async getCreators(userId: number, limit = 20) {
-    const result = await this.db.query(
-      `SELECT 
+  async getCreators(userId: number, limit = 50, search?: string) {
+    let query = `SELECT 
         u.id,
         u.display_name as name,
         u.username,
@@ -68,15 +67,24 @@ export class FanService {
         u.avatar_url as profile_url,
         u.avatar_url,
         u.creator_type,
-        (SELECT COUNT(*) FROM tracks t WHERE t.user_id = u.id AND t.visibility = 'public' AND (t.status = 'active' OR t.status = 'published' OR EXISTS (SELECT 1 FROM editions e JOIN songs s ON e.song_id = s.id WHERE s.track_id = t.id AND e.contract_edition_id IS NOT NULL))) as track_count,
+        u.wallet,
+        (SELECT COUNT(*) FROM tracks t WHERE t.user_id = u.id AND t.visibility = 'public') as track_count,
         CASE WHEN f.follower_id IS NOT NULL THEN true ELSE false END as is_following
        FROM users u
        LEFT JOIN follows f ON f.following_id = u.id AND f.follower_id = $1
-       WHERE LOWER(u.role) = 'creator'
-       ORDER BY u.created_at DESC
-       LIMIT $2`,
-      [userId, limit]
-    );
+       WHERE 1=1`;
+
+    const params: any[] = [userId || 0];
+
+    if (search && search.trim()) {
+      params.push(`%${search.trim().toLowerCase()}%`);
+      query += ` AND (LOWER(u.username) LIKE $${params.length} OR LOWER(u.display_name) LIKE $${params.length} OR LOWER(u.wallet) LIKE $${params.length})`;
+    }
+
+    params.push(limit);
+    query += ` ORDER BY u.created_at DESC LIMIT $${params.length}`;
+
+    const result = await this.db.query(query, params);
     return result.rows;
   }
 
