@@ -197,17 +197,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
 
     async function initRoomAndJoin() {
       try {
-        // 1. Record participant join in NestJS / PostgreSQL DB
-        try {
-          await apiFetch(`/api/rooms/${roomId}/join`, {
-            method: 'POST',
-            body: JSON.stringify({ role: userRole }),
-          });
-        } catch (jErr) {
-          console.warn('Join room DB endpoint notice:', jErr);
-        }
-
-        // 2. Fetch full room details
+        // 1. Fetch full room details first to determine room.host_id
         const { data } = await cachedApiFetch(`/api/rooms/${roomId}`, {
           onBackgroundUpdate: (fresh: any) => {
             if (fresh?.data) {
@@ -219,8 +209,10 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
           }
         });
 
+        let loadedRoomHostId = null;
         if (data?.data) {
           setRoom(data.data.room);
+          loadedRoomHostId = data.data.room?.host_id;
           if (data.data.participants) setParticipants(data.data.participants);
           if (data.data.playlist) setPlaylist(data.data.playlist);
           if (data.data.messages) setMessages(data.data.messages);
@@ -234,6 +226,17 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
               artist_name: data.data.room.current_track_artist || data.data.room.host_name,
             });
           }
+        }
+
+        // 2. Record participant join in NestJS / PostgreSQL DB with accurate role
+        const determinedRole = Boolean(currentUserId && loadedRoomHostId && String(currentUserId) === String(loadedRoomHostId)) ? 'host' : 'listener';
+        try {
+          await apiFetch(`/api/rooms/${roomId}/join`, {
+            method: 'POST',
+            body: JSON.stringify({ role: determinedRole }),
+          });
+        } catch (jErr) {
+          console.warn('Join room DB endpoint notice:', jErr);
         }
 
         // Fetch Creator Tracks, Fan Trending & Marketplace Tracks for Playlist Selector
@@ -544,7 +547,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   // Fallback to room host if stage speakers state is initializing
   const displaySpeakers = stageSpeakers.length > 0 ? stageSpeakers : [
     {
-      user_id: room?.host_id || 1,
+      user_id: room?.host_id || -1,
       display_name: room?.host_name || 'Creator Host',
       username: room?.host_username || 'host',
       avatar_url: room?.host_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
@@ -844,14 +847,19 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
             {/* Stage Speakers Grid */}
             <div className="flex items-center gap-6 overflow-x-auto pb-2">
               {displaySpeakers.map((speaker: any, idx: number) => {
-                const isCurrentUser = Boolean(speaker.user_id && currentUserId && String(speaker.user_id) === String(currentUserId));
+                const isCurrentUser = Boolean(
+                  speaker.user_id && 
+                  currentUserId && 
+                  String(speaker.user_id) === String(currentUserId) && 
+                  (isRoomHost || speaker.role === 'host' || speaker.role === 'cohost' || speaker.role === 'speaker')
+                );
                 const activeMute = isCurrentUser ? !isMicActive : (speaker.is_muted || speaker.isMuted);
 
                 return (
                   <div 
                     key={idx} 
                     onClick={isCurrentUser ? toggleMicrophone : undefined}
-                    className="flex flex-col items-center gap-2 group cursor-pointer"
+                    className={`flex flex-col items-center gap-2 group ${isCurrentUser ? 'cursor-pointer' : 'cursor-default'}`}
                   >
                     <div className={`relative w-16 h-16 rounded-full p-1 border-2 transition-all duration-150 ${isCurrentUser && isMicActive && audioLevel > 10 ? 'border-[#00FF85] shadow-[0_0_25px_rgba(0,255,133,0.8)] scale-110' : 'border-[#4E0AA6] shadow-[0_0_15px_rgba(78,10,166,0.5)]'}`}>
                       <img

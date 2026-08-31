@@ -401,13 +401,13 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
                   <div className="pt-2">
                     <input
                       type="number"
-                      min={5}
-                      max={500}
+                      min={1}
+                      max={100000}
                       value={maxListeners}
                       onChange={(e) => setMaxListeners(Number(e.target.value))}
                       className="w-full bg-[#0F172A] border border-[#2D3548] rounded-lg px-4 py-2.5 text-white font-mono text-center font-bold focus:outline-none"
                     />
-                    <p className="text-[10px] text-zinc-500 text-center mt-1">Cap at 500 maximum live listeners</p>
+                    <p className="text-[10px] text-zinc-500 text-center mt-1">Set custom room capacity limit</p>
                   </div>
                 ) : (
                   <p className="text-xs text-zinc-400 py-3 text-center">Unlimited live listeners (Default)</p>

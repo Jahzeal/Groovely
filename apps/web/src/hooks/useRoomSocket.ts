@@ -138,7 +138,14 @@ export const useRoomSocket = (roomId?: string | number, userId?: number | null, 
       }
       socket.disconnect();
     };
-  }, [roomId, userId, initialRole]);
+  }, [roomId, userId]);
+
+  // Dynamically re-sync join_room role whenever initialRole is determined (e.g. Host ID fetched)
+  useEffect(() => {
+    if (socketRef.current && isConnected && userId && initialRole) {
+      socketRef.current.emit('join_room', { roomId: Number(roomId), userId, role: initialRole });
+    }
+  }, [roomId, userId, initialRole, isConnected]);
 
   // Actions
   const emitPlaybackControl = useCallback((action: 'play' | 'pause' | 'seek', trackId?: number, positionMs: number = 0, track?: any) => {
