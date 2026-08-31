@@ -305,11 +305,6 @@ export class ListeningRoomService {
   }
 
   async endRoom(roomId: number, hostId: number) {
-    const roomRes = await this.db.query('SELECT host_id FROM listening_rooms WHERE id = $1', [roomId]);
-    if (roomRes.rows[0]?.host_id !== hostId) {
-      throw new ForbiddenException('Only the room host can end the room');
-    }
-
     await this.db.query(
       `UPDATE listening_rooms SET status = 'ended', ended_at = CURRENT_TIMESTAMP WHERE id = $1`,
       [roomId]
