@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, ArrowLeft, Upload, Music, Sparkles, Lock, Globe, Mic, Users, DollarSign, Calendar, Clock, Plus, Trash2, Check, Radio, Play, Radio as RadioIcon } from 'lucide-react';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, cachedApiFetch } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
@@ -37,9 +37,32 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [startTimeType, setStartTimeType] = useState<'now' | 'scheduled'>('now');
   const [scheduledDate, setScheduledDate] = useState('');
+  const [dbCreators, setDbCreators] = useState<any[]>([]);
 
-  // Popular Creator Suggestions List
-  const suggestedCreators = [
+  // Fetch Real Creator Profiles from PostgreSQL Database API
+  useEffect(() => {
+    if (!isOpen) return;
+    async function loadCreators() {
+      try {
+        const { data } = await cachedApiFetch('/api/fan/creators');
+        if (data?.creators && Array.isArray(data.creators)) {
+          const mapped = data.creators.map((u: any) => ({
+            handle: u.username || u.name?.replace(/\s+/g, '') || `user${u.id}`,
+            name: u.display_name || u.name || 'Platform Creator',
+            avatar: u.profile_url || u.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+            role: u.creator_type || 'Verified Creator',
+          }));
+          setDbCreators(mapped);
+        }
+      } catch (err) {
+        console.warn('Could not fetch DB creators for suggestions:', err);
+      }
+    }
+    loadCreators();
+  }, [isOpen]);
+
+  // Fallback Popular Creator Suggestions List if DB is initializing
+  const defaultSuggestedCreators = [
     { handle: 'Uzor', name: 'Uzor Producer', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80', role: 'Verified Creator' },
     { handle: 'Darrell', name: 'Darrell Beats', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80', role: 'Executive Producer' },
     { handle: 'JahzealDave', name: 'Jahzeal Dave', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80', role: 'Afrobeats Artist' },
@@ -48,7 +71,9 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
     { handle: 'Kaelo', name: 'Kaelo Vibes', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80', role: 'Lo-Fi Producer' },
   ];
 
-  const filteredSuggestions = suggestedCreators.filter(c => {
+  const activeCreatorList = dbCreators.length > 0 ? dbCreators : defaultSuggestedCreators;
+
+  const filteredSuggestions = activeCreatorList.filter(c => {
     const query = coHostInput.trim().toLowerCase().replace(/^@/, '');
     if (!query) return true;
     return c.handle.toLowerCase().includes(query) || c.name.toLowerCase().includes(query);
