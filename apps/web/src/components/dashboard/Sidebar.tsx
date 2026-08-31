@@ -230,7 +230,7 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
 
             <NavItem icon={Store} label="Grooveli Market" href="/marketplace" active={isMarket} />
             <NavItem icon={BarChart3} label="Analytics" href="/dashboard/analytics" active={pathname === '/dashboard/analytics'} />
-            <NavItem icon={Headphones} label="Listening Rooms" href="/rooms" active={pathname === '/rooms' || pathname?.startsWith('/rooms/')} />
+            <NavItem icon={Headphones} label="Listening Rooms" href="/dashboard/rooms" active={pathname === '/dashboard/rooms' || pathname?.startsWith('/dashboard/rooms')} />
             <NavItem icon={Sparkles} label="AI Tools" comingSoon />
 
             <div className="h-px bg-[#2D3548] my-4 mx-6" />

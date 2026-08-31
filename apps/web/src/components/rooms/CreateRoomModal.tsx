@@ -210,7 +210,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
     if (createdRoom?.id) {
       router.push(`/rooms/${createdRoom.id}`);
     } else {
-      router.push('/rooms');
+      router.push('/dashboard/rooms');
     }
     onClose();
     setModalStep(1);

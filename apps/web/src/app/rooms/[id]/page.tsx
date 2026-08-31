@@ -520,7 +520,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
             mediaStreamRef.current.getTracks().forEach(track => track.stop());
           }
           toast.success('Room session ended');
-          router.push('/rooms');
+          router.push('/dashboard/rooms');
         }
       }
     } else {
@@ -606,7 +606,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
         {/* Left: Live Status Badges */}
         <div className="flex items-center gap-4">
           <button 
-            onClick={() => router.push('/rooms')}
+            onClick={() => router.push(isHostOrCreator ? '/dashboard/rooms' : '/rooms')}
             className="p-2 text-zinc-400 hover:text-white rounded-lg bg-[#192134] border border-[#2D3548] transition-colors"
           >
             <ArrowLeft size={18} />
