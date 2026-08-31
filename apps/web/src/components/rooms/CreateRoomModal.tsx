@@ -59,7 +59,43 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
   const [scheduledDate, setScheduledDate] = useState('');
   const [dbCreators, setDbCreators] = useState<any[]>([]);
 
-  // Fetch Real Creator Profiles from PostgreSQL Database API
+  const [realTracks, setRealTracks] = useState<any[]>([]);
+
+  // Fetch Real Creator Tracks for Playlist Review
+  useEffect(() => {
+    if (!isOpen) return;
+
+    async function loadUserTracks() {
+      try {
+        const [cRes, mRes] = await Promise.allSettled([
+          cachedApiFetch('/api/creator/tracks'),
+          cachedApiFetch('/api/market/trending')
+        ]);
+
+        let dbTracks: any[] = [];
+        if (cRes.status === 'fulfilled' && cRes.value?.data) {
+          const arr = Array.isArray(cRes.value.data) ? cRes.value.data : (cRes.value.data.tracks || []);
+          dbTracks = [...dbTracks, ...arr];
+        }
+        if (mRes.status === 'fulfilled' && mRes.value?.data) {
+          const arr = Array.isArray(mRes.value.data) ? mRes.value.data : (mRes.value.data.tracks || []);
+          dbTracks = [...dbTracks, ...arr];
+        }
+
+        const unique = dbTracks.filter((t, i, self) => 
+          i === self.findIndex(ot => String(ot.id) === String(t.id))
+        );
+
+        setRealTracks(unique);
+      } catch (err) {
+        console.warn('Could not fetch user tracks for room review:', err);
+      }
+    }
+
+    loadUserTracks();
+  }, [isOpen]);
+
+  // Fetch Real Creator Profiles from PostgreSQL Database API for Co-Host Suggestions
   useEffect(() => {
     if (!isOpen) return;
     const query = coHostInput.trim().replace(/^@/, '');
@@ -67,22 +103,26 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
 
     async function loadCreators() {
       try {
-        const { data } = await cachedApiFetch(endpoint);
-        if (data?.creators && Array.isArray(data.creators)) {
-          const mapped = data.creators.map((u: any) => ({
-            handle: u.username || u.name?.replace(/\s+/g, '') || `user${u.id}`,
-            name: u.display_name || u.name || 'Platform Creator',
-            avatar: u.profile_url || u.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-            role: u.creator_type || 'Verified Creator',
-          }));
-          setDbCreators(mapped);
+        const res = await apiFetch(endpoint);
+        if (res.ok) {
+          const body = await res.json();
+          const creatorsList = body?.data?.creators || body?.creators || [];
+          if (Array.isArray(creatorsList)) {
+            const mapped = creatorsList.map((u: any) => ({
+              handle: u.username || u.display_name?.replace(/\s+/g, '') || `user${u.id}`,
+              name: u.display_name || u.name || 'Platform Creator',
+              avatar: u.profile_url || u.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+              role: (Array.isArray(u.creator_type) ? u.creator_type.join(', ') : u.creator_type) || 'Verified Creator',
+            }));
+            setDbCreators(mapped);
+          }
         }
       } catch (err) {
         console.warn('Could not fetch DB creators for suggestions:', err);
       }
     }
 
-    const timer = setTimeout(loadCreators, 200);
+    const timer = setTimeout(loadCreators, 150);
     return () => clearTimeout(timer);
   }, [isOpen, coHostInput]);
 
@@ -622,22 +662,41 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
                 <span className="text-white">{hasListenerLimit ? `${maxListeners} Users` : 'Unlimited'}</span>
               </div>
 
-              {/* Room Playlist Thumbnails Row (Frame 89: 46x46px rectangles + overflow count) */}
+              {/* Room Playlist Thumbnails Row */}
               <div className="space-y-2 pt-1 border-t border-[#232B3E]/60">
                 <div className="flex items-center justify-between">
                   <span className="text-[#959595]">Room Playlist</span>
-                  <span className="text-accent-purple text-xs cursor-pointer hover:underline">View Playlist</span>
+                  <span className="text-accent-purple text-xs font-bold">
+                    {realTracks.length > 0 ? `${realTracks.length} ${realTracks.length === 1 ? 'Track' : 'Tracks'}` : 'No Tracks'}
+                  </span>
                 </div>
 
-                <div className="flex items-center gap-2 overflow-x-auto py-1">
-                  {sampleCovers.map((src, i) => (
-                    <div key={i} className="w-[46px] h-[46px] rounded-[8px] overflow-hidden bg-[#D9D9D9] border border-white/10 shrink-0">
-                      <img src={src} alt={`Cover ${i+1}`} className="w-full h-full object-cover" />
+                <div className="flex items-center gap-2 overflow-x-auto py-1 custom-scrollbar">
+                  {realTracks.length > 0 ? (
+                    realTracks.slice(0, 4).map((track, i) => (
+                      <div key={track.id || i} className="w-[46px] h-[46px] rounded-[8px] overflow-hidden bg-[#192134] border border-white/10 shrink-0">
+                        <img 
+                          src={track.cover_url || track.image || coverUrl || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=300&q=80'} 
+                          alt={track.title} 
+                          className="w-full h-full object-cover" 
+                        />
+                      </div>
+                    ))
+                  ) : (
+                    <div className="w-[46px] h-[46px] rounded-[8px] overflow-hidden bg-[#192134] border border-white/10 shrink-0">
+                      <img 
+                        src={coverUrl || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=300&q=80'} 
+                        alt="Room Cover" 
+                        className="w-full h-full object-cover" 
+                      />
                     </div>
-                  ))}
-                  <div className="w-[46px] h-[46px] rounded-[8px] bg-black/60 border border-white/10 shrink-0 flex items-center justify-center text-xs font-bold text-white">
-                    +13
-                  </div>
+                  )}
+
+                  {realTracks.length > 4 && (
+                    <div className="w-[46px] h-[46px] rounded-[8px] bg-black/60 border border-white/10 shrink-0 flex items-center justify-center text-xs font-bold text-white">
+                      +{realTracks.length - 4}
+                    </div>
+                  )}
                 </div>
               </div>
 

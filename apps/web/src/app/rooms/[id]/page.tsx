@@ -42,8 +42,12 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
 
     async function fetchInviteCreators() {
       try {
-        const { data } = await cachedApiFetch(endpoint);
-        if (data?.creators) setInviteCreators(data.creators);
+        const res = await apiFetch(endpoint);
+        if (res.ok) {
+          const body = await res.json();
+          if (body?.data?.creators) setInviteCreators(body.data.creators);
+          else if (body?.creators) setInviteCreators(body.creators);
+        }
       } catch (err) {
         console.warn('Failed to fetch creators for invite modal:', err);
       }
@@ -548,11 +552,9 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
           <div className="relative group w-full max-w-[320px] aspect-square rounded-2xl overflow-hidden border border-[#232B3E] shadow-xl">
             <img
               src={
-                room?.cover_url || 
-                room?.host_avatar || 
-                currentTrack?.cover_url || 
-                currentTrack?.image || 
-                'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=600&q=80'
+                (room?.cover_url && room.cover_url.trim() !== '') ? room.cover_url : 
+                (room?.host_avatar && room.host_avatar.trim() !== '') ? room.host_avatar : 
+                `https://api.dicebear.com/7.x/avataaars/svg?seed=${room?.host_name || room?.host_username || 'Creator'}`
               }
               alt="Room Cover Artwork"
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
