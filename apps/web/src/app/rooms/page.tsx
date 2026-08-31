@@ -141,7 +141,7 @@ export default function ListeningRoomsPage() {
                       {/* Room Cover & Host Info */}
                       <div className="flex gap-4 mb-4">
                         <img
-                          src={room.cover_url || room.current_track_cover || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=600&q=80'}
+                          src={room.cover_url || room.host_avatar || room.current_track_cover || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=600&q=80'}
                           alt={room.title}
                           className="w-20 h-20 rounded-xl object-cover border border-[#2D3548] shrink-0"
                         />

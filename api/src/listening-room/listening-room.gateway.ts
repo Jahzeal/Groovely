@@ -59,10 +59,14 @@ export class ListeningRoomGateway implements OnGatewayConnection, OnGatewayDisco
     const { roomId, userId } = payload;
     const roomChannel = `room:${roomId}`;
 
-    await this.roomService.leaveRoom(roomId, userId);
+    const updatedDetails = await this.roomService.leaveRoom(roomId, userId);
     client.leave(roomChannel);
 
-    this.server.to(roomChannel).emit('user_left', { userId, roomId });
+    this.server.to(roomChannel).emit('user_left', { 
+      userId, 
+      roomId, 
+      participants: updatedDetails.participants 
+    });
     return { event: 'room_left', roomId };
   }
 

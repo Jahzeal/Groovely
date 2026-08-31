@@ -228,7 +228,7 @@ export class ListeningRoomService {
        WHERE room_id = $1 AND user_id = $2`,
       [roomId, userId]
     );
-    return { success: true };
+    return this.getRoomDetails(roomId);
   }
 
   async updatePlayback(roomId: number, userId: number, action: 'play' | 'pause' | 'seek', trackId?: number, positionMs: number = 0) {

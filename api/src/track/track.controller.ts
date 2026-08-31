@@ -125,8 +125,7 @@ export class TrackController {
   }
 
   @Get('creator/tracks')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('creator')
+  @UseGuards(JwtAuthGuard)
   @ResponseMessage('Tracks retrieved successfully')
   async getMyTracks(@Req() req: any) {
     const userId = req.userId;

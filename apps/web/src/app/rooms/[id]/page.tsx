@@ -165,14 +165,35 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   const [chatMessage, setChatMessage] = useState('');
   const [isChatLocked, setIsChatLocked] = useState(false);
 
+  // User Role Detection (Creator vs Fan)
+  const [userRole, setUserRole] = useState<string>('fan');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const role = localStorage.getItem('groovely_role') || localStorage.getItem('grooveli_role') || 'fan';
+      setUserRole(role.toLowerCase());
+    }
+  }, []);
+
   // Floating Reactions State
   const [floatingReactions, setFloatingReactions] = useState<{ id: number; emoji: string; left: number }[]>([]);
 
   useEffect(() => {
     if (!roomId) return;
 
-    async function fetchRoomData() {
+    async function initRoomAndJoin() {
       try {
+        // 1. Record participant join in NestJS / PostgreSQL DB
+        try {
+          await apiFetch(`/api/rooms/${roomId}/join`, {
+            method: 'POST',
+            body: JSON.stringify({ role: userRole }),
+          });
+        } catch (jErr) {
+          console.warn('Join room DB endpoint notice:', jErr);
+        }
+
+        // 2. Fetch full room details
         const { data } = await cachedApiFetch(`/api/rooms/${roomId}`, {
           onBackgroundUpdate: (fresh: any) => {
             if (fresh?.data) {
@@ -201,65 +222,41 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
           }
         }
 
-        // Fetch User Library & Marketplace Tracks for Playlist Selector
+        // Fetch Creator Tracks, User Library & Marketplace Tracks for Playlist Selector
         try {
-          const [libRes, trendRes] = await Promise.allSettled([
+          const [creatorTracksRes, libRes, trendRes] = await Promise.allSettled([
+            cachedApiFetch('/api/creator/tracks'),
             cachedApiFetch('/api/library'),
             cachedApiFetch('/api/market/trending')
           ]);
 
           let dbTracks: any[] = [];
+          if (creatorTracksRes.status === 'fulfilled' && creatorTracksRes.value?.data) {
+            const arr = Array.isArray(creatorTracksRes.value.data) 
+              ? creatorTracksRes.value.data 
+              : (creatorTracksRes.value.data.tracks || creatorTracksRes.value.data.data || []);
+            dbTracks = [...dbTracks, ...arr];
+          }
           if (libRes.status === 'fulfilled' && libRes.value?.data) {
-            const arr = Array.isArray(libRes.value.data) ? libRes.value.data : (libRes.value.data.tracks || libRes.value.data.data || []);
+            const arr = Array.isArray(libRes.value.data) 
+              ? libRes.value.data 
+              : (libRes.value.data.tracks || libRes.value.data.data || []);
             dbTracks = [...dbTracks, ...arr];
           }
           if (trendRes.status === 'fulfilled' && trendRes.value?.data) {
-            const arr = Array.isArray(trendRes.value.data) ? trendRes.value.data : (trendRes.value.data.tracks || trendRes.value.data.data || []);
+            const arr = Array.isArray(trendRes.value.data) 
+              ? trendRes.value.data 
+              : (trendRes.value.data.tracks || trendRes.value.data.data || []);
             dbTracks = [...dbTracks, ...arr];
           }
 
-          const sampleLibraryTracks = [
-            {
-              id: 1,
-              title: 'Midnight Afrobeat Stems Breakdown',
-              artist_name: 'Uzor Producer',
-              cover_url: 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=300&q=80',
-              audio_url: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3',
-              duration: '03:15',
-            },
-            {
-              id: 2,
-              title: 'Amapiano Log Drum Rhythm 24-Bit',
-              artist_name: 'Night Whisper',
-              cover_url: 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?auto=format&fit=crop&w=300&q=80',
-              audio_url: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=chill-abstract-intention-12099.mp3',
-              duration: '02:45',
-            },
-            {
-              id: 3,
-              title: 'Hip-Hop Vocal Lead Stems',
-              artist_name: 'Slick Beats',
-              cover_url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=300&q=80',
-              audio_url: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3?filename=twentysix-10495.mp3',
-              duration: '04:10',
-            },
-            {
-              id: 4,
-              title: 'Lo-Fi Chill Hop Baseline',
-              artist_name: 'Kaelo Vibes',
-              cover_url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80',
-              audio_url: 'https://cdn.pixabay.com/download/audio/2022/10/14/audio_9939f792b0.mp3?filename=lofi-chill-124436.mp3',
-              duration: '03:30',
-            },
-          ];
+          const uniqueDbTracks = dbTracks.filter((t, i, self) => 
+            i === self.findIndex(ot => String(ot.id) === String(t.id))
+          );
 
-          const combined = dbTracks.length > 0 
-            ? [...dbTracks, ...sampleLibraryTracks.filter(s => !dbTracks.some(d => Number(d.id) === Number(s.id)))]
-            : sampleLibraryTracks;
-
-          setLibraryTracks(combined);
-          if (!currentTrack && combined.length > 0) {
-            setCurrentTrack(combined[0]);
+          setLibraryTracks(uniqueDbTracks);
+          if (!currentTrack && uniqueDbTracks.length > 0) {
+            setCurrentTrack(uniqueDbTracks[0]);
           }
         } catch (tErr) {
           console.warn('Could not fetch library tracks:', tErr);
@@ -271,8 +268,53 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       }
     }
 
-    fetchRoomData();
-  }, [roomId, setParticipants, setMessages]);
+    initRoomAndJoin();
+  }, [roomId, userRole]);
+
+  // Fetch fresh Creator & Library Tracks whenever Playlist modal opens
+  useEffect(() => {
+    if (!isPlaylistModalOpen) return;
+
+    async function loadFreshLibraryTracks() {
+      try {
+        const [creatorRes, libRes, trendRes] = await Promise.allSettled([
+          cachedApiFetch('/api/creator/tracks'),
+          cachedApiFetch('/api/library'),
+          cachedApiFetch('/api/market/trending')
+        ]);
+
+        let dbTracks: any[] = [];
+        if (creatorRes.status === 'fulfilled' && creatorRes.value?.data) {
+          const arr = Array.isArray(creatorRes.value.data) 
+            ? creatorRes.value.data 
+            : (creatorRes.value.data.tracks || creatorRes.value.data.data || []);
+          dbTracks = [...dbTracks, ...arr];
+        }
+        if (libRes.status === 'fulfilled' && libRes.value?.data) {
+          const arr = Array.isArray(libRes.value.data) 
+            ? libRes.value.data 
+            : (libRes.value.data.tracks || libRes.value.data.data || []);
+          dbTracks = [...dbTracks, ...arr];
+        }
+        if (trendRes.status === 'fulfilled' && trendRes.value?.data) {
+          const arr = Array.isArray(trendRes.value.data) 
+            ? trendRes.value.data 
+            : (trendRes.value.data.tracks || trendRes.value.data.data || []);
+          dbTracks = [...dbTracks, ...arr];
+        }
+
+        const unique = dbTracks.filter((t, i, self) => 
+          i === self.findIndex(ot => String(ot.id) === String(t.id))
+        );
+
+        setLibraryTracks(unique);
+      } catch (err) {
+        console.warn('Failed to load fresh library tracks for modal:', err);
+      }
+    }
+
+    loadFreshLibraryTracks();
+  }, [isPlaylistModalOpen]);
 
   // Sync WebSockets playback state changes to local player
   useEffect(() => {
@@ -290,7 +332,9 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     if (!chatMessage.trim()) return;
 
     // Broadcast over WebSockets
-    emitSendMessage(chatMessage.trim(), 'text');
+    if (typeof emitSendMessage === 'function') {
+      emitSendMessage(chatMessage.trim(), 'text');
+    }
     setChatMessage('');
   };
 
@@ -301,21 +345,15 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       emoji,
       left: Math.floor(Math.random() * 70) + 15,
     };
-    setFloatingReactions(prev => [...prev, reaction]);
-    setTimeout(() => {
-      setFloatingReactions(prev => prev.filter(r => r.id !== reaction.id));
-    }, 2500);
+    if (typeof setFloatingReactions === 'function') {
+      setFloatingReactions(prev => [...prev, reaction]);
+      setTimeout(() => {
+        setFloatingReactions(prev => prev.filter(r => r.id !== reaction.id));
+      }, 2500);
+    }
   };
 
-  // User Role Detection (Creator vs Fan)
-  const [userRole, setUserRole] = useState<string>('fan');
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const role = localStorage.getItem('groovely_role') || localStorage.getItem('grooveli_role') || 'fan';
-      setUserRole(role.toLowerCase());
-    }
-  }, []);
 
   // Browser Microphone & WebAudio WebRTC State
   const [isMicActive, setIsMicActive] = useState(false);
@@ -423,7 +461,32 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   };
 
   return (
-    <div className="min-h-screen bg-[#0F172A] text-white font-['Space_Grotesk',sans-serif] flex flex-col overflow-x-hidden select-none">
+    <div className="min-h-screen bg-[#0F172A] text-white font-['Space_Grotesk',sans-serif] flex flex-col overflow-x-hidden">
+      {/* ── LIVE AUDIO STREAM ENGINE ── */}
+      <audio
+        ref={audioRef}
+        src={currentTrack?.audio_url || currentTrack?.url || room?.current_track_audio}
+        preload="auto"
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onEnded={() => {
+          setIsPlaying(false);
+          setCurrentTimeMs(0);
+        }}
+        onTimeUpdate={(e) => {
+          const target = e.currentTarget;
+          if (target && target.currentTime) {
+            setCurrentTimeMs(Math.floor(target.currentTime * 1000));
+          }
+        }}
+        onLoadedMetadata={(e) => {
+          const target = e.currentTarget;
+          if (target && target.duration && !isNaN(target.duration)) {
+            setDurationMs(Math.floor(target.duration * 1000));
+          }
+        }}
+        className="hidden"
+      />
       
       {/* ── TOP HEADER BAR (Figma Spec) ── */}
       <header className="h-[76px] px-6 sm:px-10 border-b border-[#232B3E] bg-[#0F172A]/90 backdrop-blur-md flex items-center justify-between z-30">
@@ -484,8 +547,14 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
           {/* Rectangle 6: Album Artwork (320x320px) */}
           <div className="relative group w-full max-w-[320px] aspect-square rounded-2xl overflow-hidden border border-[#232B3E] shadow-xl">
             <img
-              src={currentTrack?.cover_url || currentTrack?.image || room?.cover_url || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=600&q=80'}
-              alt="Track Artwork"
+              src={
+                room?.cover_url || 
+                room?.host_avatar || 
+                currentTrack?.cover_url || 
+                currentTrack?.image || 
+                'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=600&q=80'
+              }
+              alt="Room Cover Artwork"
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-transparent to-transparent opacity-80" />
@@ -507,18 +576,25 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
             </p>
           </div>
 
-          {/* Media Player Controls (Play / Pause / Mute) */}
+          {/* Media Player Controls (Play / Pause) - Creator Only */}
           <div className="flex items-center justify-center gap-6 pt-2">
             <button 
               onClick={() => {
+                if (userRole !== 'creator' && currentUserId !== room?.host_id) {
+                  toast.error('Only room creators can play or pause the live stream sound');
+                  return;
+                }
                 const nextState = !isPlaying;
                 setIsPlaying(nextState);
                 if (audioRef.current) {
                   if (nextState) audioRef.current.play().catch(e => console.warn(e));
                   else audioRef.current.pause();
                 }
+                emitPlaybackControl(nextState ? 'play' : 'pause', currentTrack?.id || room?.current_track_id, currentTimeMs);
               }}
-              className="w-16 h-16 rounded-full bg-[#8A2BE2] hover:bg-[#7823c9] text-white flex items-center justify-center transition-all shadow-[0_0_25px_rgba(138,43,226,0.6)] cursor-pointer hover:scale-105 active:scale-95"
+              className={`w-16 h-16 rounded-full text-white flex items-center justify-center transition-all shadow-[0_0_25px_rgba(138,43,226,0.6)] cursor-pointer hover:scale-105 active:scale-95 ${
+                userRole === 'creator' || currentUserId === room?.host_id ? 'bg-[#8A2BE2] hover:bg-[#7823c9]' : 'bg-zinc-700/60 opacity-60 cursor-not-allowed'
+              }`}
             >
               {isPlaying ? <Pause size={28} fill="currentColor" /> : <Play size={28} fill="currentColor" className="ml-1" />}
             </button>
@@ -527,11 +603,29 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
           {/* Timecode & Progress Slider */}
           <div className="w-full max-w-[320px] space-y-2">
             <div className="relative w-full h-1.5 bg-[#CACACA]/30 rounded-full overflow-hidden cursor-pointer">
-              <div className="h-full bg-[#8A2BE2] rounded-full w-[45%]" />
+              <div 
+                className="h-full bg-[#8A2BE2] rounded-full transition-all duration-200" 
+                style={{ width: `${durationMs > 0 ? Math.min(100, (currentTimeMs / durationMs) * 100) : 0}%` }}
+              />
             </div>
             <div className="flex items-center justify-between text-xs font-mono text-[#CACACA]">
-              <span>01:27</span>
-              <span>03:45</span>
+              <span>
+                {(() => {
+                  const sec = Math.floor((currentTimeMs || 0) / 1000);
+                  const m = Math.floor(sec / 60);
+                  const s = sec % 60;
+                  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                })()}
+              </span>
+              <span>
+                {(() => {
+                  if (!durationMs) return '00:00';
+                  const sec = Math.floor(durationMs / 1000);
+                  const m = Math.floor(sec / 60);
+                  const s = sec % 60;
+                  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                })()}
+              </span>
             </div>
           </div>
 
@@ -578,13 +672,15 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
               <h3 className="text-xs font-bold uppercase tracking-widest text-[#CACACA]">
                 ON STAGE
               </h3>
-              <button 
-                onClick={handleMuteAll}
-                className="flex items-center gap-1.5 text-xs font-bold text-accent-purple hover:underline cursor-pointer"
-              >
-                <MicOff size={14} />
-                <span>Mute All</span>
-              </button>
+              {(userRole === 'creator' || currentUserId === room?.host_id) && (
+                <button 
+                  onClick={handleMuteAll}
+                  className="flex items-center gap-1.5 text-xs font-bold text-accent-purple hover:underline cursor-pointer"
+                >
+                  <MicOff size={14} />
+                  <span>Mute All</span>
+                </button>
+              )}
             </div>
 
             {/* Stage Speakers Grid */}

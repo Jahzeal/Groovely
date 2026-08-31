@@ -66,14 +66,39 @@ export const useRoomSocket = (roomId?: string | number, userId?: number, initial
     });
 
     // Listen for room events
-    socket.on('user_joined', (data: { userId: number; participants?: RoomParticipant[] }) => {
-      if (data.participants) {
+    socket.on('user_joined', (data: any) => {
+      if (data.participants && Array.isArray(data.participants)) {
         setParticipants(data.participants);
+      } else if (data.participant) {
+        setParticipants(prev => {
+          const exists = prev.some(p => Number(p.user_id) === Number(data.participant.user_id));
+          if (exists) {
+            return prev.map(p => Number(p.user_id) === Number(data.participant.user_id) ? { ...p, ...data.participant } : p);
+          }
+          return [...prev, data.participant];
+        });
+      } else if (data.user) {
+        setParticipants(prev => {
+          const exists = prev.some(p => Number(p.user_id) === Number(data.user.user_id || data.user.id));
+          if (exists) return prev;
+          return [...prev, {
+            user_id: Number(data.user.user_id || data.user.id),
+            display_name: data.user.display_name || data.user.name || 'Listener',
+            username: data.user.username || 'user',
+            avatar_url: data.user.avatar_url,
+            role: data.role || 'listener'
+          }];
+        });
       }
     });
 
-    socket.on('user_left', (data: { userId: number }) => {
-      setParticipants(prev => prev.filter(p => p.user_id !== data.userId));
+    socket.on('user_left', (data: any) => {
+      if (data.participants && Array.isArray(data.participants)) {
+        setParticipants(data.participants);
+      } else if (data.userId || data.user_id) {
+        const leftId = Number(data.userId || data.user_id);
+        setParticipants(prev => prev.filter(p => Number(p.user_id) !== leftId));
+      }
     });
 
     socket.on('playback_synced', (data: PlaybackSyncData) => {
