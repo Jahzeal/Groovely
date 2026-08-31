@@ -10,6 +10,7 @@ import { FanModule } from './fan/fan.module';
 import { CreatorModule } from './creator/creator.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { MintingModule } from './minting/minting.module';
+import { ListeningRoomModule } from './listening-room/listening-room.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { MintingModule } from './minting/minting.module';
     CreatorModule,
     AnalyticsModule,
     MintingModule,
+    ListeningRoomModule,
   ],
   controllers: [AppController],
 })
