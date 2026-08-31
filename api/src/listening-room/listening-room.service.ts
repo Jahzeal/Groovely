@@ -74,7 +74,7 @@ export class ListeningRoomService {
              u.username as host_username, 
              u.avatar_url as host_avatar, 
              u.wallet as host_wallet,
-             (SELECT COUNT(*) FROM listening_room_participants p WHERE p.room_id = r.id AND p.left_at IS NULL) as active_listeners,
+             (SELECT COUNT(*) FROM listening_room_participants p WHERE p.room_id = r.id AND p.left_at IS NULL AND p.role = 'listener') as active_listeners,
              t.title as current_track_title,
              t.cover_url as current_track_cover,
              t.audio_url as current_track_audio
@@ -111,8 +111,7 @@ export class ListeningRoomService {
               u.wallet as host_wallet,
               t.title as current_track_title,
               t.cover_url as current_track_cover,
-              t.audio_url as current_track_audio,
-              t.artist_name as current_track_artist
+              t.audio_url as current_track_audio
        FROM listening_rooms r
        LEFT JOIN users u ON r.host_id = u.id
        LEFT JOIN tracks t ON r.current_track_id = t.id
@@ -126,63 +125,80 @@ export class ListeningRoomService {
 
     const room = roomRes.rows[0];
 
-    // Fetch active participants
-    const participantsRes = await this.db.query(
-      `SELECT p.*, 
-              COALESCE(u.display_name, 'Participant') as display_name, 
-              COALESCE(u.username, 'user') as username, 
-              u.avatar_url, 
-              u.wallet, 
-              u.role as user_role
-       FROM listening_room_participants p
-       LEFT JOIN users u ON p.user_id = u.id
-       WHERE p.room_id = $1 AND p.left_at IS NULL
-       ORDER BY CASE p.role 
-         WHEN 'host' THEN 1 
-         WHEN 'cohost' THEN 2 
-         WHEN 'speaker' THEN 3 
-         ELSE 4 
-       END ASC`,
-      [roomId]
-    );
+    // Fetch active participants safely
+    let participants: any[] = [];
+    try {
+      const participantsRes = await this.db.query(
+        `SELECT p.*, 
+                COALESCE(u.display_name, 'Participant') as display_name, 
+                COALESCE(u.username, 'user') as username, 
+                u.avatar_url, 
+                u.wallet, 
+                u.role as user_role
+         FROM listening_room_participants p
+         LEFT JOIN users u ON p.user_id = u.id
+         WHERE p.room_id = $1 AND p.left_at IS NULL
+         ORDER BY CASE p.role 
+           WHEN 'host' THEN 1 
+           WHEN 'cohost' THEN 2 
+           WHEN 'speaker' THEN 3 
+           ELSE 4 
+         END ASC`,
+        [roomId]
+      );
+      participants = participantsRes.rows;
+    } catch (pErr) {
+      console.warn('Could not fetch participants:', pErr);
+    }
 
-    // Fetch room playlist queue
-    const playlistRes = await this.db.query(
-      `SELECT q.*, 
-              t.title, 
-              t.artist_name, 
-              t.cover_url, 
-              t.audio_url, 
-              t.price,
-              u.display_name as added_by_name
-       FROM listening_room_playlist q
-       JOIN tracks t ON q.track_id = t.id
-       JOIN users u ON q.added_by_user_id = u.id
-       WHERE q.room_id = $1
-       ORDER BY q.position_order ASC`,
-      [roomId]
-    );
+    // Fetch room playlist queue safely
+    let playlist: any[] = [];
+    try {
+      const playlistRes = await this.db.query(
+        `SELECT q.*, 
+                t.title, 
+                t.cover_url, 
+                t.audio_url, 
+                t.price,
+                COALESCE(u.display_name, 'Creator') as added_by_name
+         FROM listening_room_playlist q
+         LEFT JOIN tracks t ON q.track_id = t.id
+         LEFT JOIN users u ON q.added_by_user_id = u.id
+         WHERE q.room_id = $1
+         ORDER BY q.position_order ASC`,
+        [roomId]
+      );
+      playlist = playlistRes.rows;
+    } catch (plErr) {
+      console.warn('Could not fetch room playlist:', plErr);
+    }
 
-    // Fetch recent messages
-    const messagesRes = await this.db.query(
-      `SELECT m.*, 
-              u.display_name, 
-              u.username, 
-              u.avatar_url,
-              u.wallet
-       FROM listening_room_messages m
-       JOIN users u ON m.user_id = u.id
-       WHERE m.room_id = $1
-       ORDER BY m.created_at DESC
-       LIMIT 50`,
-      [roomId]
-    );
+    // Fetch recent messages safely
+    let messages: any[] = [];
+    try {
+      const messagesRes = await this.db.query(
+        `SELECT m.*, 
+                COALESCE(u.display_name, 'User') as display_name, 
+                COALESCE(u.username, 'user') as username, 
+                u.avatar_url,
+                u.wallet
+         FROM listening_room_messages m
+         LEFT JOIN users u ON m.user_id = u.id
+         WHERE m.room_id = $1
+         ORDER BY m.created_at DESC
+         LIMIT 50`,
+        [roomId]
+      );
+      messages = messagesRes.rows.reverse();
+    } catch (mErr) {
+      console.warn('Could not fetch room messages:', mErr);
+    }
 
     return {
       room,
-      participants: participantsRes.rows,
-      playlist: playlistRes.rows,
-      messages: messagesRes.rows.reverse(),
+      participants,
+      playlist,
+      messages,
     };
   }
 

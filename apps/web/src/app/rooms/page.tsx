@@ -8,6 +8,7 @@ import { CreateRoomModal } from '@/components/rooms/CreateRoomModal';
 import { Headphones, Plus, Users, Radio, Calendar, Lock, Globe, Sparkles, Loader2 } from 'lucide-react';
 import { cachedApiFetch } from '@/lib/api';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 
 export default function ListeningRoomsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -34,6 +35,23 @@ export default function ListeningRoomsPage() {
     }
     fetchRooms();
   }, []);
+
+  const [userRole, setUserRole] = useState<string>('fan');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const role = localStorage.getItem('groovely_role') || localStorage.getItem('grooveli_role') || 'fan';
+      setUserRole(role.toLowerCase());
+    }
+  }, []);
+
+  const handleCreateRoomClick = () => {
+    if (userRole !== 'creator') {
+      toast.error('Only verified Creators can create listening rooms. Fans can join any active room as a listener!');
+      return;
+    }
+    setIsModalOpen(true);
+  };
 
   const genres = ['All', 'Afrobeat', 'Hip Hop', 'Amapiano', 'R&B', 'Lo-Fi / Chill', 'Podcast / Discussion', 'Studio Session'];
 
@@ -72,7 +90,7 @@ export default function ListeningRoomsPage() {
                 </div>
 
                 <button
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={handleCreateRoomClick}
                   className="px-6 py-3.5 bg-[#8A2BE2] hover:bg-[#7823c9] text-white font-bold text-sm rounded-xl transition-all shadow-[0_0_25px_rgba(138,43,226,0.4)] flex items-center justify-center gap-2 cursor-pointer shrink-0"
                 >
                   <Plus size={18} />

@@ -307,6 +307,16 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     }, 2500);
   };
 
+  // User Role Detection (Creator vs Fan)
+  const [userRole, setUserRole] = useState<string>('fan');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const role = localStorage.getItem('groovely_role') || localStorage.getItem('grooveli_role') || 'fan';
+      setUserRole(role.toLowerCase());
+    }
+  }, []);
+
   // Browser Microphone & WebAudio WebRTC State
   const [isMicActive, setIsMicActive] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
@@ -316,7 +326,6 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
 
   const toggleMicrophone = async () => {
     if (isMicActive) {
-      // Turn off microphone
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(track => track.stop());
         mediaStreamRef.current = null;
@@ -326,50 +335,61 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       setAudioLevel(0);
       toast.success('Microphone muted');
     } else {
-      // Turn on microphone
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaStreamRef.current = stream;
-        setIsMicActive(true);
-        toast.success('Microphone active! You are now live on stage.');
-
-        // Web Audio API level analyzer
-        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        const audioCtx = new AudioCtx();
         audioContextRef.current = audioCtx;
+        
         const source = audioCtx.createMediaStreamSource(stream);
         const analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 64;
+        analyser.fftSize = 256;
         source.connect(analyser);
 
         const dataArray = new Uint8Array(analyser.frequencyBinCount);
-        const checkAudio = () => {
+        
+        const checkAudioLevel = () => {
           analyser.getByteFrequencyData(dataArray);
-          const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+          const sum = dataArray.reduce((acc, val) => acc + val, 0);
+          const average = sum / dataArray.length;
           setAudioLevel(average);
-          animFrameRef.current = requestAnimationFrame(checkAudio);
+          animFrameRef.current = requestAnimationFrame(checkAudioLevel);
         };
-        checkAudio();
+
+        checkAudioLevel();
+        setIsMicActive(true);
+        toast.success('Microphone active - You are live on stage!');
       } catch (err) {
-        console.error('Microphone permission denied:', err);
-        toast.error('Could not access microphone. Please allow microphone access in your browser.');
+        console.error('Microphone access error:', err);
+        toast.error('Could not access microphone');
       }
     }
   };
 
   const handleEndRoom = async () => {
-    if (confirm('Are you sure you want to end this live room?')) {
-      try {
-        await apiFetch(`/api/rooms/${roomId}/end`, { method: 'POST' });
-      } catch (err) {
-        console.warn('Backend end room warning:', err);
-      } finally {
-        // Stop active microphone stream if any
-        if (mediaStreamRef.current) {
-          mediaStreamRef.current.getTracks().forEach(track => track.stop());
+    const isHostOrCreator = userRole === 'creator' || currentUserId === room?.host_id;
+    if (isHostOrCreator) {
+      if (confirm('Are you sure you want to end this live room for all participants?')) {
+        try {
+          await apiFetch(`/api/rooms/${roomId}/end`, { method: 'POST' });
+        } catch (err) {
+          console.warn('Backend end room warning:', err);
+        } finally {
+          if (mediaStreamRef.current) {
+            mediaStreamRef.current.getTracks().forEach(track => track.stop());
+          }
+          toast.success('Room session ended');
+          router.push('/rooms');
         }
-        toast.success('Room session ended');
-        router.push('/rooms');
       }
+    } else {
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+      toast.success('Left listening room');
+      router.push('/rooms');
     }
   };
 
@@ -426,7 +446,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
           {/* Frame 103: Listener Count */}
           <div className="hidden sm:flex items-center gap-2 text-zinc-400 text-xs font-medium">
             <Users size={16} className="text-zinc-400" />
-            <span>{roomListeners.length > 0 ? roomListeners.length : (room?.active_listeners || participants.length || 1)} listening</span>
+            <span>{roomListeners.length} {roomListeners.length === 1 ? 'listener' : 'listeners'}</span>
           </div>
         </div>
 
@@ -447,10 +467,10 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
 
           <button
             onClick={handleEndRoom}
-            className="px-5 py-2.5 bg-[#FF0044] hover:bg-[#d60039] text-white font-bold text-xs rounded-xl transition-all shadow-[0_0_20px_rgba(255,0,68,0.4)] flex items-center gap-1.5"
+            className="px-5 py-2.5 bg-[#FF0044] hover:bg-[#d60039] text-white font-bold text-xs rounded-xl transition-all shadow-[0_0_20px_rgba(255,0,68,0.4)] flex items-center gap-1.5 cursor-pointer"
           >
             <PhoneOff size={15} />
-            <span>End Room</span>
+            <span>{userRole === 'creator' || currentUserId === room?.host_id ? 'End Room' : 'Leave Room'}</span>
           </button>
         </div>
       </header>
@@ -462,48 +482,45 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
         <div className="lg:col-span-4 flex flex-col items-center space-y-6 bg-[#0F172A] p-6 rounded-3xl border border-[#232B3E]">
           
           {/* Rectangle 6: Album Artwork (320x320px) */}
-          <div className="relative w-full max-w-[320px] aspect-square rounded-2xl overflow-hidden border border-[#2D3548] shadow-[0_15px_40px_rgba(0,0,0,0.8)] group">
+          <div className="relative group w-full max-w-[320px] aspect-square rounded-2xl overflow-hidden border border-[#232B3E] shadow-xl">
             <img
-              src={currentTrack?.cover_url || room?.current_track_cover || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=600&q=80'}
-              alt={currentTrack?.title || 'Track Artwork'}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              src={currentTrack?.cover_url || currentTrack?.image || room?.cover_url || 'https://images.unsplash.com/photo-1514525253361-bee8d48800d5?auto=format&fit=crop&w=600&q=80'}
+              alt="Track Artwork"
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
-            <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-mono font-bold text-accent-purple border border-accent-purple/30">
-              HQ STEMS 24-BIT
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-transparent to-transparent opacity-80" />
+            
+            {/* Playing Badge */}
+            <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-bold uppercase tracking-widest text-[#00FF85] flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#00FF85] animate-ping" />
+              <span>{isPlaying ? 'NOW STREAMING' : 'AUDIO PAUSED'}</span>
             </div>
           </div>
 
-          {/* Track Title & Artist Info */}
-          <div className="text-center space-y-1.5 w-full">
-            <h2 className="font-['Clash_Display',sans-serif] text-xl font-bold text-white truncate">
-              {currentTrack?.title || room?.current_track_title || 'Select a Track from Library'}
+          {/* Track Info */}
+          <div className="text-center space-y-1 w-full max-w-[320px]">
+            <h2 className="font-['Clash_Display',sans-serif] text-xl font-bold text-white tracking-wide truncate">
+              {currentTrack?.title || room?.current_track_title || room?.title || 'Midnight Afrobeat Stems'}
             </h2>
-            <div className="flex items-center justify-center gap-2 text-sm text-[#CACACA] font-bold">
-              <span>{currentTrack?.artist_name || room?.host_name || 'Creator'}</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-[#CACACA]" />
-              <span>{room?.title || 'Live Session'}</span>
-            </div>
+            <p className="text-xs text-zinc-400 font-medium truncate">
+              {currentTrack?.artist_name || room?.current_track_artist || room?.host_name || 'Creator Host'}
+            </p>
           </div>
 
-          {/* Player Controls (Frame: Backward, Play 64px #8A2BE2, Forward) */}
-          <div className="flex items-center justify-center gap-8 py-2">
-            <button className="text-[#CACACA] hover:text-white transition-colors p-2 cursor-pointer">
-              <SkipBack size={28} />
-            </button>
-
-            <button
+          {/* Media Player Controls (Play / Pause / Mute) */}
+          <div className="flex items-center justify-center gap-6 pt-2">
+            <button 
               onClick={() => {
                 const nextState = !isPlaying;
                 setIsPlaying(nextState);
-                emitPlaybackControl(nextState ? 'play' : 'pause', currentTrack?.id || room?.current_track_id, currentTimeMs);
+                if (audioRef.current) {
+                  if (nextState) audioRef.current.play().catch(e => console.warn(e));
+                  else audioRef.current.pause();
+                }
               }}
-              className="w-16 h-16 rounded-full bg-[#8A2BE2] hover:bg-[#7823c9] text-white flex items-center justify-center transition-all shadow-[0_0_30px_rgba(138,43,226,0.6)] cursor-pointer"
+              className="w-16 h-16 rounded-full bg-[#8A2BE2] hover:bg-[#7823c9] text-white flex items-center justify-center transition-all shadow-[0_0_25px_rgba(138,43,226,0.6)] cursor-pointer hover:scale-105 active:scale-95"
             >
               {isPlaying ? <Pause size={28} fill="currentColor" /> : <Play size={28} fill="currentColor" className="ml-1" />}
-            </button>
-
-            <button className="text-[#CACACA] hover:text-white transition-colors p-2 cursor-pointer">
-              <SkipForward size={28} />
             </button>
           </div>
 
@@ -518,35 +535,37 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
             </div>
           </div>
 
-          {/* Additional Player Actions (Shuffle, Repeat, Playlist, Upload) */}
-          <div className="flex items-center justify-between w-full max-w-[320px] pt-4 border-t border-[#232B3E] text-[#CACACA]">
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleAudioUpload} 
-              accept="audio/*,.mp3,.wav,.m4a,.flac" 
-              className="hidden" 
-            />
+          {/* Additional Player Actions (Upload, Playlist) - Creator Only */}
+          {(userRole === 'creator' || currentUserId === room?.host_id) && (
+            <div className="flex items-center justify-between w-full max-w-[320px] pt-4 border-t border-[#232B3E] text-[#CACACA]">
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleAudioUpload} 
+                accept="audio/*,.mp3,.wav,.m4a,.flac" 
+                className="hidden" 
+              />
 
-            <button 
-              onClick={triggerFileUpload}
-              disabled={isUploadingTrack}
-              className="hover:text-white transition-colors bg-[#8A2BE2] hover:bg-[#7823c9] text-white px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-bold shadow-[0_0_15px_rgba(138,43,226,0.4)] cursor-pointer disabled:opacity-50"
-            >
-              {isUploadingTrack ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-              <span>Upload Audio</span>
-            </button>
-
-            <div className="flex items-center gap-2">
               <button 
-                onClick={() => setIsPlaylistModalOpen(true)}
-                className="hover:text-accent-purple transition-colors p-2 cursor-pointer bg-[#192134] border border-[#2D3548] rounded-xl flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white"
+                onClick={triggerFileUpload}
+                disabled={isUploadingTrack}
+                className="hover:text-white transition-colors bg-[#8A2BE2] hover:bg-[#7823c9] text-white px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-bold shadow-[0_0_15px_rgba(138,43,226,0.4)] cursor-pointer disabled:opacity-50"
               >
-                <ListMusic size={15} className="text-accent-purple" />
-                <span>Playlist</span>
+                {isUploadingTrack ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                <span>Upload Audio</span>
               </button>
+
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setIsPlaylistModalOpen(true)}
+                  className="hover:text-accent-purple transition-colors p-2 cursor-pointer bg-[#192134] border border-[#2D3548] rounded-xl flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white"
+                >
+                  <ListMusic size={15} className="text-accent-purple" />
+                  <span>Playlist</span>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
         </div>
 

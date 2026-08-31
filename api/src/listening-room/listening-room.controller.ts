@@ -13,6 +13,10 @@ export class ListeningRoomController {
   async createRoom(@Req() req: any, @Body() dto: CreateRoomDto) {
     const hostId = Number(req.userId || req.user?.id);
     if (!hostId) throw new BadRequestException('Invalid authentication token');
+    const role = (req.userRole || req.user?.role || '').toLowerCase();
+    if (role === 'fan') {
+      throw new BadRequestException('Only verified Creators can create listening rooms');
+    }
     const room = await this.roomService.createRoom(hostId, dto);
     return { success: true, data: room };
   }
