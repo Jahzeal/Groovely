@@ -82,6 +82,8 @@ export default function ListeningRoomsPage() {
     },
   ];
 
+  const genres = ['All', 'Afrobeat', 'Hip Hop', 'Amapiano', 'R&B', 'Lo-Fi / Chill', 'Podcast / Discussion', 'Studio Session'];
+
   const allDisplayRooms = [...rooms, ...featuredCreatorRooms.filter(f => !rooms.some((r: any) => Number(r.id) === Number(f.id)))];
 
   const filteredRooms = allDisplayRooms.filter(r => {
