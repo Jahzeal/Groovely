@@ -43,7 +43,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     async function fetchInviteCreators() {
       try {
         const res = await apiFetch(endpoint);
-        if (res.ok) {
+        if (res?.ok) {
           const body = await res.json();
           if (body?.data?.creators) setInviteCreators(body.data.creators);
           else if (body?.creators) setInviteCreators(body.creators);
@@ -145,7 +145,18 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     }
   };
 
+  // User Role Detection (Creator vs Fan)
+  const [userRole, setUserRole] = useState<string>('fan');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const role = localStorage.getItem('groovely_role') || localStorage.getItem('grooveli_role') || 'fan';
+      setUserRole(role.toLowerCase());
+    }
+  }, []);
+
   // WebSockets Hook Integration
+  const socketRole = (userRole === 'creator' || (currentUserId && room?.host_id && currentUserId === room.host_id)) ? 'host' : 'listener';
   const {
     isConnected: isSocketConnected,
     participants,
@@ -156,7 +167,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     emitPlaybackControl,
     emitSendMessage,
     emitRaiseHand,
-  } = useRoomSocket(roomId, currentUserId, 'host');
+  } = useRoomSocket(roomId, currentUserId, socketRole);
 
   // Live Player State
   const [isPlaying, setIsPlaying] = useState(false);
@@ -168,16 +179,6 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   const [activeTab, setActiveTab] = useState<'chat' | 'activity'>('chat');
   const [chatMessage, setChatMessage] = useState('');
   const [isChatLocked, setIsChatLocked] = useState(false);
-
-  // User Role Detection (Creator vs Fan)
-  const [userRole, setUserRole] = useState<string>('fan');
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const role = localStorage.getItem('groovely_role') || localStorage.getItem('grooveli_role') || 'fan';
-      setUserRole(role.toLowerCase());
-    }
-  }, []);
 
   // Floating Reactions State
   const [floatingReactions, setFloatingReactions] = useState<{ id: number; emoji: string; left: number }[]>([]);
@@ -226,36 +227,39 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
           }
         }
 
-        // Fetch Creator Tracks, User Library & Marketplace Tracks for Playlist Selector
+        // Fetch Creator Tracks, Fan Trending & Marketplace Tracks for Playlist Selector
         try {
-          const [creatorTracksRes, libRes, trendRes] = await Promise.allSettled([
-            cachedApiFetch('/api/creator/tracks'),
-            cachedApiFetch('/api/library'),
-            cachedApiFetch('/api/market/trending')
+          const [cRes, mRes, fRes] = await Promise.allSettled([
+            apiFetch('/api/creator/tracks'),
+            apiFetch('/api/market/trending'),
+            apiFetch('/api/fan/trending')
           ]);
 
+          const extractTracks = (body: any): any[] => {
+            if (!body) return [];
+            if (Array.isArray(body)) return body;
+            if (Array.isArray(body.data?.tracks)) return body.data.tracks;
+            if (Array.isArray(body.tracks)) return body.tracks;
+            if (Array.isArray(body.data)) return body.data;
+            return [];
+          };
+
           let dbTracks: any[] = [];
-          if (creatorTracksRes.status === 'fulfilled' && creatorTracksRes.value?.data) {
-            const arr = Array.isArray(creatorTracksRes.value.data) 
-              ? creatorTracksRes.value.data 
-              : (creatorTracksRes.value.data.tracks || creatorTracksRes.value.data.data || []);
-            dbTracks = [...dbTracks, ...arr];
+          if (cRes.status === 'fulfilled' && cRes.value?.ok) {
+            const body = await cRes.value.json();
+            dbTracks = [...dbTracks, ...extractTracks(body)];
           }
-          if (libRes.status === 'fulfilled' && libRes.value?.data) {
-            const arr = Array.isArray(libRes.value.data) 
-              ? libRes.value.data 
-              : (libRes.value.data.tracks || libRes.value.data.data || []);
-            dbTracks = [...dbTracks, ...arr];
+          if (mRes.status === 'fulfilled' && mRes.value?.ok) {
+            const body = await mRes.value.json();
+            dbTracks = [...dbTracks, ...extractTracks(body)];
           }
-          if (trendRes.status === 'fulfilled' && trendRes.value?.data) {
-            const arr = Array.isArray(trendRes.value.data) 
-              ? trendRes.value.data 
-              : (trendRes.value.data.tracks || trendRes.value.data.data || []);
-            dbTracks = [...dbTracks, ...arr];
+          if (fRes.status === 'fulfilled' && fRes.value?.ok) {
+            const body = await fRes.value.json();
+            dbTracks = [...dbTracks, ...extractTracks(body)];
           }
 
           const uniqueDbTracks = dbTracks.filter((t, i, self) => 
-            i === self.findIndex(ot => String(ot.id) === String(t.id))
+            i === self.findIndex(ot => String(ot.id || ot.track_id) === String(t.id || t.track_id))
           );
 
           setLibraryTracks(uniqueDbTracks);
@@ -275,40 +279,44 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     initRoomAndJoin();
   }, [roomId, userRole]);
 
-  // Fetch fresh Creator & Library Tracks whenever Playlist modal opens
+  // Fetch fresh Creator & Library Tracks whenever Playlist modal opens (Creator Only)
   useEffect(() => {
     if (!isPlaylistModalOpen) return;
+    if (userRole !== 'creator' && currentUserId !== room?.host_id) return;
 
     async function loadFreshLibraryTracks() {
       try {
-        const [creatorRes, libRes, trendRes] = await Promise.allSettled([
-          cachedApiFetch('/api/creator/tracks'),
-          cachedApiFetch('/api/library'),
-          cachedApiFetch('/api/market/trending')
+        const [cRes, mRes, fRes] = await Promise.allSettled([
+          apiFetch('/api/creator/tracks'),
+          apiFetch('/api/market/trending'),
+          apiFetch('/api/fan/trending')
         ]);
 
+        const extractTracks = (body: any): any[] => {
+          if (!body) return [];
+          if (Array.isArray(body)) return body;
+          if (Array.isArray(body.data?.tracks)) return body.data.tracks;
+          if (Array.isArray(body.tracks)) return body.tracks;
+          if (Array.isArray(body.data)) return body.data;
+          return [];
+        };
+
         let dbTracks: any[] = [];
-        if (creatorRes.status === 'fulfilled' && creatorRes.value?.data) {
-          const arr = Array.isArray(creatorRes.value.data) 
-            ? creatorRes.value.data 
-            : (creatorRes.value.data.tracks || creatorRes.value.data.data || []);
-          dbTracks = [...dbTracks, ...arr];
+        if (cRes.status === 'fulfilled' && cRes.value?.ok) {
+          const body = await cRes.value.json();
+          dbTracks = [...dbTracks, ...extractTracks(body)];
         }
-        if (libRes.status === 'fulfilled' && libRes.value?.data) {
-          const arr = Array.isArray(libRes.value.data) 
-            ? libRes.value.data 
-            : (libRes.value.data.tracks || libRes.value.data.data || []);
-          dbTracks = [...dbTracks, ...arr];
+        if (mRes.status === 'fulfilled' && mRes.value?.ok) {
+          const body = await mRes.value.json();
+          dbTracks = [...dbTracks, ...extractTracks(body)];
         }
-        if (trendRes.status === 'fulfilled' && trendRes.value?.data) {
-          const arr = Array.isArray(trendRes.value.data) 
-            ? trendRes.value.data 
-            : (trendRes.value.data.tracks || trendRes.value.data.data || []);
-          dbTracks = [...dbTracks, ...arr];
+        if (fRes.status === 'fulfilled' && fRes.value?.ok) {
+          const body = await fRes.value.json();
+          dbTracks = [...dbTracks, ...extractTracks(body)];
         }
 
         const unique = dbTracks.filter((t, i, self) => 
-          i === self.findIndex(ot => String(ot.id) === String(t.id))
+          i === self.findIndex(ot => String(ot.id || ot.track_id) === String(t.id || t.track_id))
         );
 
         setLibraryTracks(unique);
@@ -688,7 +696,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
             {/* Stage Speakers Grid */}
             <div className="flex items-center gap-6 overflow-x-auto pb-2">
               {displaySpeakers.map((speaker: any, idx: number) => {
-                const isCurrentUser = speaker.user_id === currentUserId || speaker.role === 'host';
+                const isCurrentUser = Boolean(speaker.user_id && currentUserId && String(speaker.user_id) === String(currentUserId));
                 const activeMute = isCurrentUser ? !isMicActive : (speaker.is_muted || speaker.isMuted);
 
                 return (
@@ -882,8 +890,8 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
         </div>
       </div>
 
-      {/* ── ROOM PLAYLIST / LIBRARY TRACK SELECTOR MODAL ── */}
-      {isPlaylistModalOpen && (
+      {/* ── ROOM PLAYLIST / LIBRARY TRACK SELECTOR MODAL (Creator Only) ── */}
+      {isPlaylistModalOpen && (userRole === 'creator' || currentUserId === room?.host_id) && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#0F172A] border border-[#232B3E] rounded-3xl p-6 sm:p-8 max-w-xl w-full space-y-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-[#2D3548] pb-4">

@@ -104,7 +104,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
     async function loadCreators() {
       try {
         const res = await apiFetch(endpoint);
-        if (res.ok) {
+        if (res?.ok) {
           const body = await res.json();
           const creatorsList = body?.data?.creators || body?.creators || [];
           if (Array.isArray(creatorsList)) {
