@@ -455,15 +455,37 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   const [audioLevel, setAudioLevel] = useState(0);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const animFrameRef = useRef<number | null>(null);
+  const voiceAudioContextRef = useRef<AudioContext | null>(null);
 
   function handleVoiceStreamReceived(data: { userId: number; audioData: string }) {
     if (!data.audioData) return;
     try {
-      const audio = new Audio(data.audioData);
-      audio.volume = 1.0;
-      audio.play().catch(e => console.warn('Voice chunk playback notice:', e));
+      if (!voiceAudioContextRef.current) {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        voiceAudioContextRef.current = new AudioCtx();
+      }
+      const audioCtx = voiceAudioContextRef.current;
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
+      fetch(data.audioData)
+        .then(res => res.arrayBuffer())
+        .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
+        .then(audioBuffer => {
+          const source = audioCtx.createBufferSource();
+          source.buffer = audioBuffer;
+          source.connect(audioCtx.destination);
+          source.start(0);
+        })
+        .catch(() => {
+          // Fallback to HTMLAudioElement
+          try {
+            const fallbackAudio = new Audio(data.audioData);
+            fallbackAudio.volume = 1.0;
+            fallbackAudio.play().catch(() => {});
+          } catch (fErr) {}
+        });
     } catch (e) {
       console.warn('Voice stream playback decode error:', e);
     }
