@@ -194,7 +194,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
                     Description / Topic Teaser
                   </label>
                   <textarea
-                    placeholder="Tell listeners what this room is about, what stems you're breaking down, or guest announcements..."
+                    placeholder="Tell listeners what this room is about, what stems you are breaking down, or guest announcements..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={3}

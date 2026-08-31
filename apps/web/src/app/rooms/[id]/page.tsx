@@ -124,7 +124,7 @@ export default function LiveRoomPage() {
   ];
 
   const demoMessages = [
-    { name: 'Sarah.eth', time: '11:32AM', text: 'This beat is absolutely fire🔥 Can’t wait for the drop!', isHost: false },
+    { name: 'Sarah.eth', time: '11:32AM', text: 'This beat is absolutely fire🔥 Can&apos;t wait for the drop!', isHost: false },
     { name: 'skinpop', time: '01:32AM', text: 'Wen token?🚀', isHost: false },
     { name: 'Cub3 (Host)', time: '03:06AM', text: 'Thanks guys! Minting starts in 5 mins. Check the pinned link.', isHost: true },
     { name: 'overlisted', time: '07:54PM', text: 'Love the vibes here', isHost: false },
