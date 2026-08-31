@@ -34,10 +34,35 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
   const [stemsEnabled, setStemsEnabled] = useState(false);
   const [coHostInput, setCoHostInput] = useState('');
   const [coHosts, setCoHosts] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [startTimeType, setStartTimeType] = useState<'now' | 'scheduled'>('now');
   const [scheduledDate, setScheduledDate] = useState('');
 
+  // Popular Creator Suggestions List
+  const suggestedCreators = [
+    { handle: 'Uzor', name: 'Uzor Producer', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80', role: 'Verified Creator' },
+    { handle: 'Darrell', name: 'Darrell Beats', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80', role: 'Executive Producer' },
+    { handle: 'JahzealDave', name: 'Jahzeal Dave', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80', role: 'Afrobeats Artist' },
+    { handle: 'NightWhisper', name: 'Night Whisper', avatar: 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?auto=format&fit=crop&w=200&q=80', role: 'Sound Engineer' },
+    { handle: 'SlickBeats', name: 'Slick Beats', avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=200&q=80', role: 'Mixing Master' },
+    { handle: 'Kaelo', name: 'Kaelo Vibes', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80', role: 'Lo-Fi Producer' },
+  ];
+
+  const filteredSuggestions = suggestedCreators.filter(c => {
+    const query = coHostInput.trim().toLowerCase().replace(/^@/, '');
+    if (!query) return true;
+    return c.handle.toLowerCase().includes(query) || c.name.toLowerCase().includes(query);
+  }).filter(c => !coHosts.includes(c.handle));
+
   if (!isOpen) return null;
+
+  const handleSelectCreator = (handle: string) => {
+    if (!coHosts.includes(handle)) {
+      setCoHosts([...coHosts, handle]);
+    }
+    setCoHostInput('');
+    setShowSuggestions(false);
+  };
 
   const handleAddCoHost = () => {
     if (!coHostInput.trim()) return;
@@ -343,34 +368,73 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
               {/* Invite Co-Hosts */}
-              <div className="bg-[#192134] p-4 rounded-xl border border-[#2D3548] space-y-3">
+              <div className="bg-[#192134] p-4 rounded-xl border border-[#2D3548] space-y-3 relative">
                 <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400">
                   Invite Co-Hosts (Creators)
                 </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="@username or handle"
-                    value={coHostInput}
-                    onChange={(e) => setCoHostInput(e.target.value)}
-                    className="flex-1 bg-[#0F172A] border border-[#2D3548] rounded-lg px-3 py-2 text-xs text-white focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddCoHost}
-                    className="px-3 py-2 bg-[#8A2BE2] hover:bg-[#7823c9] text-white font-bold text-xs rounded-lg transition-colors flex items-center gap-1"
-                  >
-                    <Plus size={14} />
-                    <span>Add</span>
-                  </button>
+                <div className="relative">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="@username or handle..."
+                      value={coHostInput}
+                      onFocus={() => setShowSuggestions(true)}
+                      onChange={(e) => {
+                        setCoHostInput(e.target.value);
+                        setShowSuggestions(true);
+                      }}
+                      className="flex-1 bg-[#0F172A] border border-[#2D3548] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#8A2BE2]"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCoHost}
+                      className="px-3 py-2 bg-[#8A2BE2] hover:bg-[#7823c9] text-white font-bold text-xs rounded-lg transition-colors flex items-center gap-1 cursor-pointer shrink-0"
+                    >
+                      <Plus size={14} />
+                      <span>Add</span>
+                    </button>
+                  </div>
+
+                  {/* Creator Suggestions Dropdown */}
+                  {showSuggestions && filteredSuggestions.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full mt-1.5 bg-[#0F172A] border border-[#2D3548] rounded-xl shadow-2xl max-h-48 overflow-y-auto z-50 p-1 custom-scrollbar">
+                      <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-zinc-500 border-b border-[#2D3548]">
+                        Suggested Platform Creators
+                      </div>
+                      {filteredSuggestions.map(creator => (
+                        <div
+                          key={creator.handle}
+                          onClick={() => handleSelectCreator(creator.handle)}
+                          className="flex items-center justify-between p-2 hover:bg-[#192134] rounded-lg cursor-pointer transition-colors group"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <img
+                              src={creator.avatar}
+                              alt={creator.name}
+                              className="w-7 h-7 rounded-full object-cover border border-[#2D3548]"
+                            />
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-white group-hover:text-accent-purple truncate">
+                                {creator.name}
+                              </p>
+                              <p className="text-[10px] text-zinc-400 font-mono">@{creator.handle}</p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold text-accent-purple bg-[#8A2BE2]/10 px-2 py-0.5 rounded-full border border-[#8A2BE2]/20">
+                            {creator.role}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {coHosts.length > 0 && (
                   <div className="flex flex-wrap gap-2 pt-1">
                     {coHosts.map(handle => (
-                      <span key={handle} className="inline-flex items-center gap-1 bg-[#8A2BE2]/20 border border-[#8A2BE2]/40 text-accent-purple px-2.5 py-1 rounded-full text-xs font-bold">
+                      <span key={handle} className="inline-flex items-center gap-1.5 bg-[#8A2BE2]/20 border border-[#8A2BE2]/40 text-accent-purple px-2.5 py-1 rounded-full text-xs font-bold">
                         @{handle}
-                        <button type="button" onClick={() => handleRemoveCoHost(handle)} className="hover:text-white">
+                        <button type="button" onClick={() => handleRemoveCoHost(handle)} className="hover:text-white cursor-pointer">
                           <X size={12} />
                         </button>
                       </span>
