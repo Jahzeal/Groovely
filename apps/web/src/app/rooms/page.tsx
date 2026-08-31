@@ -8,9 +8,11 @@ import { CreateRoomModal } from '@/components/rooms/CreateRoomModal';
 import { Headphones, Plus, Users, Radio, Calendar, Lock, Globe, Sparkles, Loader2 } from 'lucide-react';
 import { cachedApiFetch } from '@/lib/api';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
 export default function ListeningRoomsPage() {
+  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [rooms, setRooms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,10 +42,13 @@ export default function ListeningRoomsPage() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const role = localStorage.getItem('groovely_role') || localStorage.getItem('grooveli_role') || 'fan';
-      setUserRole(role.toLowerCase());
+      const role = (localStorage.getItem('groovely_role') || localStorage.getItem('grooveli_role') || 'fan').toLowerCase();
+      setUserRole(role);
+      if (role === 'creator') {
+        router.replace('/dashboard/rooms');
+      }
     }
-  }, []);
+  }, [router]);
 
   const handleCreateRoomClick = () => {
     if (userRole !== 'creator') {

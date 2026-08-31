@@ -13,7 +13,7 @@ export const ActiveRoomCard = () => {
             <Headphones size={20} className="text-accent-purple" />
             <span>Active Listening Rooms</span>
           </h2>
-          <Link href="/rooms">
+          <Link href="/dashboard/rooms">
             <button className="text-accent-purple text-xs font-bold uppercase tracking-widest hover:underline cursor-pointer">
                View All Rooms
             </button>
@@ -28,7 +28,7 @@ export const ActiveRoomCard = () => {
             Host live sessions &amp; stream stems
           </p>
           
-          <Link href="/rooms">
+          <Link href="/dashboard/rooms">
             <button className="bg-[#8A2BE2] hover:bg-[#7823c9] text-white font-bold py-3 px-8 rounded-2xl flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(138,43,226,0.4)] cursor-pointer text-xs">
                <Plus size={16} strokeWidth={3} />
                <span>Create / Join Room</span>

@@ -74,7 +74,7 @@ export default function CreatorRoomsDashboard() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden bg-[#192134]">
-        <TopBar title="Room Management" />
+        <TopBar displayName="Creator" />
 
         <main className="flex-1 p-6 sm:p-10 overflow-y-auto space-y-8 custom-scrollbar max-w-[1600px] mx-auto w-full">
           
