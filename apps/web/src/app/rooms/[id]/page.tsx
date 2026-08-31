@@ -9,7 +9,7 @@ import {
   Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, ListMusic, 
   Mic, MicOff, Volume2, VolumeX, Send, Lock, Unlock, PhoneOff, 
   Users, MessageSquare, Radio, Share2, Sparkles, Heart, Flame, Hand, 
-  ArrowLeft, Check, Copy, ChevronDown
+  ArrowLeft, Check, Copy, ChevronDown, Plus
 } from 'lucide-react';
 import { apiFetch, cachedApiFetch } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -407,7 +407,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
           </div>
 
           {/* Floating Emoji Stream Canvas */}
-          <div className="absolute inset-x-0 bottom-24 height-48 pointer-events-none overflow-hidden">
+          <div className="absolute inset-x-0 bottom-24 h-48 pointer-events-none overflow-hidden">
             {floatingReactions.map(r => (
               <div
                 key={r.id}
