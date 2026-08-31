@@ -9,6 +9,7 @@ import {
   ArrowLeft, Check, Copy, ChevronDown, Plus
 } from 'lucide-react';
 import { apiFetch, cachedApiFetch } from '@/lib/api';
+import { useRoomSocket } from '@/hooks/useRoomSocket';
 import toast from 'react-hot-toast';
 
 export default function LiveRoomPage({ params }: { params: Promise<{ id: string }> }) {
@@ -16,11 +17,25 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   const roomId = resolvedParams?.id;
   const router = useRouter();
 
+  // Current logged in user ID from localStorage
+  const currentUserId = typeof window !== 'undefined' ? Number(localStorage.getItem('groovely_user_id') || localStorage.getItem('grooveli_user_id') || 1) : 1;
+
   const [room, setRoom] = useState<any>(null);
-  const [participants, setParticipants] = useState<any[]>([]);
   const [playlist, setPlaylist] = useState<any[]>([]);
-  const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // WebSockets Hook Integration
+  const {
+    isConnected: isSocketConnected,
+    participants,
+    setParticipants,
+    messages,
+    setMessages,
+    playbackState,
+    emitPlaybackControl,
+    emitSendMessage,
+    emitRaiseHand,
+  } = useRoomSocket(roomId, currentUserId, 'host');
 
   // Live Player State
   const [isPlaying, setIsPlaying] = useState(true);
@@ -52,9 +67,9 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
 
         if (data?.data) {
           setRoom(data.data.room);
-          setParticipants(data.data.participants || []);
-          setPlaylist(data.data.playlist || []);
-          setMessages(data.data.messages || []);
+          if (data.data.participants) setParticipants(data.data.participants);
+          if (data.data.playlist) setPlaylist(data.data.playlist);
+          if (data.data.messages) setMessages(data.data.messages);
         }
       } catch (err) {
         console.error('Failed to load room details:', err);
@@ -64,24 +79,25 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     }
 
     fetchRoomData();
-  }, [roomId]);
+  }, [roomId, setParticipants, setMessages]);
 
-  // Handle Sending Chat Messages
+  // Sync WebSockets playback state changes to local player
+  useEffect(() => {
+    if (playbackState) {
+      setIsPlaying(playbackState.state === 'playing');
+      if (playbackState.positionMs !== undefined) {
+        setCurrentTimeMs(playbackState.positionMs);
+      }
+    }
+  }, [playbackState]);
+
+  // Handle Sending Chat Messages over WebSockets
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatMessage.trim()) return;
 
-    const newMsg = {
-      id: Date.now(),
-      display_name: 'You (Host)',
-      username: 'host',
-      content: chatMessage.trim(),
-      message_type: 'text',
-      created_at: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      isHost: true,
-    };
-
-    setMessages([...messages, newMsg]);
+    // Broadcast over WebSockets
+    emitSendMessage(chatMessage.trim(), 'text');
     setChatMessage('');
   };
 
@@ -110,27 +126,21 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     }
   };
 
-  // Demo Speakers & Listeners matching Figma Spec
-  const onStageSpeakers = [
-    { name: 'Uzor', role: 'Host', isMuted: false, avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80' },
-    { name: 'Darrell', role: 'Co-Host', isMuted: false, avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80' },
-    { name: 'Shane', role: 'Speaker', isMuted: true, avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80' },
-  ];
+  // Derive real stage speakers and listeners from WebSockets/DB participants
+  const stageSpeakers = participants.filter(p => p.role === 'host' || p.role === 'cohost' || p.role === 'speaker');
+  const roomListeners = participants.filter(p => p.role === 'listener');
 
-  const listenersList = [
-    'Mitchell', 'Kyle', 'Debra', 'Esther', 'Soham', 'Leslie', 'Dianne', 'Ronald',
-    'Arthur', 'Eduardo', 'Greg', 'Darlene', 'Kristin', 'Arlene', 'Cody', 'Aubrey',
-    'Colleen', 'Philip', 'Max'
+  // Fallback to room host if participants state is initializing
+  const displaySpeakers = stageSpeakers.length > 0 ? stageSpeakers : [
+    {
+      user_id: room?.host_id || 1,
+      display_name: room?.host_name || 'Creator Host',
+      username: room?.host_username || 'host',
+      avatar_url: room?.host_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+      role: 'host' as const,
+      is_muted: false,
+    }
   ];
-
-  const demoMessages = [
-    { name: 'Sarah.eth', time: '11:32AM', text: 'This beat is absolutely fire🔥 Can&apos;t wait for the drop!', isHost: false },
-    { name: 'skinpop', time: '01:32AM', text: 'Wen token?🚀', isHost: false },
-    { name: 'Cub3 (Host)', time: '03:06AM', text: 'Thanks guys! Minting starts in 5 mins. Check the pinned link.', isHost: true },
-    { name: 'overlisted', time: '07:54PM', text: 'Love the vibes here', isHost: false },
-  ];
-
-  const activeMessages = messages.length > 0 ? messages : demoMessages;
 
   return (
     <div className="min-h-screen bg-[#0F172A] text-white font-['Space_Grotesk',sans-serif] flex flex-col overflow-x-hidden select-none">
@@ -225,8 +235,12 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
             </button>
 
             <button
-              onClick={() => setIsPlaying(!isPlaying)}
-              className="w-16 h-16 rounded-full bg-[#8A2BE2] hover:bg-[#7823c9] text-white flex items-center justify-center transition-all shadow-[0_0_30px_rgba(138,43,226,0.6)]"
+              onClick={() => {
+                const nextState = !isPlaying;
+                setIsPlaying(nextState);
+                emitPlaybackControl(nextState ? 'play' : 'pause', room?.current_track_id, currentTimeMs);
+              }}
+              className="w-16 h-16 rounded-full bg-[#8A2BE2] hover:bg-[#7823c9] text-white flex items-center justify-center transition-all shadow-[0_0_30px_rgba(138,43,226,0.6)] cursor-pointer"
             >
               {isPlaying ? <Pause size={28} fill="currentColor" /> : <Play size={28} fill="currentColor" className="ml-1" />}
             </button>
@@ -282,32 +296,38 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
 
             {/* Stage Speakers Grid */}
             <div className="flex items-center gap-6 overflow-x-auto pb-2">
-              {onStageSpeakers.map((speaker, idx) => (
+              {displaySpeakers.map((speaker: any, idx: number) => (
                 <div key={idx} className="flex flex-col items-center gap-2 group cursor-pointer">
                   <div className="relative w-16 h-16 rounded-full p-1 border-2 border-[#4E0AA6] shadow-[0_0_15px_rgba(78,10,166,0.5)]">
                     <img
-                      src={speaker.avatar}
-                      alt={speaker.name}
+                      src={speaker.avatar_url || speaker.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${speaker.display_name || speaker.username || 'Speaker'}`}
+                      alt={speaker.display_name || speaker.name}
                       className="w-full h-full rounded-full object-cover"
                     />
-                    <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-[#0F172A] flex items-center justify-center ${speaker.isMuted ? 'bg-[#FF0044] text-white' : 'bg-[#8A2BE2] text-white'}`}>
-                      {speaker.isMuted ? <MicOff size={12} /> : <Mic size={12} />}
+                    <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-[#0F172A] flex items-center justify-center ${speaker.is_muted || speaker.isMuted ? 'bg-[#FF0044] text-white' : 'bg-[#8A2BE2] text-white'}`}>
+                      {speaker.is_muted || speaker.isMuted ? <MicOff size={12} /> : <Mic size={12} />}
                     </div>
                   </div>
 
                   <div className="text-center">
                     <p className="text-xs font-bold text-white group-hover:text-accent-purple transition-colors">
-                      {speaker.name}
+                      {speaker.display_name || speaker.name}
                     </p>
-                    <span className="text-[10px] font-bold text-accent-purple bg-[#8A2BE2]/10 px-2 py-0.5 rounded-full border border-[#8A2BE2]/20">
-                      {speaker.role}
+                    <span className="text-[10px] font-bold uppercase text-accent-purple bg-[#8A2BE2]/10 px-2 py-0.5 rounded-full border border-[#8A2BE2]/20">
+                      {speaker.role || 'Host'}
                     </span>
                   </div>
                 </div>
               ))}
 
               {/* Add Co-Host Slot */}
-              <div className="flex flex-col items-center gap-2 group cursor-pointer">
+              <div 
+                onClick={() => {
+                  toast.success('Invite link copied to clipboard!');
+                  navigator.clipboard.writeText(window.location.href);
+                }}
+                className="flex flex-col items-center gap-2 group cursor-pointer"
+              >
                 <div className="w-16 h-16 rounded-full bg-[#192134] border border-dashed border-[#2D3548] group-hover:border-[#8A2BE2] flex items-center justify-center text-zinc-400 group-hover:text-accent-purple transition-colors">
                   <Plus size={20} />
                 </div>
@@ -316,34 +336,34 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
             </div>
           </div>
 
-          {/* LISTENERS (243) GRID */}
+          {/* LISTENERS GRID */}
           <div className="flex-1 space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-widest text-[#CACACA]">
-              LISTENERS (243)
+              LISTENERS ({roomListeners.length > 0 ? roomListeners.length : (room?.active_listeners || 1)})
             </h3>
 
             {/* Listener Avatar Cards Grid */}
             <div className="grid grid-cols-4 sm:grid-cols-4 gap-4 max-h-[420px] overflow-y-auto pr-1 custom-scrollbar">
-              {listenersList.map((name, i) => (
-                <div key={i} className="flex flex-col items-center gap-1.5 group cursor-pointer">
-                  <div className="w-14 h-14 rounded-full border border-[#4E0AA6]/50 overflow-hidden bg-[#192134]">
-                    <img
-                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`}
-                      alt={name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform"
-                    />
+              {roomListeners.length > 0 ? (
+                roomListeners.map((listener: any, i: number) => (
+                  <div key={i} className="flex flex-col items-center gap-1.5 group cursor-pointer">
+                    <div className="w-14 h-14 rounded-full border border-[#4E0AA6]/50 overflow-hidden bg-[#192134]">
+                      <img
+                        src={listener.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${listener.display_name || listener.username || i}`}
+                        alt={listener.display_name || listener.username}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                      />
+                    </div>
+                    <span className="text-xs font-bold text-white truncate max-w-[60px] text-center">
+                      {listener.display_name || listener.username}
+                    </span>
                   </div>
-                  <span className="text-xs font-bold text-white truncate max-w-[60px] text-center">
-                    {name}
-                  </span>
+                ))
+              ) : (
+                <div className="col-span-4 py-8 text-center bg-[#0F172A]/40 rounded-2xl border border-[#232B3E]">
+                  <p className="text-xs text-zinc-400 font-medium">Be the first listener to join this room!</p>
                 </div>
-              ))}
-              <div className="flex flex-col items-center gap-1.5">
-                <div className="w-14 h-14 rounded-full bg-[#192134] border border-[#2D3548] flex items-center justify-center font-['Clash_Display',sans-serif] font-bold text-white">
-                  +225
-                </div>
-                <span className="text-[10px] font-bold text-zinc-500">More</span>
-              </div>
+              )}
             </div>
           </div>
 
@@ -385,22 +405,32 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
 
           {/* Chat Stream Area */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-            {activeMessages.map((msg, i) => (
-              <div
-                key={i}
-                className={`p-3 rounded-xl transition-all ${msg.isHost ? 'bg-[#8A2BE2]/10 border border-[#8A2BE2]/30' : 'bg-[#0F172A]/50 border border-transparent'}`}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className={`text-xs font-bold ${msg.isHost ? 'text-accent-purple' : 'text-[#E5E5E5]'}`}>
-                    {msg.name}
-                  </span>
-                  <span className="text-[10px] text-zinc-400 font-mono">{msg.time || '11:32AM'}</span>
+            {messages.length > 0 ? (
+              messages.map((msg: any, i: number) => (
+                <div
+                  key={msg.id || i}
+                  className={`p-3 rounded-xl transition-all ${msg.role === 'host' || msg.isHost ? 'bg-[#8A2BE2]/10 border border-[#8A2BE2]/30' : 'bg-[#0F172A]/50 border border-transparent'}`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`text-xs font-bold ${msg.role === 'host' || msg.isHost ? 'text-accent-purple' : 'text-[#E5E5E5]'}`}>
+                      {msg.display_name || msg.username || msg.name || 'User'}
+                    </span>
+                    <span className="text-[10px] text-zinc-400 font-mono">
+                      {msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (msg.time || 'Live')}
+                    </span>
+                  </div>
+                  <p className="text-sm font-normal text-white leading-relaxed">
+                    {msg.content || msg.text}
+                  </p>
                 </div>
-                <p className="text-sm font-normal text-white leading-relaxed">
-                  {msg.text || msg.content}
-                </p>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center p-6 text-zinc-400">
+                <MessageSquare className="w-10 h-10 mb-2 text-[#8A2BE2]/50" />
+                <p className="text-xs font-bold text-white mb-1">No Messages Yet</p>
+                <p className="text-[11px] text-zinc-400">Be the first to say hello in this live room!</p>
               </div>
-            ))}
+            )}
           </div>
 
           {/* Floating Emoji Stream Canvas */}

@@ -180,8 +180,7 @@ export default function DashboardPage() {
                 <StatCard
                   icon={Headphones}
                   label="Listening Rooms"
-                  value="0"
-                  comingSoon
+                  value="Live"
                   className="col-span-2 lg:col-span-1 hidden lg:flex"
                 />
               </>

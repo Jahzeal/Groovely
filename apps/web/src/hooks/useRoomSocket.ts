@@ -1,0 +1,171 @@
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { io, Socket } from 'socket.io-client';
+
+export interface RoomParticipant {
+  user_id: number;
+  display_name: string;
+  username: string;
+  avatar_url?: string;
+  wallet?: string;
+  role: 'host' | 'cohost' | 'speaker' | 'listener';
+  is_hand_raised?: boolean;
+  is_muted?: boolean;
+}
+
+export interface RoomMessage {
+  id: number;
+  room_id: number;
+  user_id: number;
+  display_name: string;
+  username: string;
+  avatar_url?: string;
+  content: string;
+  message_type: 'text' | 'reaction' | 'system' | 'tip';
+  metadata?: any;
+  created_at: string;
+}
+
+export interface PlaybackSyncData {
+  roomId: number;
+  action: 'play' | 'pause' | 'seek';
+  state: 'playing' | 'paused';
+  current_track_id?: number;
+  positionMs: number;
+  timestamp: number;
+}
+
+export const useRoomSocket = (roomId?: string | number, userId?: number, initialRole: string = 'listener') => {
+  const socketRef = useRef<Socket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [participants, setParticipants] = useState<RoomParticipant[]>([]);
+  const [messages, setMessages] = useState<RoomMessage[]>([]);
+  const [playbackState, setPlaybackState] = useState<PlaybackSyncData | null>(null);
+
+  useEffect(() => {
+    if (!roomId) return;
+
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    
+    // Connect to NestJS WebSockets Gateway namespace /rooms
+    const socket = io(`${API_URL}/rooms`, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+    });
+
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      setIsConnected(true);
+      if (userId) {
+        socket.emit('join_room', { roomId: Number(roomId), userId, role: initialRole });
+      }
+    });
+
+    socket.on('disconnect', () => {
+      setIsConnected(false);
+    });
+
+    // Listen for room events
+    socket.on('user_joined', (data: { userId: number; participants?: RoomParticipant[] }) => {
+      if (data.participants) {
+        setParticipants(data.participants);
+      }
+    });
+
+    socket.on('user_left', (data: { userId: number }) => {
+      setParticipants(prev => prev.filter(p => p.user_id !== data.userId));
+    });
+
+    socket.on('playback_synced', (data: PlaybackSyncData) => {
+      setPlaybackState(data);
+    });
+
+    socket.on('new_message', (msg: RoomMessage) => {
+      setMessages(prev => [...prev, msg]);
+    });
+
+    socket.on('hand_raised_toggled', (data: { userId: number; isHandRaised: boolean }) => {
+      setParticipants(prev => prev.map(p => {
+        if (p.user_id === data.userId) {
+          return { ...p, is_hand_raised: data.isHandRaised };
+        }
+        return p;
+      }));
+    });
+
+    socket.on('participant_role_updated', (data: { targetUserId: number; newRole: any }) => {
+      setParticipants(prev => prev.map(p => {
+        if (p.user_id === data.targetUserId) {
+          return { ...p, role: data.newRole };
+        }
+        return p;
+      }));
+    });
+
+    return () => {
+      if (userId) {
+        socket.emit('leave_room', { roomId: Number(roomId), userId });
+      }
+      socket.disconnect();
+    };
+  }, [roomId, userId, initialRole]);
+
+  // Actions
+  const emitPlaybackControl = useCallback((action: 'play' | 'pause' | 'seek', trackId?: number, positionMs: number = 0) => {
+    if (socketRef.current && roomId && userId) {
+      socketRef.current.emit('playback_control', {
+        roomId: Number(roomId),
+        userId,
+        action,
+        trackId,
+        positionMs,
+      });
+    }
+  }, [roomId, userId]);
+
+  const emitSendMessage = useCallback((content: string, messageType: string = 'text', metadata: any = {}) => {
+    if (socketRef.current && roomId && userId) {
+      socketRef.current.emit('send_message', {
+        roomId: Number(roomId),
+        userId,
+        content,
+        messageType,
+        metadata,
+      });
+    }
+  }, [roomId, userId]);
+
+  const emitRaiseHand = useCallback(() => {
+    if (socketRef.current && roomId && userId) {
+      socketRef.current.emit('raise_hand', {
+        roomId: Number(roomId),
+        userId,
+      });
+    }
+  }, [roomId, userId]);
+
+  const emitSetParticipantRole = useCallback((targetUserId: number, newRole: 'cohost' | 'speaker' | 'listener') => {
+    if (socketRef.current && roomId && userId) {
+      socketRef.current.emit('set_participant_role', {
+        roomId: Number(roomId),
+        hostId: userId,
+        targetUserId,
+        newRole,
+      });
+    }
+  }, [roomId, userId]);
+
+  return {
+    socket: socketRef.current,
+    isConnected,
+    participants,
+    setParticipants,
+    messages,
+    setMessages,
+    playbackState,
+    emitPlaybackControl,
+    emitSendMessage,
+    emitRaiseHand,
+    emitSetParticipantRole,
+  };
+};
