@@ -30,6 +30,8 @@ export class ListeningRoomGateway implements OnGatewayConnection, OnGatewayDisco
     console.log(`📡 Client disconnected from Listening Rooms gateway: ${client.id}`);
   }
 
+  private activeRoomPlaybackState = new Map<number, any>();
+
   @SubscribeMessage('join_room')
   async handleJoinRoom(
     @ConnectedSocket() client: Socket,
@@ -47,6 +49,12 @@ export class ListeningRoomGateway implements OnGatewayConnection, OnGatewayDisco
       roomId,
       participants: updatedDetails.participants,
     });
+
+    // Send active playing track & playback state directly to newly joining fan
+    const activePlayback = this.activeRoomPlaybackState.get(Number(roomId));
+    if (activePlayback) {
+      client.emit('playback_synced', activePlayback);
+    }
 
     return { event: 'room_joined', data: updatedDetails };
   }
@@ -72,10 +80,21 @@ export class ListeningRoomGateway implements OnGatewayConnection, OnGatewayDisco
 
   @SubscribeMessage('playback_control')
   async handlePlaybackControl(
-    @MessageBody() payload: { roomId: number; userId: number; action: 'play' | 'pause' | 'seek'; trackId?: number; positionMs?: number }
+    @MessageBody() payload: { roomId: number; userId: number; action: 'play' | 'pause' | 'seek'; trackId?: number; track?: any; positionMs?: number }
   ) {
-    const { roomId, userId, action, trackId, positionMs = 0 } = payload;
-    const syncData = await this.roomService.updatePlayback(roomId, userId, action, trackId, positionMs);
+    const { roomId, userId, action, trackId, track, positionMs = 0 } = payload;
+    let syncData: any;
+    try {
+      syncData = await this.roomService.updatePlayback(roomId, userId, action, trackId, positionMs);
+    } catch (e) {
+      syncData = { roomId, action, state: action === 'play' ? 'playing' : 'paused', current_track_id: trackId, positionMs, timestamp: Date.now() };
+    }
+    if (track) {
+      syncData.track = track;
+    }
+
+    // Store active playback state in gateway memory for newly joining fans
+    this.activeRoomPlaybackState.set(Number(roomId), syncData);
 
     // Broadcast playback sync to ALL listeners in room
     this.server.to(`room:${roomId}`).emit('playback_synced', syncData);

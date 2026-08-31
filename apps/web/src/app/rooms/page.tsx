@@ -39,6 +39,7 @@ export default function ListeningRoomsPage() {
   }, []);
 
   const [userRole, setUserRole] = useState<string>('fan');
+  const isCreator = userRole === 'creator';
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -51,7 +52,7 @@ export default function ListeningRoomsPage() {
   }, [router]);
 
   const handleCreateRoomClick = () => {
-    if (userRole !== 'creator') {
+    if (!isCreator) {
       toast.error('Only verified Creators can create listening rooms. Fans can join any active room as a listener!');
       return;
     }
@@ -187,19 +188,32 @@ export default function ListeningRoomsPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-20 bg-[#0F172A] border border-[#2D3548] rounded-3xl p-8">
-                <Headphones className="w-12 h-12 text-zinc-500 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-white mb-1">No Active Rooms Found</h3>
-                <p className="text-zinc-400 text-xs max-w-md mx-auto mb-6">
-                  Be the first creator to start a Live Listening Room, invite co-hosts, and share unreleased beats!
-                </p>
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  className="px-6 py-3 bg-[#8A2BE2] hover:bg-[#7823c9] text-white font-bold text-xs rounded-xl transition-all shadow-[0_0_20px_rgba(138,43,226,0.4)] inline-flex items-center gap-2 cursor-pointer"
-                >
-                  <Plus size={16} />
-                  <span>Create Listening Room</span>
-                </button>
+              <div className="text-center py-20 bg-[#0F172A] border border-[#2D3548] rounded-3xl p-8 space-y-4">
+                <Headphones className="w-12 h-12 text-zinc-500 mx-auto" />
+                <div className="space-y-1 max-w-md mx-auto">
+                  <h3 className="text-lg font-bold text-white">No Live Rooms Currently Active</h3>
+                  <p className="text-zinc-400 text-xs">
+                    {isCreator
+                      ? 'Be the first creator to start a Live Listening Room, invite co-hosts, and share unreleased beats!'
+                      : 'No live rooms are active right now. Check back soon or explore music on the Grooveli Market!'}
+                  </p>
+                </div>
+                {isCreator ? (
+                  <button
+                    onClick={handleCreateRoomClick}
+                    className="px-6 py-3 bg-[#8A2BE2] hover:bg-[#7823c9] text-white font-bold text-xs rounded-xl transition-all shadow-[0_0_20px_rgba(138,43,226,0.4)] inline-flex items-center gap-2 cursor-pointer"
+                  >
+                    <Plus size={16} />
+                    <span>Create Listening Room</span>
+                  </button>
+                ) : (
+                  <Link href="/marketplace">
+                    <button className="px-6 py-3 bg-[#8A2BE2] hover:bg-[#7823c9] text-white font-bold text-xs rounded-xl transition-all shadow-[0_0_20px_rgba(138,43,226,0.4)] inline-flex items-center gap-2 cursor-pointer">
+                      <Sparkles size={16} />
+                      <span>Explore Grooveli Market</span>
+                    </button>
+                  </Link>
+                )}
               </div>
             )}
 

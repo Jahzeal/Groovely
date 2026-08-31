@@ -208,13 +208,18 @@ export class ListeningRoomService {
 
     const room = roomRes.rows[0];
     const isHost = Number(room.host_id) === Number(userId);
-    const initialRole = isHost ? 'host' : (role || 'listener');
+    let initialRole = 'listener';
+    if (isHost) {
+      initialRole = 'host';
+    } else if (role === 'cohost' || role === 'speaker') {
+      initialRole = role;
+    }
 
     await this.db.query(
       `INSERT INTO listening_room_participants (room_id, user_id, role, left_at) 
        VALUES ($1, $2, $3, NULL) 
        ON CONFLICT (room_id, user_id) 
-       DO UPDATE SET left_at = NULL, role = EXCLUDED.role`,
+       DO UPDATE SET left_at = NULL, role = $3`,
       [roomId, userId, initialRole]
     );
 
@@ -251,15 +256,26 @@ export class ListeningRoomService {
     const state = action === 'play' ? 'playing' : 'paused';
     const activeTrackId = trackId || room.current_track_id;
 
-    await this.db.query(
-      `UPDATE listening_rooms 
-       SET playback_state = $1, 
-           current_track_id = $2, 
-           playback_position_ms = $3, 
-           playback_started_at = CURRENT_TIMESTAMP 
-       WHERE id = $4`,
-      [state, activeTrackId, positionMs, roomId]
-    );
+    try {
+      await this.db.query(
+        `UPDATE listening_rooms 
+         SET playback_state = $1, 
+             current_track_id = $2, 
+             playback_position_ms = $3, 
+             playback_started_at = CURRENT_TIMESTAMP 
+         WHERE id = $4`,
+        [state, activeTrackId, positionMs, roomId]
+      );
+    } catch (err) {
+      await this.db.query(
+        `UPDATE listening_rooms 
+         SET playback_state = $1, 
+             playback_position_ms = $2, 
+             playback_started_at = CURRENT_TIMESTAMP 
+         WHERE id = $3`,
+        [state, positionMs, roomId]
+      );
+    }
 
     return { roomId, action, state, current_track_id: activeTrackId, positionMs, timestamp: Date.now() };
   }
@@ -306,7 +322,7 @@ export class ListeningRoomService {
 
   async setParticipantRole(roomId: number, hostId: number, targetUserId: number, newRole: 'cohost' | 'speaker' | 'listener') {
     const roomRes = await this.db.query('SELECT host_id FROM listening_rooms WHERE id = $1', [roomId]);
-    if (roomRes.rows[0]?.host_id !== hostId) {
+    if (Number(roomRes.rows[0]?.host_id) !== Number(hostId)) {
       throw new ForbiddenException('Only the room host can promote or demote participants');
     }
 

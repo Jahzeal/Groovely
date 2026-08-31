@@ -137,7 +137,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       setPlaylist(prev => [newUploadedTrack, ...prev]);
       setCurrentTrack(newUploadedTrack);
       setIsPlaying(true);
-      emitPlaybackControl('play', newUploadedTrack.id, 0);
+      emitPlaybackControl('play', newUploadedTrack.id, 0, newUploadedTrack);
       setIsPlaylistModalOpen(false);
 
       toast.success(`Now streaming live: ${trackTitle}`, { id: toastId });
@@ -272,9 +272,6 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
           );
 
           setLibraryTracks(uniqueDbTracks);
-          if (!currentTrack && uniqueDbTracks.length > 0) {
-            setCurrentTrack(uniqueDbTracks[0]);
-          }
         } catch (tErr) {
           console.warn('Could not fetch library tracks:', tErr);
         }
@@ -537,7 +534,8 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     if (room?.host_id && String(p.user_id) === String(room.host_id)) {
       return { ...p, role: 'host' as const, display_name: p.display_name || room?.host_name };
     }
-    return p;
+    // Guarantee non-host users cannot hold host role
+    return { ...p, role: (p.role === 'host' ? 'listener' : p.role) || 'listener' };
   });
 
   const stageSpeakers = normalizedParticipants.filter(p => p.role === 'host' || p.role === 'cohost' || p.role === 'speaker');
@@ -577,8 +575,8 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       {/* ── LIVE AUDIO STREAM ENGINE ── */}
       <audio
         ref={audioRef}
-        src={currentTrack?.audio_url || currentTrack?.url || room?.current_track_audio}
-        preload="auto"
+        src={resolveIpfsUrl(currentTrack?.audio_url || currentTrack?.url || room?.current_track_audio)}
+        preload="none"
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
         onEnded={() => {
@@ -715,10 +713,14 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
                 const nextState = !isPlaying;
                 setIsPlaying(nextState);
                 if (audioRef.current) {
+                  const targetSrc = resolveIpfsUrl(currentTrack?.audio_url || currentTrack?.url || room?.current_track_audio);
+                  if (targetSrc && audioRef.current.src !== targetSrc) {
+                    audioRef.current.src = targetSrc;
+                  }
                   if (nextState) audioRef.current.play().catch(e => console.warn(e));
                   else audioRef.current.pause();
                 }
-                emitPlaybackControl(nextState ? 'play' : 'pause', currentTrack?.id || room?.current_track_id, currentTimeMs);
+                emitPlaybackControl(nextState ? 'play' : 'pause', currentTrack?.id || room?.current_track_id, currentTimeMs, currentTrack);
               }}
               className={`w-16 h-16 rounded-full text-white flex items-center justify-center transition-all shadow-[0_0_25px_rgba(138,43,226,0.6)] cursor-pointer hover:scale-105 active:scale-95 ${
                 isHostOrCreator ? 'bg-[#8A2BE2] hover:bg-[#7823c9]' : 'bg-zinc-700/60 opacity-60 cursor-not-allowed'
@@ -1122,10 +1124,13 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
                         setCurrentTrack(track);
                         setIsPlaying(true);
                         if (audioRef.current && (track.audio_url || track.url)) {
-                          audioRef.current.src = track.audio_url || track.url;
-                          audioRef.current.play().catch(e => console.warn('Audio playback error:', e));
+                          const resolvedSrc = resolveIpfsUrl(track.audio_url || track.url);
+                          if (resolvedSrc) {
+                            audioRef.current.src = resolvedSrc;
+                            audioRef.current.play().catch(e => console.warn('Audio playback error:', e));
+                          }
                         }
-                        emitPlaybackControl('play', track.id, 0);
+                        emitPlaybackControl('play', track.id, 0, track);
                         setIsPlaylistModalOpen(false);
                         toast.success(`Now streaming live: ${track.title}`);
                       }}

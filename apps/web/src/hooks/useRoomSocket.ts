@@ -141,13 +141,14 @@ export const useRoomSocket = (roomId?: string | number, userId?: number | null, 
   }, [roomId, userId, initialRole]);
 
   // Actions
-  const emitPlaybackControl = useCallback((action: 'play' | 'pause' | 'seek', trackId?: number, positionMs: number = 0) => {
+  const emitPlaybackControl = useCallback((action: 'play' | 'pause' | 'seek', trackId?: number, positionMs: number = 0, track?: any) => {
     if (socketRef.current && roomId && userId) {
       socketRef.current.emit('playback_control', {
         roomId: Number(roomId),
         userId,
         action,
         trackId,
+        track,
         positionMs,
       });
     }
