@@ -121,7 +121,7 @@ export default function CreatorRoomsDashboard() {
                 <Users size={16} className="text-accent-purple" />
               </div>
               <p className="text-2xl font-bold text-white">
-                {activeRooms.reduce((acc, r) => acc + (r.max_listeners || r.active_listeners || 12), 0)}
+                {activeRooms.reduce((acc, r) => acc + Number(r.active_listeners || r.current_listeners || 0), 0)}
               </p>
             </div>
 
