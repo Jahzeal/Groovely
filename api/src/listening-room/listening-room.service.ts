@@ -336,6 +336,26 @@ export class ListeningRoomService {
     return { success: true, targetUserId, newRole };
   }
 
+  async kickParticipant(roomId: number, hostId: number, targetUserId: number) {
+    const roomRes = await this.db.query('SELECT host_id FROM listening_rooms WHERE id = $1', [roomId]);
+    if (Number(roomRes.rows[0]?.host_id) !== Number(hostId)) {
+      throw new ForbiddenException('Only the room host can kick participants');
+    }
+
+    if (Number(hostId) === Number(targetUserId)) {
+      throw new BadRequestException('Host cannot kick themselves');
+    }
+
+    await this.db.query(
+      `UPDATE listening_room_participants 
+       SET left_at = CURRENT_TIMESTAMP 
+       WHERE room_id = $1 AND user_id = $2`,
+      [roomId, targetUserId]
+    );
+
+    return this.getRoomDetails(roomId);
+  }
+
   async endRoom(roomId: number, hostId: number) {
     await this.db.query(
       `UPDATE listening_rooms SET status = 'ended', ended_at = CURRENT_TIMESTAMP WHERE id = $1`,

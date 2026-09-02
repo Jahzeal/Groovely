@@ -31,6 +31,7 @@ export class ListeningRoomGateway implements OnGatewayConnection, OnGatewayDisco
   }
 
   private activeRoomPlaybackState = new Map<number, any>();
+  private activeRoomMuteState = new Map<string, boolean>();
 
   @SubscribeMessage('join_room')
   async handleJoinRoom(
@@ -43,11 +44,16 @@ export class ListeningRoomGateway implements OnGatewayConnection, OnGatewayDisco
 
     const updatedDetails = await this.roomService.joinRoom(roomId, userId, role);
 
+    const enrichedParticipants = updatedDetails.participants.map((p: any) => {
+      const isMuted = this.activeRoomMuteState.get(`${roomId}:${p.user_id}`) ?? false;
+      return { ...p, is_muted: isMuted, isMuted };
+    });
+
     // Broadcast user joined event to room
     this.server.to(roomChannel).emit('user_joined', {
       userId,
       roomId,
-      participants: updatedDetails.participants,
+      participants: enrichedParticipants,
     });
 
     // Send active playing track & playback state directly to newly joining fan
@@ -106,6 +112,7 @@ export class ListeningRoomGateway implements OnGatewayConnection, OnGatewayDisco
     @MessageBody() payload: { roomId: number; userId: number; isMuted: boolean }
   ) {
     const { roomId, userId, isMuted } = payload;
+    this.activeRoomMuteState.set(`${roomId}:${userId}`, isMuted);
     this.server.to(`room:${roomId}`).emit('participant_mute_updated', { userId, isMuted });
     return { event: 'mute_toggled', userId, isMuted };
   }
@@ -163,5 +170,21 @@ export class ListeningRoomGateway implements OnGatewayConnection, OnGatewayDisco
     // Broadcast room_ended event to all participants in room
     this.server.to(`room:${roomId}`).emit('room_ended', { roomId, endedBy: hostId });
     return res;
+  }
+
+  @SubscribeMessage('kick_participant')
+  async handleKickParticipant(
+    @MessageBody() payload: { roomId: number; hostId: number; targetUserId: number }
+  ) {
+    const { roomId, hostId, targetUserId } = payload;
+    const updatedDetails = await this.roomService.kickParticipant(roomId, hostId, targetUserId);
+
+    this.server.to(`room:${roomId}`).emit('participant_kicked', {
+      targetUserId,
+      roomId,
+      participants: updatedDetails.participants,
+    });
+
+    return { event: 'participant_kicked', targetUserId, roomId };
   }
 }

@@ -6,7 +6,7 @@ import {
   Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, ListMusic, 
   Mic, MicOff, Volume2, VolumeX, Send, Lock, Unlock, PhoneOff, 
   Users, MessageSquare, Radio, Share2, Sparkles, Heart, Flame, Hand, 
-  ArrowLeft, Check, Copy, ChevronDown, Plus, Upload, Loader2
+  ArrowLeft, Check, Copy, ChevronDown, Plus, Upload, Loader2, UserX, UserMinus
 } from 'lucide-react';
 import { apiFetch, cachedApiFetch, resolveIpfsUrl } from '@/lib/api';
 import { useRoomSocket } from '@/hooks/useRoomSocket';
@@ -178,6 +178,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     emitEndRoom,
     emitToggleMute,
     emitVoiceStream,
+    emitKickParticipant,
   } = useRoomSocket(roomId, currentUserId ?? undefined, socketRole, handleVoiceStreamReceived);
 
   // Live Player State
@@ -461,6 +462,17 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
 
   const voiceAudioElementRef = useRef<HTMLAudioElement | null>(null);
 
+  function base64ToArrayBuffer(base64: string) {
+    const raw = base64.includes(',') ? base64.split(',')[1] : base64;
+    const binaryString = atob(raw);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes.buffer;
+  }
+
   function handleVoiceStreamReceived(data: { userId: number; audioData: string }) {
     if (!data.audioData) return;
     try {
@@ -473,9 +485,8 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
         audioCtx.resume();
       }
 
-      fetch(data.audioData)
-        .then(res => res.arrayBuffer())
-        .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
+      const arrayBuffer = base64ToArrayBuffer(data.audioData);
+      audioCtx.decodeAudioData(arrayBuffer)
         .then(audioBuffer => {
           const source = audioCtx.createBufferSource();
           source.buffer = audioBuffer;
@@ -576,6 +587,25 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       } catch (err) {
         console.error('Microphone access error:', err);
         toast.error('Could not access microphone');
+      }
+    }
+  };
+
+  const handleKickParticipant = async (targetUserId: number, username: string) => {
+    if (!isHostOrCreator) return;
+    if (confirm(`Are you sure you want to remove @${username || 'participant'} from this live room?`)) {
+      try {
+        if (typeof emitKickParticipant === 'function') {
+          emitKickParticipant(targetUserId);
+        }
+        await apiFetch(`/api/rooms/${roomId}/kick`, {
+          method: 'POST',
+          body: JSON.stringify({ targetUserId }),
+        }).catch(() => {});
+        toast.success(`Removed @${username || 'participant'} from room`);
+      } catch (err) {
+        console.error('Kick participant error:', err);
+        toast.error('Could not remove participant');
       }
     }
   };
@@ -1007,6 +1037,18 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
                       className={`flex flex-col items-center gap-1.5 group ${isCurrentFan ? 'cursor-pointer' : 'cursor-default'}`}
                     >
                       <div className={`relative w-14 h-14 rounded-full border-2 p-0.5 transition-all ${isCurrentFan && isMicActive && audioLevel > 10 ? 'border-[#00FF85] shadow-[0_0_20px_rgba(0,255,133,0.8)]' : 'border-[#4E0AA6]/50 bg-[#192134]'}`}>
+                        {isHostOrCreator && listener.user_id && Number(listener.user_id) !== Number(currentUserId) && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleKickParticipant(listener.user_id, listener.display_name || listener.username);
+                            }}
+                            title="Kick Out Participant"
+                            className="absolute -top-1 -left-1 z-20 p-1 bg-[#FF0044] hover:bg-red-700 text-white rounded-full transition-transform hover:scale-110 shadow-md"
+                          >
+                            <UserX size={11} />
+                          </button>
+                        )}
                         <img
                           crossOrigin="anonymous"
                           referrerPolicy="no-referrer"

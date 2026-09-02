@@ -10,6 +10,7 @@ export interface RoomParticipant {
   role: 'host' | 'cohost' | 'speaker' | 'listener';
   is_hand_raised?: boolean;
   is_muted?: boolean;
+  isMuted?: boolean;
 }
 
 export interface RoomMessage {
@@ -79,7 +80,14 @@ export const useRoomSocket = (
     // Listen for room events
     socket.on('user_joined', (data: any) => {
       if (data.participants && Array.isArray(data.participants)) {
-        setParticipants(data.participants);
+        setParticipants(prev => {
+          const prevMuteMap = new Map(prev.map(p => [Number(p.user_id), p.is_muted ?? p.isMuted]));
+          return data.participants.map((p: any) => {
+            const existingMute = prevMuteMap.get(Number(p.user_id));
+            const isMuted = existingMute !== undefined ? existingMute : (p.is_muted ?? p.isMuted ?? false);
+            return { ...p, is_muted: isMuted, isMuted };
+          });
+        });
       } else if (data.participant) {
         setParticipants(prev => {
           const exists = prev.some(p => Number(p.user_id) === Number(data.participant.user_id));
@@ -147,6 +155,14 @@ export const useRoomSocket = (
     socket.on('voice_stream_received', (data: { userId: number; audioData: string }) => {
       if (onVoiceStreamReceivedRef.current) {
         onVoiceStreamReceivedRef.current(data);
+      }
+    });
+
+    socket.on('participant_kicked', (data: { targetUserId: number; roomId: number; participants?: any[] }) => {
+      if (data.participants && Array.isArray(data.participants)) {
+        setParticipants(data.participants);
+      } else {
+        setParticipants(prev => prev.filter(p => Number(p.user_id) !== Number(data.targetUserId)));
       }
     });
 
@@ -244,6 +260,16 @@ export const useRoomSocket = (
     }
   }, [roomId, userId]);
 
+  const emitKickParticipant = useCallback((targetUserId: number) => {
+    if (socketRef.current && roomId && userId) {
+      socketRef.current.emit('kick_participant', {
+        roomId: Number(roomId),
+        hostId: userId,
+        targetUserId,
+      });
+    }
+  }, [roomId, userId]);
+
   return {
     socket: socketRef.current,
     isConnected,
@@ -260,5 +286,6 @@ export const useRoomSocket = (
     emitEndRoom,
     emitToggleMute,
     emitVoiceStream,
+    emitKickParticipant,
   };
 };
