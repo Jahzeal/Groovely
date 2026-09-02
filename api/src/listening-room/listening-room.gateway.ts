@@ -45,7 +45,7 @@ export class ListeningRoomGateway implements OnGatewayConnection, OnGatewayDisco
     const updatedDetails = await this.roomService.joinRoom(roomId, userId, role);
 
     const enrichedParticipants = updatedDetails.participants.map((p: any) => {
-      const isMuted = this.activeRoomMuteState.get(`${roomId}:${p.user_id}`) ?? false;
+      const isMuted = this.activeRoomMuteState.get(`${roomId}:${p.user_id}`) ?? true;
       return { ...p, is_muted: isMuted, isMuted };
     });
 

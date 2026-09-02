@@ -462,6 +462,30 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
 
   const voiceAudioElementRef = useRef<HTMLAudioElement | null>(null);
 
+  useEffect(() => {
+    const unlockAudio = () => {
+      try {
+        if (!voiceAudioContextRef.current) {
+          const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+          voiceAudioContextRef.current = new AudioCtx();
+        }
+        if (voiceAudioContextRef.current && voiceAudioContextRef.current.state === 'suspended') {
+          voiceAudioContextRef.current.resume();
+        }
+      } catch (e) {}
+    };
+
+    window.addEventListener('click', unlockAudio);
+    window.addEventListener('keydown', unlockAudio);
+    window.addEventListener('touchstart', unlockAudio);
+
+    return () => {
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+    };
+  }, []);
+
   function base64ToArrayBuffer(base64: string) {
     const raw = base64.includes(',') ? base64.split(',')[1] : base64;
     const binaryString = atob(raw);
