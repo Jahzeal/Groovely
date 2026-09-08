@@ -262,8 +262,8 @@ export default function ExplorePage() {
                         <div key={creator.id || i} className="shrink-0">
                           <CreatorCard 
                             id={creator.id}
-                            name={creator.displayName || creator.display_name || creator.name || 'Unknown'}
-                            username={creator.username}
+                            name={creator.displayName || creator.display_name || creator.name || (creator.username ? `@${creator.username}` : (creator.email ? creator.email.split('@')[0] : `Creator #${creator.id}`))}
+                            username={creator.username || (creator.email ? creator.email.split('@')[0] : `creator_${creator.id}`)}
                             role={creator.creatorType || creator.creator_type || creator.role || 'Creator'}
                             image={creator.avatar_url || creator.avatarUrl || creator.profileUrl || creator.profile_url || creator.image}
                             isFollowing={creator.isFollowing || creator.is_following}

@@ -20,8 +20,8 @@ export class MarketService {
         t.usage_rights as license_types,
         t.category,
         t.tags,
-        u.display_name as creator,
-        u.username as creator_username
+        COALESCE(NULLIF(TRIM(u.display_name), ''), NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), CASE WHEN u.wallet IS NOT NULL AND length(u.wallet) > 8 THEN SUBSTRING(u.wallet FROM 1 FOR 6) || '...' || SUBSTRING(u.wallet FROM length(u.wallet)-3 FOR 4) ELSE 'Creator #' || u.id END) as creator,
+        COALESCE(NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), 'creator_' || u.id) as creator_username
        FROM tracks t
        JOIN users u ON t.user_id = u.id
        WHERE t.visibility = 'public'
@@ -133,8 +133,8 @@ export class MarketService {
         t.usage_rights as license_types,
         t.category,
         t.tags,
-        u.display_name as creator,
-        u.username as creator_username
+        COALESCE(NULLIF(TRIM(u.display_name), ''), NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), CASE WHEN u.wallet IS NOT NULL AND length(u.wallet) > 8 THEN SUBSTRING(u.wallet FROM 1 FOR 6) || '...' || SUBSTRING(u.wallet FROM length(u.wallet)-3 FOR 4) ELSE 'Creator #' || u.id END) as creator,
+        COALESCE(NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), 'creator_' || u.id) as creator_username
        FROM tracks t
        JOIN users u ON t.user_id = u.id
        WHERE t.visibility = 'public'
@@ -183,8 +183,8 @@ export class MarketService {
         t.usage_rights as license_types,
         t.category,
         t.tags,
-        u.display_name as creator,
-        u.username as creator_username
+        COALESCE(NULLIF(TRIM(u.display_name), ''), NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), CASE WHEN u.wallet IS NOT NULL AND length(u.wallet) > 8 THEN SUBSTRING(u.wallet FROM 1 FOR 6) || '...' || SUBSTRING(u.wallet FROM length(u.wallet)-3 FOR 4) ELSE 'Creator #' || u.id END) as creator,
+        COALESCE(NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), 'creator_' || u.id) as creator_username
        FROM tracks t
        JOIN users u ON t.user_id = u.id
        WHERE t.visibility = 'public'
@@ -231,8 +231,8 @@ export class MarketService {
         t.usage_rights as license_types,
         t.created_at,
         u.id as creator_id,
-        u.display_name as creator_name,
-        u.username as creator_username
+        COALESCE(NULLIF(TRIM(u.display_name), ''), NULLIF(TRIM(u.username), ''), CASE WHEN u.wallet IS NOT NULL AND length(u.wallet) > 8 THEN SUBSTRING(u.wallet FROM 1 FOR 6) || '...' || SUBSTRING(u.wallet FROM length(u.wallet)-3 FOR 4) ELSE 'Creator #' || u.id END) as creator_name,
+        COALESCE(NULLIF(TRIM(u.username), ''), 'creator_' || u.id) as creator_username
        FROM tracks t
        JOIN users u ON t.user_id = u.id
        WHERE t.id = $1 

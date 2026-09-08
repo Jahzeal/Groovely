@@ -347,59 +347,64 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     const targetState = playbackState.state === 'playing';
     setIsPlaying(targetState);
 
-    if (playbackState.positionMs !== undefined && Math.abs(currentTimeMs - playbackState.positionMs) > 2000) {
-      setCurrentTimeMs(playbackState.positionMs);
-      if (audioRef.current && !isNaN(playbackState.positionMs)) {
-        audioRef.current.currentTime = playbackState.positionMs / 1000;
-      }
-    }
-
+    const directTrack = (playbackState as any).track;
     const newTrackId = playbackState.current_track_id || (playbackState as any).trackId;
-    if (newTrackId && String(currentTrack?.id) !== String(newTrackId)) {
+
+    const applyAudioSync = (trackObj: any) => {
+      if (trackObj) setCurrentTrack(trackObj);
+
+      if (audioRef.current) {
+        const audioSrc = resolveIpfsUrl(trackObj?.audio_url || trackObj?.url || currentTrack?.audio_url || currentTrack?.url);
+
+        // Compute real-time network + buffering latency compensation
+        const broadcastTime = playbackState.timestamp || Date.now();
+        const elapsedSec = Math.max(0, (Date.now() - broadcastTime) / 1000);
+        const basePositionSec = (playbackState.positionMs || 0) / 1000;
+        const targetTimeSec = targetState ? basePositionSec + elapsedSec : basePositionSec;
+
+        if (audioSrc && audioRef.current.src !== audioSrc) {
+          audioRef.current.src = audioSrc;
+          audioRef.current.currentTime = targetTimeSec;
+        } else if (audioRef.current && Math.abs(audioRef.current.currentTime - targetTimeSec) > 1.2) {
+          audioRef.current.currentTime = targetTimeSec;
+        }
+
+        if (targetState) {
+          const p = audioRef.current.play();
+          if (p !== undefined) {
+            p.catch((e) => console.warn('Audio play sync notice:', e));
+          }
+        } else {
+          audioRef.current.pause();
+        }
+      }
+    };
+
+    if (directTrack) {
+      applyAudioSync(directTrack);
+    } else if (newTrackId && String(currentTrack?.id) !== String(newTrackId)) {
       const matchInLibrary = libraryTracks.find((t: any) => String(t.id || t.track_id) === String(newTrackId));
       const matchInPlaylist = playlist.find((t: any) => String(t.id || t.track_id) === String(newTrackId));
       const targetTrack = matchInLibrary || matchInPlaylist;
 
       if (targetTrack) {
-        setCurrentTrack(targetTrack);
-        if (audioRef.current) {
-          const audioSrc = resolveIpfsUrl(targetTrack.audio_url || targetTrack.url);
-          if (audioSrc) {
-            audioRef.current.src = audioSrc;
-            if (targetState) {
-              audioRef.current.play().catch((e) => console.warn('Audio play sync error:', e));
-            }
-          }
-        }
+        applyAudioSync(targetTrack);
       } else {
-        // Fetch track details from backend API
+        // Fallback fetch track details from backend API if not in payload
         apiFetch(`/api/tracks/${newTrackId}`, { skipAuthRedirect: true })
           .then(async (res) => {
             if (res && res.ok) {
               const body = await res.json();
               const fetched = body?.data?.track || body?.data || body;
               if (fetched && (fetched.id || fetched.track_id)) {
-                setCurrentTrack(fetched);
-                if (audioRef.current) {
-                  const audioSrc = resolveIpfsUrl(fetched.audio_url || fetched.url);
-                  if (audioSrc) {
-                    audioRef.current.src = audioSrc;
-                    if (targetState) {
-                      audioRef.current.play().catch((e) => console.warn('Audio play sync error:', e));
-                    }
-                  }
-                }
+                applyAudioSync(fetched);
               }
             }
           })
           .catch((err) => console.warn('Could not sync track details:', err));
       }
-    } else if (audioRef.current) {
-      if (targetState && audioRef.current.paused) {
-        audioRef.current.play().catch((e) => console.warn('Audio play sync error:', e));
-      } else if (!targetState && !audioRef.current.paused) {
-        audioRef.current.pause();
-      }
+    } else {
+      applyAudioSync(currentTrack);
     }
   }, [playbackState]);
 
@@ -460,29 +465,63 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   const audioContextRef = useRef<AudioContext | null>(null);
   const animFrameRef = useRef<number | null>(null);
 
-  const voiceAudioElementRef = useRef<HTMLAudioElement | null>(null);
+  const mediaSourceRef = useRef<MediaSource | null>(null);
+  const sourceBufferRef = useRef<SourceBuffer | null>(null);
+  const voiceQueueRef = useRef<ArrayBuffer[]>([]);
+  const voicePlayerRef = useRef<HTMLAudioElement | null>(null);
 
+  // Initialize MediaSource pipeline for continuous WebSockets voice audio streaming
   useEffect(() => {
-    const unlockAudio = () => {
-      try {
-        if (!voiceAudioContextRef.current) {
-          const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-          voiceAudioContextRef.current = new AudioCtx();
-        }
-        if (voiceAudioContextRef.current && voiceAudioContextRef.current.state === 'suspended') {
-          voiceAudioContextRef.current.resume();
-        }
-      } catch (e) {}
-    };
+    if (typeof window === 'undefined') return;
 
-    window.addEventListener('click', unlockAudio);
-    window.addEventListener('keydown', unlockAudio);
-    window.addEventListener('touchstart', unlockAudio);
+    try {
+      const mediaSource = new MediaSource();
+      mediaSourceRef.current = mediaSource;
+
+      const voicePlayer = new Audio();
+      voicePlayerRef.current = voicePlayer;
+      voicePlayer.src = URL.createObjectURL(mediaSource);
+
+      const handleSourceOpen = () => {
+        try {
+          let mimeType = 'audio/webm; codecs=opus';
+          if (!MediaSource.isTypeSupported(mimeType)) {
+            mimeType = MediaSource.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+          }
+          if (mimeType) {
+            const sb = mediaSource.addSourceBuffer(mimeType);
+            sourceBufferRef.current = sb;
+
+            sb.addEventListener('updateend', () => {
+              if (voiceQueueRef.current.length > 0 && sourceBufferRef.current && !sourceBufferRef.current.updating) {
+                const nextChunk = voiceQueueRef.current.shift();
+                if (nextChunk) {
+                  try {
+                    sourceBufferRef.current.appendBuffer(nextChunk);
+                  } catch (e) {
+                    console.warn('SourceBuffer append error:', e);
+                  }
+                }
+              }
+            });
+          }
+        } catch (e) {
+          console.warn('MediaSource sourceopen error:', e);
+        }
+      };
+
+      mediaSource.addEventListener('sourceopen', handleSourceOpen);
+    } catch (e) {
+      console.warn('MediaSource initialization notice:', e);
+    }
 
     return () => {
-      window.removeEventListener('click', unlockAudio);
-      window.removeEventListener('keydown', unlockAudio);
-      window.removeEventListener('touchstart', unlockAudio);
+      if (voicePlayerRef.current) {
+        try {
+          voicePlayerRef.current.pause();
+          voicePlayerRef.current.src = '';
+        } catch (e) {}
+      }
     };
   }, []);
 
@@ -500,36 +539,23 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   function handleVoiceStreamReceived(data: { userId: number; audioData: string }) {
     if (!data.audioData) return;
     try {
-      if (!voiceAudioContextRef.current) {
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-        voiceAudioContextRef.current = new AudioCtx();
-      }
-      const audioCtx = voiceAudioContextRef.current;
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-
       const arrayBuffer = base64ToArrayBuffer(data.audioData);
-      audioCtx.decodeAudioData(arrayBuffer)
-        .then(audioBuffer => {
-          const source = audioCtx.createBufferSource();
-          source.buffer = audioBuffer;
-          source.connect(audioCtx.destination);
-          source.start(0);
-        })
-        .catch(() => {
-          // Re-use single HTMLAudioElement ref to avoid WebMediaPlayer leaks (crbug.com/1144736)
-          try {
-            if (!voiceAudioElementRef.current) {
-              voiceAudioElementRef.current = new Audio();
-            }
-            const fallbackAudio = voiceAudioElementRef.current;
-            fallbackAudio.src = data.audioData;
-            fallbackAudio.play().catch(() => {});
-          } catch (fErr) {}
-        });
+      const sb = sourceBufferRef.current;
+
+      if (sb && !sb.updating) {
+        try {
+          sb.appendBuffer(arrayBuffer);
+          if (voicePlayerRef.current && voicePlayerRef.current.paused) {
+            voicePlayerRef.current.play().catch(() => {});
+          }
+        } catch (err) {
+          voiceQueueRef.current.push(arrayBuffer);
+        }
+      } else {
+        voiceQueueRef.current.push(arrayBuffer);
+      }
     } catch (e) {
-      console.warn('Voice stream playback decode error:', e);
+      console.warn('Voice stream received notice:', e);
     }
   }
 
@@ -1151,7 +1177,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className={`text-xs font-bold ${msg.role === 'host' || msg.isHost ? 'text-accent-purple' : 'text-[#E5E5E5]'}`}>
-                      {msg.display_name || msg.username || msg.name || 'User'}
+                      {msg.display_name || msg.username || (msg.email ? msg.email.split('@')[0] : '') || msg.name || 'User'}
                     </span>
                     <span className="text-[10px] text-zinc-400 font-mono">
                       {msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (msg.time || 'Live')}

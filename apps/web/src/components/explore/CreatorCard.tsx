@@ -33,8 +33,13 @@ export const CreatorCard = ({
   isFollowing = false, 
   onFollow 
 }: CreatorCardProps) => {
-  const profileHref = username ? `/creator/${username}` : '#';
-  const displayImage = ipfsToHttp(image) || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(username || name || 'groovely')}&backgroundColor=192134,0F172A,8A2BE2`;
+  const cleanUsername = username || (id ? `creator_${id}` : '');
+  const profileHref = cleanUsername ? `/creator/${encodeURIComponent(cleanUsername)}` : '#';
+  const displayName = name && name !== 'Unknown' 
+    ? name 
+    : (username ? `@${username}` : (id ? `Creator #${id}` : 'Grooveli Creator'));
+
+  const displayImage = ipfsToHttp(image) || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(cleanUsername || displayName || 'groovely')}&backgroundColor=192134,0F172A,8A2BE2`;
 
   return (
     <div className="flex flex-col items-center gap-3 group">
@@ -44,10 +49,10 @@ export const CreatorCard = ({
       >
         <img 
           src={displayImage} 
-          alt={name} 
+          alt={displayName} 
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
           onError={(e) => {
-            (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(username || name || 'groovely')}`;
+            (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(cleanUsername || displayName || 'groovely')}`;
           }}
         />
         <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors" />
@@ -56,16 +61,16 @@ export const CreatorCard = ({
       <Link href={profileHref} className="flex flex-col items-center gap-1 cursor-pointer">
         <div className="flex items-center gap-1.5 max-w-[140px]">
           <span className="text-[13px] font-black text-white group-hover:text-[#8A2BE2] transition-colors truncate">
-            {name}
+            {displayName}
           </span>
         </div>
-        {username && (
+        {cleanUsername && (
           <span className="text-[10px] font-medium text-zinc-400">
-            @{username}
+            @{cleanUsername}
           </span>
         )}
         <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-white/10 text-zinc-300">
-          {role}
+          {role || 'Creator'}
         </span>
       </Link>
 

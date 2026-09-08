@@ -89,21 +89,30 @@ export class ListeningRoomGateway implements OnGatewayConnection, OnGatewayDisco
     @MessageBody() payload: { roomId: number; userId: number; action: 'play' | 'pause' | 'seek'; trackId?: number; track?: any; positionMs?: number }
   ) {
     const { roomId, userId, action, trackId, track, positionMs = 0 } = payload;
-    let syncData: any;
-    try {
-      syncData = await this.roomService.updatePlayback(roomId, userId, action, trackId, positionMs);
-    } catch (e) {
-      syncData = { roomId, action, state: action === 'play' ? 'playing' : 'paused', current_track_id: trackId, positionMs, timestamp: Date.now() };
-    }
-    if (track) {
-      syncData.track = track;
-    }
+    const state = action === 'play' ? 'playing' : 'paused';
+    const timestamp = Date.now();
 
-    // Store active playback state in gateway memory for newly joining fans
+    const syncData: any = {
+      roomId: Number(roomId),
+      action,
+      state,
+      current_track_id: trackId,
+      positionMs,
+      timestamp,
+      track: track || null,
+    };
+
+    // 1. Store active playback state in memory for joining fans
     this.activeRoomPlaybackState.set(Number(roomId), syncData);
 
-    // Broadcast playback sync to ALL listeners in room
+    // 2. Broadcast playback sync IMMEDIATELY to all listeners in room over WebSockets (< 5ms latency)
     this.server.to(`room:${roomId}`).emit('playback_synced', syncData);
+
+    // 3. Persist to PostgreSQL database asynchronously in the background
+    this.roomService.updatePlayback(roomId, userId, action, trackId, positionMs).catch((e) => {
+      console.warn('Background room playback DB update notice:', e);
+    });
+
     return syncData;
   }
 

@@ -105,8 +105,8 @@ export class ListeningRoomService {
   async getRoomDetails(roomId: number) {
     const roomRes = await this.db.query(
       `SELECT r.*, 
-              COALESCE(u.display_name, 'Creator Host') as host_name, 
-              COALESCE(u.username, 'host') as host_username, 
+              COALESCE(NULLIF(TRIM(u.display_name), ''), NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), 'Creator Host') as host_name, 
+              COALESCE(NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), 'host') as host_username, 
               COALESCE(u.avatar_url, 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80') as host_avatar, 
               u.wallet as host_wallet,
               t.title as current_track_title,
@@ -130,8 +130,8 @@ export class ListeningRoomService {
     try {
       const participantsRes = await this.db.query(
         `SELECT p.*, 
-                COALESCE(u.display_name, 'Participant') as display_name, 
-                COALESCE(u.username, 'user') as username, 
+                COALESCE(NULLIF(TRIM(u.display_name), ''), NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), CASE WHEN u.wallet IS NOT NULL AND length(u.wallet) > 8 THEN SUBSTRING(u.wallet FROM 1 FOR 6) || '...' || SUBSTRING(u.wallet FROM length(u.wallet)-3 FOR 4) ELSE 'Participant' END) as display_name, 
+                COALESCE(NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), 'user_' || u.id) as username, 
                 u.avatar_url, 
                 u.wallet, 
                 u.role as user_role
@@ -160,7 +160,7 @@ export class ListeningRoomService {
                 t.cover_url, 
                 t.audio_url, 
                 t.price,
-                COALESCE(u.display_name, 'Creator') as added_by_name
+                COALESCE(NULLIF(TRIM(u.display_name), ''), NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), 'Creator') as added_by_name
          FROM listening_room_playlist q
          LEFT JOIN tracks t ON q.track_id = t.id
          LEFT JOIN users u ON q.added_by_user_id = u.id
@@ -178,8 +178,8 @@ export class ListeningRoomService {
     try {
       const messagesRes = await this.db.query(
         `SELECT m.*, 
-                COALESCE(u.display_name, 'User') as display_name, 
-                COALESCE(u.username, 'user') as username, 
+                COALESCE(NULLIF(TRIM(u.display_name), ''), NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), CASE WHEN u.wallet IS NOT NULL AND length(u.wallet) > 8 THEN SUBSTRING(u.wallet FROM 1 FOR 6) || '...' || SUBSTRING(u.wallet FROM length(u.wallet)-3 FOR 4) ELSE 'User' END) as display_name, 
+                COALESCE(NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), 'user_' || u.id) as username, 
                 u.avatar_url,
                 u.wallet
          FROM listening_room_messages m

@@ -334,9 +334,17 @@ export class ProfileService {
   async getPublicProfile(username: string) {
     const cleanUsername = username ? username.replace(/^@/, '').trim().toLowerCase() : '';
     const result = await this.db.query(
-      `SELECT id, display_name, username, bio, creator_type, twitter, instagram, soundcloud, avatar_url, role, wallet 
+      `SELECT id, 
+              COALESCE(NULLIF(TRIM(display_name), ''), NULLIF(TRIM(username), ''), NULLIF(TRIM(SPLIT_PART(email, '@', 1)), ''), CASE WHEN wallet IS NOT NULL AND length(wallet) > 8 THEN SUBSTRING(wallet FROM 1 FOR 6) || '...' || SUBSTRING(wallet FROM length(wallet)-3 FOR 4) ELSE 'Creator #' || id END) as display_name,
+              COALESCE(NULLIF(TRIM(username), ''), NULLIF(TRIM(SPLIT_PART(email, '@', 1)), ''), 'creator_' || id) as username,
+              bio, creator_type, twitter, instagram, soundcloud, avatar_url, role, wallet 
        FROM users 
-       WHERE LOWER(REPLACE(username, '@', '')) = $1 OR LOWER(username) = $1`,
+       WHERE LOWER(REPLACE(username, '@', '')) = $1 
+          OR LOWER(username) = $1 
+          OR LOWER(SPLIT_PART(email, '@', 1)) = $1
+          OR ('creator_' || id::text) = $1 
+          OR id::text = $1 
+          OR LOWER(wallet) = $1`,
       [cleanUsername]
     );
     const profile = result.rows[0];
@@ -363,8 +371,8 @@ export class ProfileService {
         COALESCE(t.license_price, t.price, '5.00') as price,
         t.currency,
         t.usage_rights as license_types,
-        u.display_name as creator,
-        u.username as creator_username
+        COALESCE(NULLIF(TRIM(u.display_name), ''), NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), CASE WHEN u.wallet IS NOT NULL AND length(u.wallet) > 8 THEN SUBSTRING(u.wallet FROM 1 FOR 6) || '...' || SUBSTRING(u.wallet FROM length(u.wallet)-3 FOR 4) ELSE 'Creator #' || u.id END) as creator,
+        COALESCE(NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), 'creator_' || u.id) as creator_username
        FROM tracks t
        JOIN users u ON t.user_id = u.id
        WHERE t.user_id = $1 AND t.visibility = 'public'

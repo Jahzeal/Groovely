@@ -16,15 +16,15 @@ export class FanService {
         t.category,
         t.price as price,
         t.license_price as license_price,
-        u.display_name as artist_name,
-        u.username as artist_username,
+        COALESCE(NULLIF(TRIM(u.display_name), ''), NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), CASE WHEN u.wallet IS NOT NULL AND length(u.wallet) > 8 THEN SUBSTRING(u.wallet FROM 1 FOR 6) || '...' || SUBSTRING(u.wallet FROM length(u.wallet)-3 FOR 4) ELSE 'Creator #' || u.id END) as artist_name,
+        COALESCE(NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), 'creator_' || u.id) as artist_username,
         COUNT(ts.id) as stream_count
        FROM tracks t
        JOIN users u ON t.user_id = u.id
        LEFT JOIN track_streams ts ON t.id = ts.track_id AND ts.played_at >= NOW() - INTERVAL '7 days'
        WHERE t.visibility = 'public'
          AND (t.status = 'active' OR t.status = 'published' OR EXISTS (SELECT 1 FROM editions e JOIN songs s ON e.song_id = s.id WHERE s.track_id = t.id AND e.contract_edition_id IS NOT NULL))
-       GROUP BY t.id, t.user_id, u.display_name, u.username, t.price, t.license_price
+       GROUP BY t.id, t.user_id, u.display_name, u.username, u.wallet, u.id, u.email, t.price, t.license_price
        ORDER BY stream_count DESC
        LIMIT $1`,
       [limit]
@@ -44,8 +44,8 @@ export class FanService {
         t.price as price,
         t.license_price as license_price,
         t.created_at,
-        u.display_name as artist_name,
-        u.username as artist_username
+        COALESCE(NULLIF(TRIM(u.display_name), ''), NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), CASE WHEN u.wallet IS NOT NULL AND length(u.wallet) > 8 THEN SUBSTRING(u.wallet FROM 1 FOR 6) || '...' || SUBSTRING(u.wallet FROM length(u.wallet)-3 FOR 4) ELSE 'Creator #' || u.id END) as artist_name,
+        COALESCE(NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), 'creator_' || u.id) as artist_username
        FROM tracks t
        JOIN users u ON t.user_id = u.id
        WHERE t.visibility = 'public'
@@ -60,25 +60,25 @@ export class FanService {
   async getCreators(userId: number, limit = 50, search?: string) {
     let query = `SELECT 
         u.id,
-        u.display_name as name,
-        u.username,
+        COALESCE(NULLIF(TRIM(u.display_name), ''), NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), CASE WHEN u.wallet IS NOT NULL AND length(u.wallet) > 8 THEN SUBSTRING(u.wallet FROM 1 FOR 6) || '...' || SUBSTRING(u.wallet FROM length(u.wallet)-3 FOR 4) ELSE 'Creator #' || u.id END) as name,
+        COALESCE(NULLIF(TRIM(u.display_name), ''), NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), CASE WHEN u.wallet IS NOT NULL AND length(u.wallet) > 8 THEN SUBSTRING(u.wallet FROM 1 FOR 6) || '...' || SUBSTRING(u.wallet FROM length(u.wallet)-3 FOR 4) ELSE 'Creator #' || u.id END) as display_name,
+        COALESCE(NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), 'creator_' || u.id) as username,
         u.bio,
-        u.display_name,
         u.avatar_url as profile_url,
         u.avatar_url,
-        u.creator_type,
+        COALESCE(u.creator_type, 'Creator') as creator_type,
         u.wallet,
         (SELECT COUNT(*) FROM tracks t WHERE t.user_id = u.id AND t.visibility = 'public') as track_count,
         CASE WHEN f.follower_id IS NOT NULL THEN true ELSE false END as is_following
        FROM users u
        LEFT JOIN follows f ON f.following_id = u.id AND f.follower_id = $1
-       WHERE 1=1`;
+       WHERE (u.role = 'creator' OR u.creator_type IS NOT NULL OR EXISTS (SELECT 1 FROM tracks t WHERE t.user_id = u.id))`;
 
     const params: any[] = [userId || 0];
 
     if (search && search.trim()) {
       params.push(`%${search.trim().toLowerCase()}%`);
-      query += ` AND (LOWER(u.username) LIKE $${params.length} OR LOWER(u.display_name) LIKE $${params.length} OR LOWER(u.wallet) LIKE $${params.length})`;
+      query += ` AND (LOWER(u.username) LIKE $${params.length} OR LOWER(u.display_name) LIKE $${params.length} OR LOWER(u.wallet) LIKE $${params.length} OR LOWER(u.email) LIKE $${params.length})`;
     }
 
     params.push(limit);
@@ -138,8 +138,8 @@ export class FanService {
         t.category,
         t.price as price,
         t.license_price as license_price,
-        u.display_name as artist_name,
-        u.username as artist_username,
+        COALESCE(NULLIF(TRIM(u.display_name), ''), NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), CASE WHEN u.wallet IS NOT NULL AND length(u.wallet) > 8 THEN SUBSTRING(u.wallet FROM 1 FOR 6) || '...' || SUBSTRING(u.wallet FROM length(u.wallet)-3 FOR 4) ELSE 'Creator #' || u.id END) as artist_name,
+        COALESCE(NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), 'creator_' || u.id) as artist_username,
         CASE WHEN f.follower_id IS NOT NULL THEN true ELSE false END as follows_artist
        FROM tracks t
        JOIN users u ON t.user_id = u.id
