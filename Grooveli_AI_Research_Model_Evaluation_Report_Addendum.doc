@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+<meta charset="utf-8">
+<title>Grooveli AI Research Addendum</title>
+<!--[if gte mso 9]>
+<xml>
+ <w:WordDocument>
+  <w:View>Print</w:View>
+  <w:Zoom>100</w:Zoom>
+  <w:DoNotOptimizeForCustomXml/>
+ </w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #222222;
+    margin: 40px;
+  }
+  h1 {
+    color: #1A1A3A;
+    font-size: 20pt;
+    border-bottom: 2px solid #6366F1;
+    padding-bottom: 8px;
+    margin-bottom: 4px;
+  }
+  .subtitle {
+    color: #64748B;
+    font-size: 10.5pt;
+    margin-bottom: 24px;
+  }
+  h2 {
+    color: #2563EB;
+    font-size: 14pt;
+    margin-top: 24px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #E2E8F0;
+    padding-bottom: 4px;
+  }
+  h3 {
+    color: #1E293B;
+    font-size: 11.5pt;
+    margin-top: 16px;
+    margin-bottom: 8px;
+  }
+  p, li {
+    font-size: 11pt;
+    color: #334155;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 16px 0 20px 0;
+    font-size: 10pt;
+  }
+  th {
+    background-color: #1E1B4B;
+    color: #FFFFFF;
+    font-weight: bold;
+    text-align: left;
+    padding: 9px 11px;
+    border: 1px solid #1E1B4B;
+  }
+  td {
+    padding: 8px 11px;
+    border: 1px solid #CBD5E1;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td {
+    background-color: #F8FAFC;
+  }
+  .badge-green {
+    color: #166534;
+    font-weight: bold;
+  }
+  .callout {
+    background-color: #F1F5F9;
+    border-left: 4px solid #6366F1;
+    padding: 10px 14px;
+    margin: 14px 0;
+    font-size: 10.5pt;
+  }
+</style>
+</head>
+<body>
+
+<h1>Grooveli AI Research & Model Evaluation Report: Addendum & Product Integration Extension</h1>
+<div class="subtitle">
+  <strong>Document Type:</strong> Official Addendum & Extension &nbsp;|&nbsp; 
+  <strong>Base Reference:</strong> Grooveli AI Research Model Evaluation Report (v1.0) &nbsp;|&nbsp; 
+  <strong>Date:</strong> September 9, 2026
+</div>
+
+<hr style="border: 0; border-top: 1px solid #E2E8F0; margin: 16px 0;">
+
+<h2>1. Purpose of this Addendum</h2>
+<p>This document serves as an <strong>official extension and addendum</strong> to the initial <em>Grooveli AI Research & Model Evaluation Report (v1.0)</em>. While the primary research report successfully established a 10-step methodology, provider adapter principles, and initial candidate lists for TTS, ASR, and Lyria 3 music generation, this addendum expands the scope to cover all <strong>6 Grooveli AI Studio Product Modules</strong>.</p>
+
+<div class="callout">
+  <strong>Key Objective:</strong> Complement the base 10-step evaluation framework by mapping model candidates, latency SLAs, unit margins, circuit breaker failovers, and billing safeguards for the full 6-module AI Studio suite.
+</div>
+
+<h2>2. Complete 6-Module Model Matrix</h2>
+<p>The initial report focused on TTS, ASR, LLMs, and Music Synthesis. The table below extends that research to include the remaining missing audio DSP modules (<strong>Vocal Stem Separation</strong> and <strong>AI Audio Mastering</strong>).</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 22%;">AI Studio Module</th>
+      <th style="width: 23%;">Primary Candidate Engine</th>
+      <th style="width: 23%;">Secondary / Fallback Engine</th>
+      <th style="width: 17%;">Delivery Mode</th>
+      <th style="width: 15%;">Target Speed</th>
+      <th style="width: 15%;">Target Margin</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>1. Lyric Assistant</strong></td>
+      <td>Claude 3.5 Sonnet (Anthropic)</td>
+      <td>GPT-4o (OpenAI) / Llama 3.3</td>
+      <td>Real-Time Text Stream</td>
+      <td>&lt; 0.35 seconds</td>
+      <td class="badge-green">82% Margin</td>
+    </tr>
+    <tr>
+      <td><strong>2. Voice Clone Studio</strong></td>
+      <td>Fish Audio S2.1 Pro / Qwen3-TTS</td>
+      <td>CosyVoice 3.5 / F5-TTS</td>
+      <td>Real-Time Audio Stream</td>
+      <td>&lt; 0.45 seconds</td>
+      <td class="badge-green">70% Margin</td>
+    </tr>
+    <tr>
+      <td><strong>3. Beat & Track Generator</strong></td>
+      <td>Google Lyria 3 Pro API</td>
+      <td>Stability Audio 2.0 / AudioCraft</td>
+      <td>Chunked Audio Stream</td>
+      <td>&lt; 1.20 seconds</td>
+      <td class="badge-green">65% Margin</td>
+    </tr>
+    <tr>
+      <td><strong>4. Stem Separator</strong> <em>(New)</em></td>
+      <td>Hybrid Spectrogram Demucs v4</td>
+      <td>HTDemucs Serverless Engine</td>
+      <td>Background Async Job</td>
+      <td>&lt; 12 seconds</td>
+      <td class="badge-green">78% Margin</td>
+    </tr>
+    <tr>
+      <td><strong>5. AI Mastering Studio</strong> <em>(New)</em></td>
+      <td>Matchering 2.0 + Librosa DSP</td>
+      <td>Matchering Cloud Worker</td>
+      <td>Background Async Job</td>
+      <td>&lt; 15 seconds</td>
+      <td class="badge-green">85% Margin</td>
+    </tr>
+    <tr>
+      <td><strong>6. Co-Writer Copilot</strong></td>
+      <td>GPT-4o Interactive Model</td>
+      <td>Claude 3.5 Haiku</td>
+      <td>Bi-Directional WebSocket</td>
+      <td>&lt; 0.25 seconds</td>
+      <td class="badge-green">80% Margin</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>3. Automated Circuit Breaker & Failover Specification</h2>
+<p>To enforce the 99.9% availability requirement outlined in the base report, all provider adapters will operate under an automated 4-step Circuit Breaker failover rule:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 15%;">Step</th>
+      <th style="width: 25%;">State / Trigger</th>
+      <th style="width: 35%;">System Behavior</th>
+      <th style="width: 25%;">User Experience</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Step 1</strong></td>
+      <td>Normal Operation</td>
+      <td>Requests route to the Primary AI Engine (e.g., Fish Audio for Voice Cloning).</td>
+      <td>Instant audio playback (&lt; 0.45s).</td>
+    </tr>
+    <tr>
+      <td><strong>Step 2</strong></td>
+      <td>Outage Detection</td>
+      <td>System detects 3 consecutive errors or response delays exceeding 1.5 seconds.</td>
+      <td>No error shown to user.</td>
+    </tr>
+    <tr>
+      <td><strong>Step 3</strong></td>
+      <td>Automatic Switch</td>
+      <td>Circuit Breaker trips to "Open" and instantly routes request to Secondary Engine (e.g., Qwen3-TTS).</td>
+      <td>Uninterrupted audio generation.</td>
+    </tr>
+    <tr>
+      <td><strong>Step 4</strong></td>
+      <td>Recovery & Reset</td>
+      <td>System tests Primary Engine after 60 seconds; automatically restores primary routing once healthy.</td>
+      <td>Continuous 99.9% service availability.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>4. Financial Unit Economics & Profit Safeguards</h2>
+<p>Extending the credit engine concept from Section 8 of the base report, credit pricing is bound to API costs via the formula below:</p>
+
+<div class="callout">
+  <strong>Pricing Formula:</strong> Credit Retail Price = Wholesale API Cost / (1 - Target Gross Margin Percentage)
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 35%;">AI Studio Action</th>
+      <th style="width: 16%;">Wholesale Cost</th>
+      <th style="width: 17%;">Platform Cost</th>
+      <th style="width: 16%;">Retail Value</th>
+      <th style="width: 16%;">Profit Margin</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Lyric Verse Generation (500 tokens)</strong></td>
+      <td>$0.0015</td>
+      <td>2 Credits</td>
+      <td>$0.010</td>
+      <td class="badge-green">85.0% Margin</td>
+    </tr>
+    <tr>
+      <td><strong>Voice Synthesis (10 sec audio)</strong></td>
+      <td>$0.0040</td>
+      <td>5 Credits</td>
+      <td>$0.025</td>
+      <td class="badge-green">84.0% Margin</td>
+    </tr>
+    <tr>
+      <td><strong>Beat Generation (30 sec clip)</strong></td>
+      <td>$0.0120</td>
+      <td>12 Credits</td>
+      <td>$0.060</td>
+      <td class="badge-green">80.0% Margin</td>
+    </tr>
+    <tr>
+      <td><strong>Vocal Stem Separation (Full Track)</strong></td>
+      <td>$0.0080</td>
+      <td>8 Credits</td>
+      <td>$0.040</td>
+      <td class="badge-green">80.0% Margin</td>
+    </tr>
+    <tr>
+      <td><strong>Full Song AI Mastering</strong></td>
+      <td>$0.0050</td>
+      <td>6 Credits</td>
+      <td>$0.030</td>
+      <td class="badge-green">83.3% Margin</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>5. Integration Summary</h2>
+<p>By appending this addendum to the base report, the engineering team maintains the sound 10-step evaluation framework while ensuring full architectural readiness for all 6 Grooveli AI Studio product modules.</p>
+
+</body>
+</html>

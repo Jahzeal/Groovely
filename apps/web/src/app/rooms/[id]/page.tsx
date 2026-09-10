@@ -1070,7 +1070,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
           {/* LISTENERS GRID */}
           <div className="flex-1 space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-widest text-[#CACACA]">
-              LISTENERS ({roomListeners.length > 0 ? roomListeners.length : (room?.active_listeners || 1)})
+              LISTENERS ({roomListeners.length})
             </h3>
 
             {/* Listener Avatar Cards Grid */}

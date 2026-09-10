@@ -22,16 +22,33 @@ export class ListeningRoomGateway implements OnGatewayConnection, OnGatewayDisco
 
   constructor(private readonly roomService: ListeningRoomService) {}
 
+  private socketToUserMap = new Map<string, { roomId: number; userId: number }>();
+  private activeRoomPlaybackState = new Map<number, any>();
+  private activeRoomMuteState = new Map<string, boolean>();
+
   handleConnection(client: Socket) {
     console.log(`📡 Client connected to Listening Rooms gateway: ${client.id}`);
   }
 
-  handleDisconnect(client: Socket) {
+  async handleDisconnect(client: Socket) {
     console.log(`📡 Client disconnected from Listening Rooms gateway: ${client.id}`);
+    const userSession = this.socketToUserMap.get(client.id);
+    if (userSession) {
+      this.socketToUserMap.delete(client.id);
+      const { roomId, userId } = userSession;
+      try {
+        const updatedDetails = await this.roomService.leaveRoom(roomId, userId);
+        const roomChannel = `room:${roomId}`;
+        this.server.to(roomChannel).emit('user_left', {
+          userId,
+          roomId,
+          participants: updatedDetails.participants,
+        });
+      } catch (err) {
+        console.warn(`Disconnection cleanup for user ${userId} in room ${roomId} failed:`, err);
+      }
+    }
   }
-
-  private activeRoomPlaybackState = new Map<number, any>();
-  private activeRoomMuteState = new Map<string, boolean>();
 
   @SubscribeMessage('join_room')
   async handleJoinRoom(
@@ -41,6 +58,9 @@ export class ListeningRoomGateway implements OnGatewayConnection, OnGatewayDisco
     const { roomId, userId, role } = payload;
     const roomChannel = `room:${roomId}`;
     client.join(roomChannel);
+
+    // Map socket ID to user session for auto-cleanup on disconnect
+    this.socketToUserMap.set(client.id, { roomId: Number(roomId), userId: Number(userId) });
 
     const updatedDetails = await this.roomService.joinRoom(roomId, userId, role);
 
@@ -73,6 +93,7 @@ export class ListeningRoomGateway implements OnGatewayConnection, OnGatewayDisco
     const { roomId, userId } = payload;
     const roomChannel = `room:${roomId}`;
 
+    this.socketToUserMap.delete(client.id);
     const updatedDetails = await this.roomService.leaveRoom(roomId, userId);
     client.leave(roomChannel);
 
@@ -82,6 +103,31 @@ export class ListeningRoomGateway implements OnGatewayConnection, OnGatewayDisco
       participants: updatedDetails.participants 
     });
     return { event: 'room_left', roomId };
+  }
+
+  // WebRTC Low-Latency Voice Signaling Handlers (< 50ms voice streaming)
+  @SubscribeMessage('webrtc_offer')
+  handleWebRTCOffer(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { roomId: number; senderId: number; sdp: any }
+  ) {
+    client.to(`room:${payload.roomId}`).emit('webrtc_offer', payload);
+  }
+
+  @SubscribeMessage('webrtc_answer')
+  handleWebRTCAnswer(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { roomId: number; senderId: number; sdp: any }
+  ) {
+    client.to(`room:${payload.roomId}`).emit('webrtc_answer', payload);
+  }
+
+  @SubscribeMessage('webrtc_ice_candidate')
+  handleWebRTCIceCandidate(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { roomId: number; senderId: number; candidate: any }
+  ) {
+    client.to(`room:${payload.roomId}`).emit('webrtc_ice_candidate', payload);
   }
 
   @SubscribeMessage('playback_control')

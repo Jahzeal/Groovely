@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { toast } from 'react-hot-toast';
 
 export interface RoomParticipant {
   user_id: number;
@@ -116,7 +117,23 @@ export const useRoomSocket = (
         setParticipants(data.participants);
       } else if (data.userId || data.user_id) {
         const leftId = Number(data.userId || data.user_id);
-        setParticipants(prev => prev.filter(p => Number(p.user_id) !== leftId));
+        setParticipants(prev => {
+          const leftUser = prev.find(p => Number(p.user_id) === leftId);
+          if (leftUser) {
+            toast(`${leftUser.display_name || leftUser.username || 'A listener'} left the room`, {
+              icon: '👋',
+              style: {
+                background: '#0F0F23',
+                color: '#A1A1AA',
+                border: '1px solid rgba(255,255,255,0.1)',
+                fontSize: '12px',
+                borderRadius: '16px'
+              },
+              duration: 3000,
+            });
+          }
+          return prev.filter(p => Number(p.user_id) !== leftId);
+        });
       }
     });
 

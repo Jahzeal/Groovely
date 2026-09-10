@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Ethereum } from '@/components/ui/SocialIcons';
 import { Button } from '@/components/ui/Button';
-import { X, AlertCircle, ExternalLink, Loader2 } from 'lucide-react';
+import { X, AlertCircle, ExternalLink, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface MintConfirmationModalProps {
   isOpen: boolean;
@@ -46,6 +46,7 @@ export function MintConfirmationModal({
     totalUsd: '2.50'
   }
 }: MintConfirmationModalProps) {
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   if (!isOpen) return null;
 
   return (
@@ -99,55 +100,58 @@ export function MintConfirmationModal({
             </div>
           )}
 
-          {/* Minting Fee Block */}
-          <div className="bg-white/[0.03] border border-white/5 rounded-3xl p-5 flex items-center justify-between group hover:bg-white/[0.05] transition-all">
-            <span className="text-sm font-bold text-zinc-500 uppercase tracking-widest">Minting Fee</span>
-            <div className="flex items-center gap-3">
-               <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg border border-white/10 transition-colors group-hover:border-white/20">
-                  <Ethereum size={16} className="text-white" />
-                  <span className="text-[10px] font-black tracking-widest text-white uppercase">{data.network}</span>
-               </div>
-               <div className="text-right">
-                  <p className="text-xl font-black text-white">{data.fee}</p>
-                  <p className="text-[10px] font-bold text-zinc-600">({data.fee})</p>
-               </div>
-            </div>
+          {/* Main Price & Summary Card */}
+          <div className="bg-white/[0.03] border border-white/10 rounded-3xl p-5 space-y-4">
+             <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Minting Fee</span>
+                <span className="text-2xl font-black text-white">{data.fee}</span>
+             </div>
+             <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Estimated Total</span>
+                <div className="text-right">
+                   <span className="text-lg font-black text-accent-cyan">${data.totalUsd}</span>
+                   <span className="text-[10px] font-bold text-zinc-500 block">({data.totalEth})</span>
+                </div>
+             </div>
           </div>
 
-          {/* Details Card */}
-          <div className="border border-white/10 rounded-3xl p-6 space-y-5 bg-white/[0.01]">
-             <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">From</span>
-                <span className="text-sm font-black text-white tracking-widest">{data.from}</span>
-             </div>
-             <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">To</span>
-                <span className="text-sm font-black text-white tracking-widest">{data.to}</span>
-             </div>
-             <div className="flex justify-between items-center pt-2 border-t border-white/5">
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Network</span>
-                <div className="flex items-center gap-2 px-2 py-1 bg-white/5 rounded-md border border-white/5">
-                   <Ethereum size={12} className="text-white" />
-                   <span className="text-[9px] font-black tracking-widest text-white uppercase">{data.network}</span>
+          {/* Collapsible Technical / Blockchain Details Accordion */}
+          <div className="border border-white/10 rounded-3xl overflow-hidden bg-white/[0.01]">
+             <button
+                type="button"
+                onClick={() => setIsDetailsOpen(!isDetailsOpen)}
+                className="w-full p-4 flex items-center justify-between text-xs font-bold text-zinc-400 uppercase tracking-widest hover:bg-white/[0.03] transition-colors"
+             >
+                <div className="flex items-center gap-2">
+                   <Ethereum size={14} className="text-accent-cyan" />
+                   <span>Technical & Blockchain Details</span>
                 </div>
-             </div>
+                {isDetailsOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+             </button>
 
-             <div className="bg-white/[0.03] rounded-2xl p-4 mt-2 space-y-3">
-                <div className="flex justify-between items-center">
-                   <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest">Gas Fee (est.)</span>
-                   <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-zinc-600">(${data.totalUsd})</span>
-                      <span className="text-sm font-black text-white tracking-widest">{data.gasFee}</span>
+             {isDetailsOpen && (
+                <div className="p-5 pt-0 space-y-4 text-left border-t border-white/5 animate-in fade-in zoom-in-95 duration-200">
+                   <div className="flex justify-between items-center text-xs">
+                      <span className="font-bold text-zinc-500 uppercase tracking-widest">From Wallet</span>
+                      <span className="font-mono text-zinc-300">{data.from}</span>
+                   </div>
+                   <div className="flex justify-between items-center text-xs">
+                      <span className="font-bold text-zinc-500 uppercase tracking-widest">Target Contract</span>
+                      <span className="font-mono text-zinc-300">{data.to}</span>
+                   </div>
+                   <div className="flex justify-between items-center text-xs">
+                      <span className="font-bold text-zinc-500 uppercase tracking-widest">Network</span>
+                      <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white/5 rounded-md border border-white/10">
+                         <Ethereum size={12} className="text-white" />
+                         <span className="text-[10px] font-bold text-white uppercase">{data.network}</span>
+                      </div>
+                   </div>
+                   <div className="flex justify-between items-center text-xs pt-2 border-t border-white/5">
+                      <span className="font-bold text-zinc-500 uppercase tracking-widest">Network Gas (est.)</span>
+                      <span className="font-mono text-zinc-300">{data.gasFee}</span>
                    </div>
                 </div>
-                <div className="flex justify-between items-center pt-2 border-t border-white/10">
-                   <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">Total</span>
-                   <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-zinc-600">(${data.totalUsd})</span>
-                      <span className="text-sm font-black text-white tracking-widest">{data.totalEth}</span>
-                   </div>
-                </div>
-             </div>
+             )}
           </div>
 
           {/* Action Buttons */}

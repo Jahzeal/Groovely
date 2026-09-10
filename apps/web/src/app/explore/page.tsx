@@ -14,6 +14,8 @@ import { Send, Disc, Loader2, Sparkles, TrendingUp, Users, Clock, Music } from '
 import { useRouter } from 'next/navigation';
 import { apiFetch, resolveIpfsUrl } from '@/lib/api';
 import { toast } from 'react-hot-toast';
+import { SkeletonTrackCard } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export default function ExplorePage() {
   const router = useRouter();
@@ -209,8 +211,10 @@ export default function ExplorePage() {
                   </div>
                   
                   {isLoadingTrending ? (
-                    <div className="flex items-center justify-center py-12">
-                      <Loader2 className="w-8 h-8 text-accent-purple animate-spin" />
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <SkeletonTrackCard key={i} />
+                      ))}
                     </div>
                   ) : filteredTrending.length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
@@ -229,9 +233,12 @@ export default function ExplorePage() {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-12 bg-white/[0.02] rounded-2xl border border-white/5">
-                      <p className="text-zinc-500 font-medium text-xs sm:text-sm">No trending tracks found in this category.</p>
-                    </div>
+                    <EmptyState
+                      title="No Trending Tracks Found"
+                      description="There are currently no trending tracks in this category."
+                      actionText="Explore Marketplace"
+                      actionHref="/marketplace"
+                    />
                   )}
                 </div>
 

@@ -246,6 +246,7 @@ export const Sidebar = ({ activePage, role: initialRole }: SidebarProps = {}) =>
             <NavItem icon={Library} label="My Library" href="/library" active={pathname === '/library' || pathname === '/dashboard/library'} />
             <NavItem icon={Store} label="Grooveli Market" href="/marketplace" active={isMarket} />
             <NavItem icon={Headphones} label="Listening Rooms" href="/rooms" active={pathname === '/rooms' || pathname?.startsWith('/rooms/')} />
+            <NavItem icon={Settings} label="Settings" href="/dashboard/settings" active={pathname === '/dashboard/settings'} />
           </>
         )}
       </nav>
