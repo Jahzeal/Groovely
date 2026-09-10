@@ -1,11 +1,17 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 
 @Injectable()
-export class ListeningRoomService {
+export class ListeningRoomService implements OnModuleInit {
   constructor(private db: DatabaseService) {}
+
+  onModuleInit() {
+    // Schedule background ghost room cleanup every 5 minutes (300,000 ms)
+    setInterval(() => {
+      this.handleGhostRoomsCleanup();
+    }, 300000);
+  }
 
   async createRoom(hostId: number, dto: CreateRoomDto) {
     const { 
@@ -366,8 +372,7 @@ export class ListeningRoomService {
     return { success: true, roomId };
   }
 
-  @Cron('*/5 * * * *')
-  async handleGhostRoomsCleanupCron() {
+  async handleGhostRoomsCleanup() {
     try {
       const res = await this.db.query(
         `UPDATE listening_rooms 
