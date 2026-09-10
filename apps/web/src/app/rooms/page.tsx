@@ -23,6 +23,7 @@ export default function ListeningRoomsPage() {
     async function fetchRooms() {
       try {
         const { data } = await cachedApiFetch('/api/rooms', {
+          ttlMs: 0,
           onBackgroundUpdate: (fresh: any) => {
             if (fresh?.data) setRooms(fresh.data);
           }
@@ -45,12 +46,33 @@ export default function ListeningRoomsPage() {
       reconnection: true,
     });
 
+    socket.on('room_created', (newRoom: any) => {
+      if (!newRoom || !newRoom.id) return;
+      setRooms(prev => {
+        const exists = prev.some(r => Number(r.id) === Number(newRoom.id));
+        if (exists) {
+          return prev.map(r => Number(r.id) === Number(newRoom.id) ? { ...r, ...newRoom } : r);
+        }
+        return [newRoom, ...prev];
+      });
+    });
+
     socket.on('room_status_changed', (data: { roomId: number; status: string; is_live: boolean }) => {
-      setRooms(prev => prev.map(room => 
-        Number(room.id) === Number(data.roomId) 
-          ? { ...room, status: data.status, is_live: data.is_live } 
-          : room
-      ));
+      if (data.status === 'ended' || data.is_live === false) {
+        setRooms(prev => prev.filter(room => Number(room.id) !== Number(data.roomId)));
+      } else {
+        setRooms(prev => prev.map(room => 
+          Number(room.id) === Number(data.roomId) 
+            ? { ...room, status: data.status, is_live: data.is_live } 
+            : room
+        ));
+      }
+    });
+
+    socket.on('room_ended', (data: { roomId: number }) => {
+      if (data?.roomId) {
+        setRooms(prev => prev.filter(room => Number(room.id) !== Number(data.roomId)));
+      }
     });
 
     return () => {
@@ -82,6 +104,7 @@ export default function ListeningRoomsPage() {
   const genres = ['All', 'Afrobeat', 'Hip Hop', 'Amapiano', 'R&B', 'Lo-Fi / Chill', 'Podcast / Discussion', 'Studio Session'];
 
   const filteredRooms = rooms.filter(r => {
+    if (r.status === 'ended' || r.is_live === false) return false;
     if (selectedGenre !== 'All' && r.genre?.toLowerCase() !== selectedGenre.toLowerCase()) {
       return false;
     }

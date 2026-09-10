@@ -67,6 +67,7 @@ export default function SettingsPage() {
         toast.success('Account settings saved successfully!');
         if (typeof window !== 'undefined') {
           if (username) localStorage.setItem('groovely_username', username);
+          if (displayName) localStorage.setItem('groovely_display_name', displayName);
           if (walletAddress) localStorage.setItem('groovely_wallet', walletAddress);
         }
       } else {
@@ -151,13 +152,22 @@ export default function SettingsPage() {
               <h2 className="text-lg font-bold text-white tracking-tight">Account Preferences</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <Input
+                  label="Display Name"
+                  placeholder="e.g. Alex Rivera"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  icon={<User size={16} />}
+                />
+                <Input
                   label="Username"
+                  placeholder="e.g. alexrivera"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   icon={<User size={16} />}
                 />
                 <Input
                   label="Primary Email"
+                  placeholder="email@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   icon={<Shield size={16} />}

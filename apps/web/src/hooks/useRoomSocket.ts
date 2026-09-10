@@ -48,6 +48,7 @@ export const useRoomSocket = (
   const [messages, setMessages] = useState<RoomMessage[]>([]);
   const [playbackState, setPlaybackState] = useState<PlaybackSyncData | null>(null);
   const [isRoomEnded, setIsRoomEnded] = useState(false);
+  const [isKicked, setIsKicked] = useState(false);
 
   const onVoiceStreamReceivedRef = useRef(onVoiceStreamReceived);
   useEffect(() => {
@@ -176,6 +177,9 @@ export const useRoomSocket = (
     });
 
     socket.on('participant_kicked', (data: { targetUserId: number; roomId: number; participants?: any[] }) => {
+      if (userId && Number(data.targetUserId) === Number(userId)) {
+        setIsKicked(true);
+      }
       if (data.participants && Array.isArray(data.participants)) {
         setParticipants(data.participants);
       } else {
@@ -296,6 +300,7 @@ export const useRoomSocket = (
     setMessages,
     playbackState,
     isRoomEnded,
+    isKicked,
     emitPlaybackControl,
     emitSendMessage,
     emitRaiseHand,

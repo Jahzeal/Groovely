@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, ArrowLeft, Upload, Music, Sparkles, Lock, Globe, Mic, Users, DollarSign, Calendar, Clock, Plus, Trash2, Check, Radio, Play, Radio as RadioIcon } from 'lucide-react';
-import { apiFetch, cachedApiFetch } from '@/lib/api';
+import { apiFetch, cachedApiFetch, invalidateCache } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
@@ -193,6 +193,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
       }
 
       const { data } = await res.json();
+      invalidateCache('/api/rooms');
       setCreatedRoom(data);
       if (onRoomCreated) onRoomCreated(data);
       

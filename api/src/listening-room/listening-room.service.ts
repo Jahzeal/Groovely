@@ -71,7 +71,21 @@ export class ListeningRoomService implements OnModuleInit {
       [room.id, hostId]
     );
 
-    return room;
+    // Fetch enriched room with host user details for real-time socket & UI rendering
+    const enrichedRes = await this.db.query(
+      `SELECT r.*, 
+              u.display_name as host_name, 
+              u.username as host_username, 
+              u.avatar_url as host_avatar, 
+              u.wallet as host_wallet,
+              1 as active_listeners
+       FROM listening_rooms r
+       JOIN users u ON r.host_id = u.id
+       WHERE r.id = $1`,
+      [room.id]
+    );
+
+    return enrichedRes.rows[0] || room;
   }
 
   async getActiveRooms(genre?: string, search?: string) {

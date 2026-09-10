@@ -77,6 +77,25 @@ export function setCachedData<T = any>(endpoint: string, data: T) {
   }
 }
 
+export function invalidateCache(endpoint?: string) {
+  if (endpoint) {
+    memoryCache.delete(endpoint);
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.removeItem(`grooveli_cache_${endpoint}`);
+      } catch (_) {}
+    }
+  } else {
+    memoryCache.clear();
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.clear();
+      } catch (_) {}
+    }
+  }
+}
+
+
 /**
  * Stale-While-Revalidate fetch helper:
  * Returns cached data immediately if available, while silently revalidating in background.

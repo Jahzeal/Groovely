@@ -172,6 +172,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     setMessages,
     playbackState,
     isRoomEnded,
+    isKicked,
     emitPlaybackControl,
     emitSendMessage,
     emitRaiseHand,
@@ -426,6 +427,25 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       }, 1500);
     }
   }, [isRoomEnded, isHostOrCreator, router]);
+
+  // Listen for WebSockets participant_kicked event to notify kicked user and redirect immediately
+  useEffect(() => {
+    if (isKicked) {
+      toast.error('You have been removed from this live room by the host.', {
+        id: 'participant-kicked-notification',
+        duration: 5000,
+      });
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      }
+      setTimeout(() => {
+        router.push('/rooms');
+      }, 1200);
+    }
+  }, [isKicked, router]);
 
   // Handle Sending Chat Messages over WebSockets
   const handleSendMessage = (e: React.FormEvent) => {

@@ -7,7 +7,7 @@
     "dev": "turbo dev",
     "build": "turbo build --filter=web...",
     "start": "turbo start",
-    "lint": "turbo lint"
+    "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "keywords": [],
   "author": "",

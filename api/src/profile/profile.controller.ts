@@ -207,6 +207,8 @@ export class ProfileController {
 
   @Put('users/me')
   @Patch('users/me')
+  @Put('profile/me')
+  @Patch('profile/me')
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('Profile updated successfully')
   async updateMe(
@@ -218,7 +220,9 @@ export class ProfileController {
     let wallet = req.userWallet;
     const email = req.userEmail;
     
-    const { displayName, username, bio, creatorType, role: bodyRole, wallet: bodyWallet } = body;
+    // Support both camelCase and snake_case for display name
+    const displayName = body.displayName ?? body.display_name;
+    const { username, bio, creatorType, role: bodyRole, wallet: bodyWallet } = body;
 
     if (bodyWallet && bodyWallet !== wallet) {
       await this.profileService.updateUserWallet(userId, bodyWallet);
@@ -243,7 +247,7 @@ export class ProfileController {
         userId,
         displayName,
         username,
-        bio || '',
+        bio,
         creatorTypes,
         undefined, // twitter
         undefined, // instagram
