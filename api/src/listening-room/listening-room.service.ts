@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { DatabaseService } from '../database/database.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 
@@ -363,5 +364,29 @@ export class ListeningRoomService {
     );
 
     return { success: true, roomId };
+  }
+
+  @Cron('*/5 * * * *')
+  async handleGhostRoomsCleanupCron() {
+    try {
+      const res = await this.db.query(
+        `UPDATE listening_rooms 
+         SET status = 'ended', ended_at = CURRENT_TIMESTAMP 
+         WHERE status = 'live' 
+           AND (
+             SELECT COUNT(*) 
+             FROM listening_room_participants p 
+             WHERE p.room_id = listening_rooms.id 
+               AND p.role = 'host' 
+               AND p.left_at IS NULL
+           ) = 0
+         RETURNING id`
+      );
+      if (res.rows && res.rows.length > 0) {
+        console.log(`🧹 Auto-closed ${res.rows.length} abandoned ghost listening rooms:`, res.rows.map(r => r.id));
+      }
+    } catch (err) {
+      // Ignore background cron notice
+    }
   }
 }

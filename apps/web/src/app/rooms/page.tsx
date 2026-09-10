@@ -10,6 +10,7 @@ import { cachedApiFetch } from '@/lib/api';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { io } from 'socket.io-client';
 
 export default function ListeningRoomsPage() {
   const router = useRouter();
@@ -36,6 +37,25 @@ export default function ListeningRoomsPage() {
       }
     }
     fetchRooms();
+
+    // Subscribe to WebSockets rooms namespace for real-time directory updates (< 5ms)
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const socket = io(`${API_URL}/rooms`, {
+      transports: ['polling', 'websocket'],
+      reconnection: true,
+    });
+
+    socket.on('room_status_changed', (data: { roomId: number; status: string; is_live: boolean }) => {
+      setRooms(prev => prev.map(room => 
+        Number(room.id) === Number(data.roomId) 
+          ? { ...room, status: data.status, is_live: data.is_live } 
+          : room
+      ));
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const [userRole, setUserRole] = useState<string>('fan');

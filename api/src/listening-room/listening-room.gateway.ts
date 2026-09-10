@@ -222,8 +222,17 @@ export class ListeningRoomGateway implements OnGatewayConnection, OnGatewayDisco
     const { roomId, hostId } = payload;
     const res = await this.roomService.endRoom(roomId, hostId);
 
-    // Broadcast room_ended event to all participants in room
+    // 1. Broadcast room_ended event to all participants inside the room
     this.server.to(`room:${roomId}`).emit('room_ended', { roomId, endedBy: hostId });
+
+    // 2. Broadcast room_status_changed GLOBALLY to all clients on /rooms namespace for instant directory update (< 5ms)
+    this.server.emit('room_status_changed', {
+      roomId: Number(roomId),
+      status: 'ended',
+      is_live: false,
+      isLive: false,
+    });
+
     return res;
   }
 

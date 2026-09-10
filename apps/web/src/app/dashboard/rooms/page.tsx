@@ -21,6 +21,7 @@ import {
 import { cachedApiFetch, resolveIpfsUrl } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { io } from 'socket.io-client';
 
 export default function CreatorRoomsDashboard() {
   const router = useRouter();
@@ -56,6 +57,25 @@ export default function CreatorRoomsDashboard() {
 
   useEffect(() => {
     loadRooms();
+
+    // Subscribe to WebSockets rooms namespace for real-time live status updates (< 5ms)
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const socket = io(`${API_URL}/rooms`, {
+      transports: ['polling', 'websocket'],
+      reconnection: true,
+    });
+
+    socket.on('room_status_changed', (data: { roomId: number; status: string; is_live: boolean }) => {
+      setRooms(prev => prev.map(room => 
+        Number(room.id) === Number(data.roomId) 
+          ? { ...room, status: data.status, is_live: data.is_live } 
+          : room
+      ));
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   // Filter creator's active/live rooms vs all public rooms
