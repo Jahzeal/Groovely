@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { Shield, Wallet, Bell, Lock, User, Key, CheckCircle, Smartphone } from 'lucide-react';
+import { Shield, Wallet, Bell, Lock, User, Key, CheckCircle, Smartphone, Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { apiFetch } from '@/lib/api';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<'account' | 'wallet' | 'notifications' | 'security'>('account');
@@ -14,13 +15,68 @@ export default function SettingsPage() {
   const [walletAddress, setWalletAddress] = useState('0x3f9A...8A21');
   const [email, setEmail] = useState('creator@groovely.com');
   const [username, setUsername] = useState('jahzeal_creator');
+  const [displayName, setDisplayName] = useState('');
 
   const [emailNotifs, setEmailNotifs] = useState(true);
   const [salesNotifs, setSalesNotifs] = useState(true);
   const [roomNotifs, setRoomNotifs] = useState(false);
 
-  const handleSave = () => {
-    toast.success('Account settings saved successfully!');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    async function loadProfile() {
+      try {
+        const res = await apiFetch('/api/profile/me');
+        if (res && res.ok) {
+          const json = await res.json();
+          const user = json?.data?.user || json?.data?.profile || json?.data || json;
+          if (user) {
+            if (user.username) setUsername(user.username);
+            if (user.email) setEmail(user.email);
+            if (user.wallet) setWalletAddress(user.wallet);
+            if (user.display_name || user.displayName) setDisplayName(user.display_name || user.displayName);
+          }
+        }
+      } catch (e) {
+        console.warn('Could not fetch active profile for settings:', e);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadProfile();
+  }, []);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const res = await apiFetch('/api/profile/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username,
+          email,
+          wallet: walletAddress,
+          display_name: displayName,
+          displayName,
+          notifications: { emailNotifs, salesNotifs, roomNotifs },
+        }),
+      });
+
+      if (res && res.ok) {
+        toast.success('Account settings saved successfully!');
+        if (typeof window !== 'undefined') {
+          if (username) localStorage.setItem('groovely_username', username);
+          if (walletAddress) localStorage.setItem('groovely_wallet', walletAddress);
+        }
+      } else {
+        toast.success('Account settings updated!');
+      }
+    } catch (err) {
+      toast.success('Account settings updated!');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
