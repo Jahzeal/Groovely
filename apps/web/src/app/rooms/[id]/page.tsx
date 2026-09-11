@@ -192,6 +192,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   const [activeTab, setActiveTab] = useState<'chat' | 'activity'>('chat');
   const [chatMessage, setChatMessage] = useState('');
   const [isChatLocked, setIsChatLocked] = useState(false);
+  const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
 
   // Floating Reactions State
   const [floatingReactions, setFloatingReactions] = useState<{ id: number; emoji: string; left: number }[]>([]);
@@ -809,11 +810,24 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
         {/* Right: End Room & Share Actions */}
         <div className="flex items-center gap-3">
           <button
+            onClick={() => setIsMobileChatOpen(true)}
+            className="lg:hidden p-2.5 bg-[#192134] hover:bg-[#232B3E] border border-[#2D3548] text-white rounded-xl transition-all relative cursor-pointer"
+            title="Open Live Chat"
+          >
+            <MessageSquare size={18} />
+            {messages.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#8A2BE2] text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                {messages.length > 99 ? '99+' : messages.length}
+              </span>
+            )}
+          </button>
+
+          <button
             onClick={() => setIsInviteModalOpen(true)}
             className="px-4 py-2.5 bg-[#8A2BE2] hover:bg-[#7823c9] text-white font-bold text-xs rounded-xl shadow-[0_0_15px_rgba(138,43,226,0.4)] transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <Share2 size={15} />
-            <span>Invite & Share</span>
+            <span className="hidden sm:inline">Invite & Share</span>
           </button>
 
           <button
@@ -1153,11 +1167,11 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
 
         </div>
 
-        {/* ── RIGHT COLUMN (4 Cols): CHAT & FLOATING EMOJI REACTIONS (Frame 99) ── */}
-        <div className="lg:col-span-4 relative bg-[#192134] border border-[#232B3E] rounded-3xl overflow-hidden flex flex-col h-[740px] shadow-2xl">
+        {/* ── RIGHT COLUMN (4 Cols): CHAT & FLOATING EMOJI REACTIONS (Frame 99 - Visible on Desktop lg+) ── */}
+        <div className="hidden lg:flex lg:col-span-4 relative bg-[#192134] border border-[#232B3E] rounded-3xl overflow-hidden flex-col h-[740px] max-h-[740px] shadow-2xl">
           
           {/* Header Tabs: Chat vs Activity */}
-          <div className="h-[56px] bg-[#232B3E] flex items-center border-b border-[#2D3548]">
+          <div className="h-[56px] bg-[#232B3E] flex items-center border-b border-[#2D3548] shrink-0">
             <button
               onClick={() => setActiveTab('chat')}
               className={`flex-1 h-full font-bold text-sm flex items-center justify-center transition-colors relative ${activeTab === 'chat' ? 'text-accent-purple' : 'text-zinc-400 hover:text-white'}`}
@@ -1188,7 +1202,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
           </div>
 
           {/* Chat Stream Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 custom-scrollbar">
             {messages.length > 0 ? (
               messages.map((msg: any, i: number) => (
                 <div
@@ -1231,7 +1245,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
           </div>
 
           {/* Floating Emoji Bar (Frame 136: 💜 🔥 💯 🚀 👋) */}
-          <div className="px-4 py-2 bg-[#0F172A]/60 backdrop-blur-md border-t border-[#2D3548] flex items-center justify-center gap-3">
+          <div className="px-4 py-2 bg-[#0F172A]/60 backdrop-blur-md border-t border-[#2D3548] flex items-center justify-center gap-3 shrink-0">
             {['💜', '🔥', '💯', '🚀', '👋'].map(emoji => (
               <button
                 key={emoji}
@@ -1245,7 +1259,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
           </div>
 
           {/* Footer Input Bar */}
-          <form onSubmit={handleSendMessage} className="p-4 bg-[#0F172A] border-t border-[#2D3548] flex items-center gap-3">
+          <form onSubmit={handleSendMessage} className="p-3 sm:p-4 bg-[#0F172A] border-t border-[#2D3548] flex items-center gap-2 sm:gap-3 shrink-0">
             <input
               type="text"
               placeholder={isChatLocked ? 'Chat locked by host' : 'Say something...'}
@@ -1257,7 +1271,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
             <button
               type="submit"
               disabled={isChatLocked || !chatMessage.trim()}
-              className="w-11 h-11 bg-[#8A2BE2] hover:bg-[#7823c9] text-white rounded-xl flex items-center justify-center transition-all shadow-[0_0_15px_rgba(138,43,226,0.5)] disabled:opacity-40 cursor-pointer"
+              className="w-11 h-11 bg-[#8A2BE2] hover:bg-[#7823c9] text-white rounded-xl flex items-center justify-center transition-all shadow-[0_0_15px_rgba(138,43,226,0.5)] disabled:opacity-40 cursor-pointer shrink-0"
             >
               <Send size={18} />
             </button>
@@ -1265,6 +1279,119 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
 
         </div>
       </div>
+
+      {/* ── MOBILE CHAT FLOATING ACTION BUTTON (Visible on < lg) ── */}
+      <button
+        onClick={() => setIsMobileChatOpen(true)}
+        className="lg:hidden fixed bottom-6 right-6 z-40 px-4 py-3 bg-[#8A2BE2] hover:bg-[#7823c9] text-white font-bold text-xs rounded-full shadow-[0_0_25px_rgba(138,43,226,0.7)] flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+      >
+        <MessageSquare size={18} />
+        <span>Live Chat ({messages.length})</span>
+      </button>
+
+      {/* ── MOBILE CHAT MODAL DRAWER OVERLAY (Visible on < lg) ── */}
+      {isMobileChatOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 lg:hidden animate-in fade-in duration-200">
+          <div className="relative w-full max-w-lg bg-[#192134] border border-[#232B3E] rounded-t-3xl sm:rounded-3xl overflow-hidden flex flex-col h-[85vh] sm:h-[680px] shadow-2xl animate-in slide-in-from-bottom duration-300">
+            
+            {/* Header Bar for Mobile Chat Drawer */}
+            <div className="h-[56px] bg-[#0F172A] px-4 border-b border-[#2D3548] flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <MessageSquare size={18} className="text-accent-purple" />
+                <h3 className="font-['Clash_Display',sans-serif] font-bold text-base text-white">Live Room Chat</h3>
+                <span className="px-2 py-0.5 rounded-full bg-[#8A2BE2]/20 border border-[#8A2BE2]/40 text-accent-purple text-[10px] font-bold">
+                  {messages.length}
+                </span>
+              </div>
+
+              <button
+                onClick={() => setIsMobileChatOpen(false)}
+                className="p-1.5 text-zinc-400 hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+                aria-label="Close Chat"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Chat Stream Area */}
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+              {messages.length > 0 ? (
+                messages.map((msg: any, i: number) => (
+                  <div
+                    key={msg.id || i}
+                    className={`p-3 rounded-xl transition-all ${msg.role === 'host' || msg.isHost ? 'bg-[#8A2BE2]/10 border border-[#8A2BE2]/30' : 'bg-[#0F172A]/50 border border-transparent'}`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-xs font-bold ${msg.role === 'host' || msg.isHost ? 'text-accent-purple' : 'text-[#E5E5E5]'}`}>
+                        {msg.display_name || msg.username || (msg.email ? msg.email.split('@')[0] : '') || msg.name || 'User'}
+                      </span>
+                      <span className="text-[10px] text-zinc-400 font-mono">
+                        {msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (msg.time || 'Live')}
+                      </span>
+                    </div>
+                    <p className="text-sm font-normal text-white leading-relaxed">
+                      {msg.content || msg.text}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center p-6 text-zinc-400">
+                  <MessageSquare className="w-10 h-10 mb-2 text-[#8A2BE2]/50" />
+                  <p className="text-xs font-bold text-white mb-1">No Messages Yet</p>
+                  <p className="text-[11px] text-zinc-400">Be the first to say hello in this live room!</p>
+                </div>
+              )}
+            </div>
+
+            {/* Floating Emoji Stream Canvas */}
+            <div className="absolute inset-x-0 bottom-24 h-48 pointer-events-none overflow-hidden">
+              {floatingReactions.map(r => (
+                <div
+                  key={r.id}
+                  style={{ left: `${r.left}%` }}
+                  className="absolute bottom-0 text-3xl animate-bounce duration-1000 opacity-90 transition-all"
+                >
+                  {r.emoji}
+                </div>
+              ))}
+            </div>
+
+            {/* Floating Emoji Bar (Frame 136: 💜 🔥 💯 🚀 👋) */}
+            <div className="px-4 py-2 bg-[#0F172A]/60 backdrop-blur-md border-t border-[#2D3548] flex items-center justify-center gap-3 shrink-0">
+              {['💜', '🔥', '💯', '🚀', '👋'].map(emoji => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => triggerReaction(emoji)}
+                  className="text-2xl hover:scale-125 transition-transform p-1 cursor-pointer"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+
+            {/* Footer Input Bar */}
+            <form onSubmit={handleSendMessage} className="p-3 sm:p-4 bg-[#0F172A] border-t border-[#2D3548] flex items-center gap-2 sm:gap-3 shrink-0">
+              <input
+                type="text"
+                placeholder={isChatLocked ? 'Chat locked by host' : 'Say something...'}
+                disabled={isChatLocked}
+                value={chatMessage}
+                onChange={(e) => setChatMessage(e.target.value)}
+                className="flex-1 bg-[#192134] border border-[#2D3548] rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#8A2BE2]"
+              />
+              <button
+                type="submit"
+                disabled={isChatLocked || !chatMessage.trim()}
+                className="w-11 h-11 bg-[#8A2BE2] hover:bg-[#7823c9] text-white rounded-xl flex items-center justify-center transition-all shadow-[0_0_15px_rgba(138,43,226,0.5)] disabled:opacity-40 cursor-pointer shrink-0"
+              >
+                <Send size={18} />
+              </button>
+            </form>
+
+          </div>
+        </div>
+      )}
 
       {/* ── ROOM PLAYLIST / LIBRARY TRACK SELECTOR MODAL (Creator Only) ── */}
       {isPlaylistModalOpen && isHostOrCreator && (
