@@ -177,7 +177,11 @@ export const useRoomSocket = (
     });
 
     socket.on('participant_kicked', (data: { targetUserId: number; roomId: number; participants?: any[] }) => {
-      if (userId && Number(data.targetUserId) === Number(userId)) {
+      const localId = typeof window !== 'undefined'
+        ? Number(localStorage.getItem('groovely_user_id') || localStorage.getItem('grooveli_user_id') || userId)
+        : Number(userId);
+
+      if (localId && Number(data.targetUserId) === Number(localId)) {
         setIsKicked(true);
       }
       if (data.participants && Array.isArray(data.participants)) {
@@ -185,6 +189,10 @@ export const useRoomSocket = (
       } else {
         setParticipants(prev => prev.filter(p => Number(p.user_id) !== Number(data.targetUserId)));
       }
+    });
+
+    socket.on('kicked_from_room', () => {
+      setIsKicked(true);
     });
 
     socket.on('room_ended', () => {

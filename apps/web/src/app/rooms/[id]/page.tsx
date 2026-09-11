@@ -442,9 +442,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach((track) => track.stop());
       }
-      setTimeout(() => {
-        router.push('/rooms');
-      }, 1200);
+      router.replace('/rooms');
     }
   }, [isKicked, router]);
 

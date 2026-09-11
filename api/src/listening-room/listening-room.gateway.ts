@@ -243,11 +243,23 @@ export class ListeningRoomGateway implements OnGatewayConnection, OnGatewayDisco
     const { roomId, hostId, targetUserId } = payload;
     const updatedDetails = await this.roomService.kickParticipant(roomId, hostId, targetUserId);
 
+    // 1. Broadcast participant_kicked to room channel
     this.server.to(`room:${roomId}`).emit('participant_kicked', {
-      targetUserId,
-      roomId,
+      targetUserId: Number(targetUserId),
+      roomId: Number(roomId),
       participants: updatedDetails.participants,
     });
+
+    // 2. Direct socket kick & channel ejection for target user
+    for (const [socketId, session] of this.socketToUserMap.entries()) {
+      if (Number(session.roomId) === Number(roomId) && Number(session.userId) === Number(targetUserId)) {
+        const targetSocket = this.server.sockets.sockets.get(socketId);
+        if (targetSocket) {
+          targetSocket.emit('kicked_from_room', { roomId: Number(roomId), targetUserId: Number(targetUserId) });
+          targetSocket.leave(`room:${roomId}`);
+        }
+      }
+    }
 
     return { event: 'participant_kicked', targetUserId, roomId };
   }
