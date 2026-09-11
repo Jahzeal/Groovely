@@ -58,6 +58,13 @@ export const useRoomSocket = (
   useEffect(() => {
     if (!roomId) return;
 
+    // Reset room-specific state on room change / mount
+    setMessages([]);
+    setParticipants([]);
+    setPlaybackState(null);
+    setIsRoomEnded(false);
+    setIsKicked(false);
+
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     
     // Connect to NestJS WebSockets Gateway namespace /rooms
@@ -143,7 +150,10 @@ export const useRoomSocket = (
     });
 
     socket.on('new_message', (msg: RoomMessage) => {
-      setMessages(prev => [...prev, msg]);
+      // Only append message if it belongs to the current active room
+      if (Number(msg.room_id) === Number(roomId)) {
+        setMessages(prev => [...prev, msg]);
+      }
     });
 
     socket.on('hand_raised_toggled', (data: { userId: number; isHandRaised: boolean }) => {
@@ -183,6 +193,9 @@ export const useRoomSocket = (
 
       if (localId && Number(data.targetUserId) === Number(localId)) {
         setIsKicked(true);
+        setMessages([]);
+        setParticipants([]);
+        setPlaybackState(null);
       }
       if (data.participants && Array.isArray(data.participants)) {
         setParticipants(data.participants);
@@ -193,10 +206,16 @@ export const useRoomSocket = (
 
     socket.on('kicked_from_room', () => {
       setIsKicked(true);
+      setMessages([]);
+      setParticipants([]);
+      setPlaybackState(null);
     });
 
     socket.on('room_ended', () => {
       setIsRoomEnded(true);
+      setMessages([]);
+      setParticipants([]);
+      setPlaybackState(null);
     });
 
     return () => {
@@ -204,6 +223,11 @@ export const useRoomSocket = (
         socket.emit('leave_room', { roomId: Number(roomId), userId });
       }
       socket.disconnect();
+      setMessages([]);
+      setParticipants([]);
+      setPlaybackState(null);
+      setIsRoomEnded(false);
+      setIsKicked(false);
     };
   }, [roomId, userId]);
 

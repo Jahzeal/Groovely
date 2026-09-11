@@ -383,6 +383,13 @@ export class ListeningRoomService implements OnModuleInit {
       [roomId]
     );
 
+    // Delete chat messages for ended room
+    try {
+      await this.db.query('DELETE FROM listening_room_messages WHERE room_id = $1', [roomId]);
+    } catch (err) {
+      console.warn('Could not delete messages for ended room:', err);
+    }
+
     return { success: true, roomId };
   }
 
