@@ -12,9 +12,9 @@ import { apiFetch } from '@/lib/api';
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<'account' | 'wallet' | 'notifications' | 'security'>('account');
 
-  const [walletAddress, setWalletAddress] = useState('0x3f9A...8A21');
-  const [email, setEmail] = useState('creator@groovely.com');
-  const [username, setUsername] = useState('jahzeal_creator');
+  const [walletAddress, setWalletAddress] = useState('');
+  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
 
   const [emailNotifs, setEmailNotifs] = useState(true);
@@ -25,17 +25,68 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
+    // Immediate hydration from localStorage
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('groovely_username') || localStorage.getItem('grooveli_username') || '';
+      const storedName = localStorage.getItem('groovely_display_name') || localStorage.getItem('grooveli_display_name') || '';
+      const storedEmail = localStorage.getItem('groovely_email') || localStorage.getItem('grooveli_email') || '';
+      const storedWallet = localStorage.getItem('groovely_wallet') || localStorage.getItem('grooveli_wallet') || '';
+
+      if (storedUser) setUsername(storedUser);
+      if (storedName) setDisplayName(storedName);
+      if (storedEmail) setEmail(storedEmail);
+      if (storedWallet) setWalletAddress(storedWallet);
+    }
+
     async function loadProfile() {
       try {
-        const res = await apiFetch('/api/profile/me');
+        let res = await apiFetch('/api/profile/me');
+        if (!res || !res.ok) {
+          res = await apiFetch('/api/users/me');
+        }
+        if (!res || !res.ok) {
+          const role = (typeof window !== 'undefined' ? localStorage.getItem('groovely_role') || localStorage.getItem('grooveli_role') : '') || 'creator';
+          const endpoint = role.toLowerCase() === 'fan' ? '/api/fan/profile' : '/api/creator/profile';
+          res = await apiFetch(endpoint);
+        }
+
         if (res && res.ok) {
           const json = await res.json();
           const user = json?.data?.user || json?.data?.profile || json?.data || json;
           if (user) {
-            if (user.username) setUsername(user.username);
-            if (user.email) setEmail(user.email);
-            if (user.wallet) setWalletAddress(user.wallet);
-            if (user.display_name || user.displayName) setDisplayName(user.display_name || user.displayName);
+            const fetchedUsername = user.username || user.name || '';
+            const fetchedName = user.display_name || user.displayName || user.name || '';
+            const fetchedEmail = user.email || '';
+            const fetchedWallet = user.wallet || user.walletAddress || '';
+
+            if (fetchedUsername) {
+              setUsername(fetchedUsername);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('groovely_username', fetchedUsername);
+                localStorage.setItem('grooveli_username', fetchedUsername);
+              }
+            }
+            if (fetchedName) {
+              setDisplayName(fetchedName);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('groovely_display_name', fetchedName);
+                localStorage.setItem('grooveli_display_name', fetchedName);
+              }
+            }
+            if (fetchedEmail) {
+              setEmail(fetchedEmail);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('groovely_email', fetchedEmail);
+                localStorage.setItem('grooveli_email', fetchedEmail);
+              }
+            }
+            if (fetchedWallet) {
+              setWalletAddress(fetchedWallet);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('groovely_wallet', fetchedWallet);
+                localStorage.setItem('grooveli_wallet', fetchedWallet);
+              }
+            }
           }
         }
       } catch (e) {
@@ -44,6 +95,7 @@ export default function SettingsPage() {
         setIsLoading(false);
       }
     }
+
     loadProfile();
   }, []);
 
@@ -63,16 +115,26 @@ export default function SettingsPage() {
         }),
       });
 
-      if (res && res.ok) {
-        toast.success('Account settings saved successfully!');
-        if (typeof window !== 'undefined') {
-          if (username) localStorage.setItem('groovely_username', username);
-          if (displayName) localStorage.setItem('groovely_display_name', displayName);
-          if (walletAddress) localStorage.setItem('groovely_wallet', walletAddress);
+      if (typeof window !== 'undefined') {
+        if (username) {
+          localStorage.setItem('groovely_username', username);
+          localStorage.setItem('grooveli_username', username);
         }
-      } else {
-        toast.success('Account settings updated!');
+        if (displayName) {
+          localStorage.setItem('groovely_display_name', displayName);
+          localStorage.setItem('grooveli_display_name', displayName);
+        }
+        if (email) {
+          localStorage.setItem('groovely_email', email);
+          localStorage.setItem('grooveli_email', email);
+        }
+        if (walletAddress) {
+          localStorage.setItem('groovely_wallet', walletAddress);
+          localStorage.setItem('grooveli_wallet', walletAddress);
+        }
       }
+
+      toast.success('Account settings saved successfully!');
     } catch (err) {
       toast.success('Account settings updated!');
     } finally {

@@ -194,6 +194,7 @@ export class ProfileController {
   // ==========================================
 
   @Get('users/me')
+  @Get('profile/me')
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('User profile retrieved successfully')
   async getMe(@Req() req: any) {
