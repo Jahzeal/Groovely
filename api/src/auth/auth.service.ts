@@ -35,9 +35,12 @@ export class AuthService {
   }
 
   async createUserWithGoogle(email: string, role: string, wallet?: string) {
+    const emailPrefix = email ? email.split('@')[0] : '';
     const result = await this.db.query(
-      'INSERT INTO users (email, role, wallet) VALUES ($1, $2, $3) RETURNING id, wallet, email, role, created_at as "createdAt"',
-      [email, role, wallet || null],
+      `INSERT INTO users (email, role, wallet, display_name, username) 
+       VALUES ($1, $2, $3, $4, $5) 
+       RETURNING id, wallet, email, role, display_name as "displayName", username, created_at as "createdAt"`,
+      [email, role, wallet || null, emailPrefix, emailPrefix],
     );
     return result.rows[0];
   }

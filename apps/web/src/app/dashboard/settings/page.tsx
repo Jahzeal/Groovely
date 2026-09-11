@@ -54,11 +54,20 @@ export default function SettingsPage() {
           const json = await res.json();
           const user = json?.data?.user || json?.data?.profile || json?.data || json;
           if (user) {
-            const fetchedUsername = user.username || user.name || '';
-            const fetchedName = user.display_name || user.displayName || user.name || '';
-            const fetchedEmail = user.email || '';
+            const fetchedEmail = user.email || (typeof window !== 'undefined' ? localStorage.getItem('groovely_email') || localStorage.getItem('grooveli_email') : '') || '';
+            const emailPrefix = fetchedEmail ? fetchedEmail.split('@')[0] : '';
+
+            const fetchedUsername = user.username || emailPrefix || '';
+            const fetchedName = user.display_name || user.displayName || user.name || emailPrefix || '';
             const fetchedWallet = user.wallet || user.walletAddress || '';
 
+            if (fetchedEmail) {
+              setEmail(fetchedEmail);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('groovely_email', fetchedEmail);
+                localStorage.setItem('grooveli_email', fetchedEmail);
+              }
+            }
             if (fetchedUsername) {
               setUsername(fetchedUsername);
               if (typeof window !== 'undefined') {
@@ -71,13 +80,6 @@ export default function SettingsPage() {
               if (typeof window !== 'undefined') {
                 localStorage.setItem('groovely_display_name', fetchedName);
                 localStorage.setItem('grooveli_display_name', fetchedName);
-              }
-            }
-            if (fetchedEmail) {
-              setEmail(fetchedEmail);
-              if (typeof window !== 'undefined') {
-                localStorage.setItem('groovely_email', fetchedEmail);
-                localStorage.setItem('grooveli_email', fetchedEmail);
               }
             }
             if (fetchedWallet) {

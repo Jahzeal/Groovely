@@ -390,7 +390,22 @@ export class ProfileService {
 
   async getUserById(userId: number) {
     const result = await this.db.query(
-      `SELECT id, email, wallet, role, display_name as "displayName", username, bio, creator_type as "creatorType", twitter, instagram, soundcloud, avatar_url as "avatarUrl", created_at as "createdAt" FROM users WHERE id = $1`,
+      `SELECT 
+        id, 
+        email, 
+        wallet, 
+        role, 
+        COALESCE(NULLIF(TRIM(display_name), ''), NULLIF(TRIM(SPLIT_PART(email, '@', 1)), ''), CASE WHEN wallet IS NOT NULL AND length(wallet) > 8 THEN SUBSTRING(wallet FROM 1 FOR 6) || '...' || SUBSTRING(wallet FROM length(wallet)-3 FOR 4) ELSE 'User #' || id END) as "displayName", 
+        COALESCE(NULLIF(TRIM(username), ''), NULLIF(TRIM(SPLIT_PART(email, '@', 1)), ''), 'user_' || id) as username, 
+        bio, 
+        creator_type as "creatorType", 
+        twitter, 
+        instagram, 
+        soundcloud, 
+        avatar_url as "avatarUrl", 
+        created_at as "createdAt" 
+       FROM users 
+       WHERE id = $1`,
       [userId]
     );
     const user = result.rows[0];
