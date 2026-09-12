@@ -160,6 +160,45 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     }
   }, []);
 
+  // Browser Microphone & WebAudio WebRTC Live Voice Streaming State
+  const sourceBufferRef = useRef<SourceBuffer | null>(null);
+  const voiceQueueRef = useRef<ArrayBuffer[]>([]);
+  const voicePlayerRef = useRef<HTMLAudioElement | null>(null);
+
+  function base64ToArrayBuffer(base64: string) {
+    const raw = base64.includes(',') ? base64.split(',')[1] : base64;
+    const binaryString = atob(raw);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes.buffer;
+  }
+
+  const handleVoiceStreamReceived = useCallback((data: { userId: number; audioData: string }) => {
+    if (!data.audioData) return;
+    try {
+      const arrayBuffer = base64ToArrayBuffer(data.audioData);
+      const sb = sourceBufferRef.current;
+
+      if (sb && !sb.updating) {
+        try {
+          sb.appendBuffer(arrayBuffer);
+          if (voicePlayerRef.current && voicePlayerRef.current.paused) {
+            voicePlayerRef.current.play().catch(() => {});
+          }
+        } catch (err) {
+          voiceQueueRef.current.push(arrayBuffer);
+        }
+      } else {
+        voiceQueueRef.current.push(arrayBuffer);
+      }
+    } catch (e) {
+      console.warn('Voice stream received notice:', e);
+    }
+  }, []);
+
   // WebSockets Hook Integration & Room Host Authorization
   const isRoomHost = Boolean(currentUserId && room?.host_id && String(currentUserId) === String(room.host_id));
   const isHostOrCreator = isRoomHost;
@@ -493,134 +532,6 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   const voiceAudioContextRef = useRef<AudioContext | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const animFrameRef = useRef<number | null>(null);
-
-  const mediaSourceRef = useRef<MediaSource | null>(null);
-  const sourceBufferRef = useRef<SourceBuffer | null>(null);
-  const voiceQueueRef = useRef<ArrayBuffer[]>([]);
-  const voicePlayerRef = useRef<HTMLAudioElement | null>(null);
-
-  // Auto-unlock audio player and AudioContext on user interaction for browser autoplay policies
-  useEffect(() => {
-    const unlockAudio = () => {
-      if (voicePlayerRef.current && voicePlayerRef.current.paused && voicePlayerRef.current.src) {
-        voicePlayerRef.current.play().catch(() => {});
-      }
-      if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
-        audioContextRef.current.resume().catch(() => {});
-      }
-    };
-    window.addEventListener('click', unlockAudio);
-    window.addEventListener('touchstart', unlockAudio);
-    return () => {
-      window.removeEventListener('click', unlockAudio);
-      window.removeEventListener('touchstart', unlockAudio);
-    };
-  }, []);
-
-  // Initialize MediaSource pipeline for continuous WebSockets voice audio streaming
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    try {
-      const mediaSource = new MediaSource();
-      mediaSourceRef.current = mediaSource;
-
-      const voicePlayer = new Audio();
-      voicePlayerRef.current = voicePlayer;
-      voicePlayer.src = URL.createObjectURL(mediaSource);
-
-      const handleSourceOpen = () => {
-        try {
-          let mimeType = 'audio/webm; codecs=opus';
-          if (!MediaSource.isTypeSupported(mimeType)) {
-            mimeType = MediaSource.isTypeSupported('audio/webm') ? 'audio/webm' : '';
-          }
-          if (mimeType) {
-            const sb = mediaSource.addSourceBuffer(mimeType);
-            sourceBufferRef.current = sb;
-
-            sb.addEventListener('updateend', () => {
-              const currentSb = sourceBufferRef.current;
-              if (currentSb && !currentSb.updating) {
-                // Prune played audio buffer ranges over 4 seconds to prevent QuotaExceededError & memory stalls
-                try {
-                  if (currentSb.buffered.length > 0) {
-                    const start = currentSb.buffered.start(0);
-                    const currentTime = voicePlayerRef.current?.currentTime || 0;
-                    if (currentTime - start > 4) {
-                      currentSb.remove(start, currentTime - 2);
-                      return;
-                    }
-                  }
-                } catch (e) {}
-
-                // Drain remaining chunks in queue continuously
-                if (voiceQueueRef.current.length > 0) {
-                  const nextChunk = voiceQueueRef.current.shift();
-                  if (nextChunk) {
-                    try {
-                      currentSb.appendBuffer(nextChunk);
-                    } catch (e) {
-                      console.warn('SourceBuffer append error:', e);
-                    }
-                  }
-                }
-              }
-            });
-          }
-        } catch (e) {
-          console.warn('MediaSource sourceopen error:', e);
-        }
-      };
-
-      mediaSource.addEventListener('sourceopen', handleSourceOpen);
-    } catch (e) {
-      console.warn('MediaSource initialization notice:', e);
-    }
-
-    return () => {
-      if (voicePlayerRef.current) {
-        try {
-          voicePlayerRef.current.pause();
-          voicePlayerRef.current.src = '';
-        } catch (e) {}
-      }
-    };
-  }, []);
-
-  function base64ToArrayBuffer(base64: string) {
-    const raw = base64.includes(',') ? base64.split(',')[1] : base64;
-    const binaryString = atob(raw);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return bytes.buffer;
-  }
-
-  const handleVoiceStreamReceived = useCallback((data: { userId: number; audioData: string }) => {
-    if (!data.audioData) return;
-    try {
-      const arrayBuffer = base64ToArrayBuffer(data.audioData);
-      const sb = sourceBufferRef.current;
-
-      if (sb && !sb.updating) {
-        try {
-          sb.appendBuffer(arrayBuffer);
-          if (voicePlayerRef.current && voicePlayerRef.current.paused) {
-            voicePlayerRef.current.play().catch(() => {});
-          }
-        } catch (err) {
-          voiceQueueRef.current.push(arrayBuffer);
-        }
-      } else {
-        voiceQueueRef.current.push(arrayBuffer);
-      }
-    } catch (e) {
-      console.warn('Voice stream received notice:', e);
-    }
-  }, []);
 
   const toggleMicrophone = async () => {
     if (isMicActive) {
