@@ -499,6 +499,24 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   const voiceQueueRef = useRef<ArrayBuffer[]>([]);
   const voicePlayerRef = useRef<HTMLAudioElement | null>(null);
 
+  // Auto-unlock audio player and AudioContext on user interaction for browser autoplay policies
+  useEffect(() => {
+    const unlockAudio = () => {
+      if (voicePlayerRef.current && voicePlayerRef.current.paused && voicePlayerRef.current.src) {
+        voicePlayerRef.current.play().catch(() => {});
+      }
+      if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+        audioContextRef.current.resume().catch(() => {});
+      }
+    };
+    window.addEventListener('click', unlockAudio);
+    window.addEventListener('touchstart', unlockAudio);
+    return () => {
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+    };
+  }, []);
+
   // Initialize MediaSource pipeline for continuous WebSockets voice audio streaming
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -522,13 +540,29 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
             sourceBufferRef.current = sb;
 
             sb.addEventListener('updateend', () => {
-              if (voiceQueueRef.current.length > 0 && sourceBufferRef.current && !sourceBufferRef.current.updating) {
-                const nextChunk = voiceQueueRef.current.shift();
-                if (nextChunk) {
-                  try {
-                    sourceBufferRef.current.appendBuffer(nextChunk);
-                  } catch (e) {
-                    console.warn('SourceBuffer append error:', e);
+              const currentSb = sourceBufferRef.current;
+              if (currentSb && !currentSb.updating) {
+                // Prune played audio buffer ranges over 4 seconds to prevent QuotaExceededError & memory stalls
+                try {
+                  if (currentSb.buffered.length > 0) {
+                    const start = currentSb.buffered.start(0);
+                    const currentTime = voicePlayerRef.current?.currentTime || 0;
+                    if (currentTime - start > 4) {
+                      currentSb.remove(start, currentTime - 2);
+                      return;
+                    }
+                  }
+                } catch (e) {}
+
+                // Drain remaining chunks in queue continuously
+                if (voiceQueueRef.current.length > 0) {
+                  const nextChunk = voiceQueueRef.current.shift();
+                  if (nextChunk) {
+                    try {
+                      currentSb.appendBuffer(nextChunk);
+                    } catch (e) {
+                      console.warn('SourceBuffer append error:', e);
+                    }
                   }
                 }
               }
@@ -565,7 +599,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     return bytes.buffer;
   }
 
-  function handleVoiceStreamReceived(data: { userId: number; audioData: string }) {
+  const handleVoiceStreamReceived = useCallback((data: { userId: number; audioData: string }) => {
     if (!data.audioData) return;
     try {
       const arrayBuffer = base64ToArrayBuffer(data.audioData);
@@ -586,7 +620,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     } catch (e) {
       console.warn('Voice stream received notice:', e);
     }
-  }
+  }, []);
 
   const toggleMicrophone = async () => {
     if (isMicActive) {
