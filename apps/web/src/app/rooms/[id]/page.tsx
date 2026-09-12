@@ -192,9 +192,10 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       const mediaSource = new MediaSource();
       mediaSourceRef.current = mediaSource;
 
-      const voicePlayer = new Audio();
+      const voicePlayer = voicePlayerRef.current || new Audio();
       voicePlayerRef.current = voicePlayer;
       voicePlayer.src = URL.createObjectURL(mediaSource);
+      voicePlayer.play().catch(() => {});
 
       const handleSourceOpen = () => {
         try {
@@ -829,6 +830,12 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
             setDurationMs(Math.floor(target.duration * 1000));
           }
         }}
+        className="hidden"
+      />
+      <audio
+        ref={voicePlayerRef}
+        autoPlay
+        playsInline
         className="hidden"
       />
 
