@@ -133,6 +133,17 @@ export class TrackController {
     return { tracks };
   }
 
+  @Get('tracks/:id')
+  @ResponseMessage('Track details retrieved successfully')
+  async getPublicTrack(@Param('id') id: string) {
+    const trackId = parseInt(id);
+    if (isNaN(trackId)) {
+      throw new BadRequestException('Invalid track ID');
+    }
+    const track = await this.trackService.getPublicTrackById(trackId);
+    return { track, data: track };
+  }
+
   @Get('creator/tracks/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('creator')

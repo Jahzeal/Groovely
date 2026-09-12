@@ -370,6 +370,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
         const targetTimeSec = targetState ? basePositionSec + elapsedSec : basePositionSec;
 
         if (audioSrc && audioRef.current.src !== audioSrc) {
+          try { audioRef.current.pause(); } catch {}
           audioRef.current.src = audioSrc;
           audioRef.current.currentTime = targetTimeSec;
         } else if (audioRef.current && Math.abs(audioRef.current.currentTime - targetTimeSec) > 1.2) {
@@ -379,7 +380,11 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
         if (targetState) {
           const p = audioRef.current.play();
           if (p !== undefined) {
-            p.catch((e) => console.warn('Audio play sync notice:', e));
+            p.catch((e) => {
+              if (e?.name !== 'AbortError') {
+                console.warn('Audio play sync notice:', e);
+              }
+            });
           }
         } else {
           audioRef.current.pause();

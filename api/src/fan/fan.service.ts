@@ -66,7 +66,7 @@ export class FanService {
         u.bio,
         u.avatar_url as profile_url,
         u.avatar_url,
-        COALESCE(u.creator_type, 'Creator') as creator_type,
+        u.creator_type as creator_type,
         u.wallet,
         (SELECT COUNT(*) FROM tracks t WHERE t.user_id = u.id AND t.visibility = 'public') as track_count,
         CASE WHEN f.follower_id IS NOT NULL THEN true ELSE false END as is_following

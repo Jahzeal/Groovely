@@ -132,6 +132,23 @@ export class TrackService {
     return track;
   }
 
+  async getPublicTrackById(trackId: number) {
+    const result = await this.db.query(
+      `SELECT t.*, 
+              COALESCE(NULLIF(TRIM(u.display_name), ''), NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), 'Creator') as artist_name,
+              COALESCE(NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), 'user_' || u.id) as artist_username
+       FROM tracks t
+       LEFT JOIN users u ON t.user_id = u.id
+       WHERE t.id = $1`,
+      [trackId]
+    );
+    const track = result.rows[0];
+    if (!track) {
+      throw new NotFoundException('Track not found');
+    }
+    return track;
+  }
+
   async updateTrackDetails(trackId: number, userId: number, updates: any) {
     const fields: string[] = [];
     const values: any[] = [];
