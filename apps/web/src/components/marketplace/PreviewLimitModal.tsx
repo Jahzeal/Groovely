@@ -34,13 +34,17 @@ export const PreviewLimitModal: React.FC = () => {
 
   if (!previewLimitReached || !currentTrack) return null;
 
-  const rawPrice = currentTrack.price;
+  const rawPrice = currentTrack.price ?? (currentTrack as any).license_price ?? (currentTrack as any).licensePrice;
+  const paymentModel = currentTrack.payment_model || (currentTrack as any).paymentModel;
+
   const isFree = Boolean(
-    currentTrack.payment_model === 'none' ||
+    paymentModel === 'none' ||
     rawPrice === 0 ||
     rawPrice === '0' ||
     rawPrice === '0.00' ||
+    rawPrice === 0.0 ||
     rawPrice === 'Free' ||
+    rawPrice === 'free' ||
     (typeof rawPrice === 'string' && rawPrice.toLowerCase().includes('free'))
   );
 

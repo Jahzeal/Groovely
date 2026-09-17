@@ -12,6 +12,9 @@ interface Track {
   uploaderId?: number;
   price?: string | number;
   payment_model?: string;
+  paymentModel?: string;
+  license_price?: string | number;
+  licensePrice?: string | number;
   licenseTypes?: string[];
 }
 
@@ -162,14 +165,19 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
           }
 
           // Check if this track is free or owned by creator
+          const rawPrice = activeTrack ? (activeTrack.price ?? (activeTrack as any).license_price ?? (activeTrack as any).licensePrice) : null;
+          const paymentModel = activeTrack ? (activeTrack.payment_model || activeTrack.paymentModel) : null;
+
           const isFreeTrack = Boolean(
             activeTrack && (
-              activeTrack.payment_model === 'none' ||
-              activeTrack.price === 0 ||
-              activeTrack.price === '0' ||
-              activeTrack.price === '0.00' ||
-              activeTrack.price === 'Free' ||
-              (typeof activeTrack.price === 'string' && activeTrack.price.toLowerCase().includes('free'))
+              paymentModel === 'none' ||
+              rawPrice === 0 ||
+              rawPrice === '0' ||
+              rawPrice === '0.00' ||
+              rawPrice === 0.0 ||
+              rawPrice === 'Free' ||
+              rawPrice === 'free' ||
+              (typeof rawPrice === 'string' && rawPrice.toLowerCase().includes('free'))
             )
           );
 
