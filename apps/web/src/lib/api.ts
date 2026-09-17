@@ -30,8 +30,14 @@ export async function apiFetch(endpoint: string, options: RequestInit & { skipAu
     }
 
     return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error('API Fetch Error:', error);
+    if (error && typeof error === 'object' && typeof error.message === 'string') {
+      const msg = error.message.toLowerCase();
+      if (msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('load failed') || msg.includes('fetch failed')) {
+        error.message = 'Unable to connect to server. Please check your internet connection or try again later.';
+      }
+    }
     throw error;
   }
 }

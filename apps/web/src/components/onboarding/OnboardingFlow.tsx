@@ -407,14 +407,27 @@ export const OnboardingFlow = () => {
     }
   };
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = (e?: React.MouseEvent | React.TouchEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (!ready) {
+      toast.error('Authentication module is initializing, please try again in a moment');
+      return;
+    }
     if (authenticated) {
       if (!user?.wallet?.address) {
         toast.loading('Setting up your wallet... please wait a moment.', { duration: 4000 });
       }
       return;
     }
-    login({ loginMethods: ['google'] });
+    try {
+      login({ loginMethods: ['google'] });
+    } catch (err: any) {
+      console.error('Google signup trigger error:', err);
+      toast.error(err?.message || 'Failed to trigger Google signup');
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -754,11 +767,12 @@ export const OnboardingFlow = () => {
                   )
                 ) : (
                   <button 
+                    type="button"
                     onClick={handleGoogleLogin}
-                    className="w-full h-[56px] bg-[#192134] hover:bg-[#232B3E] text-white font-['Urbanist',sans-serif] font-semibold text-[16px] rounded-full flex items-center justify-center gap-3 transition-all cursor-pointer border border-[#232B3E] active:scale-[0.99]"
+                    className="w-full h-[56px] bg-[#192134] hover:bg-[#232B3E] text-white font-['Urbanist',sans-serif] font-semibold text-[16px] rounded-full flex items-center justify-center gap-3 transition-all cursor-pointer border border-[#232B3E] active:scale-[0.99] touch-manipulation select-none"
                   >
-                    <GoogleIcon size={20} />
-                    <span>Google</span>
+                    <GoogleIcon size={20} className="pointer-events-none" />
+                    <span className="pointer-events-none">Google</span>
                   </button>
                 )}
 

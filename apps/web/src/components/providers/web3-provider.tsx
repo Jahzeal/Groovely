@@ -336,6 +336,7 @@ export function Web3Provider({ children }: { children: ReactNode }) {
       config={{
         defaultChain: targetChain,
         supportedChains: [targetChain, mainnet],
+        loginMethods: ['google', 'wallet', 'email'],
         appearance: {
           theme: 'dark',
           accentColor: '#8B5CF6', // Accent purple matching Grooveli theme

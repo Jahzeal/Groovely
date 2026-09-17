@@ -249,8 +249,21 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleLogin = () => {
-    login({ loginMethods: ['google'] });
+  const handleGoogleLogin = (e?: React.MouseEvent | React.TouchEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (!ready) {
+      toast.error('Authentication module is initializing, please try again in a moment');
+      return;
+    }
+    try {
+      login({ loginMethods: ['google'] });
+    } catch (err: any) {
+      console.error('Google login trigger error:', err);
+      toast.error(err?.message || 'Failed to trigger Google login');
+    }
   };
 
   const formattedAddr = unregisteredAddr 
