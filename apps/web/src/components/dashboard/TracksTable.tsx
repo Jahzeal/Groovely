@@ -48,7 +48,7 @@ const formatStreams = (val: any): string => {
 
 const StatusBadge = ({ status }: { status: string }) => {
   const s = status?.toLowerCase();
-  const normalizedStatus = s === 'active' || s === 'live' ? 'Live' : s === 'minting' ? 'Minting' : s === 'failed' ? 'Failed' : s === 'pending_approval' ? 'Pending splits' : 'Draft';
+  const normalizedStatus = s === 'active' || s === 'live' || s === 'published' ? 'Live' : s === 'minting' ? 'Minting' : s === 'failed' ? 'Failed' : s === 'pending_approval' ? 'Pending splits' : 'Draft';
   const styles: Record<string, string> = {
     Live: "bg-[rgba(0,255,136,0.1)] text-[#00FF88] border border-[rgba(0,255,136,0.2)]",
     Draft: "bg-[rgba(255,230,0,0.1)] text-[#FFE600] border border-[rgba(255,230,0,0.2)]",
@@ -198,7 +198,7 @@ export const TracksTable = () => {
           <div className="sm:hidden flex flex-col divide-y divide-white/5">
             {tracks.map((track, i) => {
               const s = track.status?.toLowerCase() || 'draft';
-              const isLive = s === 'active' || s === 'live';
+              const isLive = s === 'active' || s === 'live' || s === 'published';
               const isFailed = s === 'failed';
               const isMenuOpen = openMenuTrackId === track.id;
 
@@ -331,7 +331,7 @@ export const TracksTable = () => {
               <tbody className="divide-y divide-white/5">
                 {tracks.map((track, i) => {
                   const s = track.status?.toLowerCase() || 'draft';
-                  const isLive = s === 'active' || s === 'live';
+                  const isLive = s === 'active' || s === 'live' || s === 'published';
                   const isFailed = s === 'failed';
                   const isMenuOpen = openMenuTrackId === track.id;
 
