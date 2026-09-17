@@ -97,11 +97,11 @@ export default function UploadPage() {
   const audioInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
-  // Load existing track data when in edit mode or from pending localStorage / autosave draft
+  // Load existing track data ONLY when explicitly editing via URL parameter (?editId=... or ?id=...)
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
-    const id = params.get('editId') || params.get('id') || localStorage.getItem('pending_track_id');
+    const id = params.get('editId') || params.get('id');
     if (id) {
       setEditId(id);
       setIsLoadingTrack(true);
@@ -141,7 +141,10 @@ export default function UploadPage() {
         })
         .finally(() => setIsLoadingTrack(false));
     } else {
-      // Check local form draft if not editing existing track
+      // Reset existing track state when opening a fresh upload form
+      setExistingAudioUrl(null);
+      setEditId(null);
+      
       const savedDraft = localStorage.getItem('groovely_upload_draft');
       if (savedDraft) {
         try {
@@ -376,6 +379,15 @@ export default function UploadPage() {
       toast.success(isDraft ? 'Track saved as draft!' : (paymentModel === 'none' ? 'Track published for free streaming!' : 'Track uploaded successfully!'));
 
       if (paymentModel === 'none' && !isDraft) {
+        localStorage.removeItem('pending_track_id');
+        localStorage.removeItem('pending_track_title');
+        localStorage.removeItem('pending_track_cover');
+        localStorage.removeItem('pending_track_genre');
+        localStorage.removeItem('pending_track_tags');
+        localStorage.removeItem('pending_track_rights');
+        localStorage.removeItem('pending_track_payment');
+        localStorage.removeItem('pending_track_price');
+        localStorage.removeItem('pending_track_royalty');
         router.push('/dashboard/library');
       } else {
         router.push(`/dashboard/upload/mint?id=${targetId}`);
