@@ -97,11 +97,11 @@ export default function UploadPage() {
   const audioInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
-  // Load existing track data when in edit mode
+  // Load existing track data when in edit mode or from pending localStorage / autosave draft
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
-    const id = params.get('editId') || params.get('id');
+    const id = params.get('editId') || params.get('id') || localStorage.getItem('pending_track_id');
     if (id) {
       setEditId(id);
       setIsLoadingTrack(true);
@@ -138,11 +138,62 @@ export default function UploadPage() {
         })
         .catch(err => {
           console.error('Failed to load track for edit:', err);
-          toast.error('Failed to load track details');
         })
         .finally(() => setIsLoadingTrack(false));
+    } else {
+      // Check local form draft if not editing existing track
+      const savedDraft = localStorage.getItem('groovely_upload_draft');
+      if (savedDraft) {
+        try {
+          const d = JSON.parse(savedDraft);
+          if (d.title) setTitle(d.title);
+          if (d.description) setDescription(d.description);
+          if (d.category) setCategory(d.category);
+          if (d.genre) setGenre(d.genre);
+          if (d.tags) setTags(d.tags);
+          if (d.bpm) setBpm(d.bpm);
+          if (d.key) setKey(d.key);
+          if (d.isrc) setIsrc(d.isrc);
+          if (d.usageRights) setUsageRights(d.usageRights);
+          if (d.paymentModel) setPaymentModel(d.paymentModel);
+          if (d.licensePrice) setLicensePrice(d.licensePrice);
+          if (d.royaltyPercentage) setRoyaltyPercentage(d.royaltyPercentage);
+          if (d.isPublic !== undefined) setIsPublic(d.isPublic);
+          if (d.explicit !== undefined) setExplicit(d.explicit);
+        } catch (e) {
+          console.error('Error parsing draft:', e);
+        }
+      }
     }
   }, []);
+
+  // Auto-save form draft as user types
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (isLoadingTrack) return;
+    
+    const draft = {
+      title,
+      description,
+      category,
+      genre,
+      tags,
+      bpm,
+      key,
+      isrc,
+      usageRights,
+      paymentModel,
+      licensePrice,
+      royaltyPercentage,
+      isPublic,
+      explicit,
+    };
+    localStorage.setItem('groovely_upload_draft', JSON.stringify(draft));
+  }, [
+    title, description, category, genre, tags, bpm, key, isrc, 
+    usageRights, paymentModel, licensePrice, royaltyPercentage, 
+    isPublic, explicit, isLoadingTrack
+  ]);
 
   const handleAudioChange = (e: React.ChangeEvent<HTMLInputElement> | React.DragEvent) => {
     let file: File | null = null;
@@ -216,6 +267,10 @@ export default function UploadPage() {
       toast.error('Please enter a track title');
       return;
     }
+    if (!description.trim()) {
+      toast.error('Please enter a track description');
+      return;
+    }
     if (!agreedToTerms && !isDraft) {
       toast.error('You must confirm ownership and agree to the Terms & Conditions');
       return;
@@ -263,8 +318,13 @@ export default function UploadPage() {
         localStorage.setItem('pending_track_price', licensePrice);
         localStorage.setItem('pending_track_royalty', String(royaltyPercentage));
 
-        toast.success(isDraft ? 'Track changes saved!' : 'Track updated successfully!');
-        router.push(`/dashboard/upload/mint?id=${editId}`);
+        localStorage.removeItem('groovely_upload_draft');
+        toast.success(isDraft ? 'Track changes saved!' : (paymentModel === 'none' ? 'Track published for free streaming!' : 'Track updated successfully!'));
+        if (paymentModel === 'none' && !isDraft) {
+          router.push('/dashboard/library');
+        } else {
+          router.push(`/dashboard/upload/mint?id=${editId}`);
+        }
         return;
       }
 
@@ -312,8 +372,14 @@ export default function UploadPage() {
       localStorage.setItem('pending_track_price', licensePrice);
       localStorage.setItem('pending_track_royalty', String(royaltyPercentage));
 
-      toast.success(isDraft ? 'Track saved as draft!' : 'Track uploaded successfully!');
-      router.push(`/dashboard/upload/mint?id=${targetId}`);
+      localStorage.removeItem('groovely_upload_draft');
+      toast.success(isDraft ? 'Track saved as draft!' : (paymentModel === 'none' ? 'Track published for free streaming!' : 'Track uploaded successfully!'));
+
+      if (paymentModel === 'none' && !isDraft) {
+        router.push('/dashboard/library');
+      } else {
+        router.push(`/dashboard/upload/mint?id=${targetId}`);
+      }
     } catch (error: any) {
       toast.error(error.message || 'Upload failed');
     } finally {
@@ -587,11 +653,12 @@ export default function UploadPage() {
 
                 {/* Title */}
                 <div className="space-y-2">
-                  <label className="block text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
-                    Title
+                  <label className="block text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white flex items-center gap-1">
+                    Title <span className="text-[#FF0044] font-bold" title="Required">*</span>
                   </label>
                   <input
                     type="text"
+                    required
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Title"
@@ -601,14 +668,15 @@ export default function UploadPage() {
 
                 {/* Description */}
                 <div className="space-y-2">
-                  <label className="block text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
-                    Description (Optional)
+                  <label className="block text-sm sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-white flex items-center gap-1">
+                    Description <span className="text-[#FF0044] font-bold" title="Required">*</span>
                   </label>
                   <textarea
                     rows={4}
+                    required
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Write a short description"
+                    placeholder="Write a description for your track"
                     className="w-full bg-transparent border-2 border-[#606060] focus:border-[#8A2BE2] rounded-lg p-4 text-sm sm:text-base font-['Space_Grotesk',sans-serif] text-white placeholder-[#606060] focus:outline-none transition-colors"
                   />
                 </div>
@@ -1021,11 +1089,11 @@ export default function UploadPage() {
             {isUploading ? (
               <>
                 <Loader2 size={18} className="animate-spin" />
-                <span>Uploading...</span>
+                <span>{paymentModel === 'none' ? 'Publishing...' : 'Uploading...'}</span>
               </>
             ) : (
               <>
-                <span>Next</span>
+                <span>{paymentModel === 'none' ? 'Publish Track' : 'Next'}</span>
                 <ArrowRight size={18} />
               </>
             )}

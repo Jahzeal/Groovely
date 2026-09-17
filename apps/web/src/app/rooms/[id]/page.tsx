@@ -160,17 +160,17 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     }
   }, []);
 
-  // Browser Microphone & WebAudio WebRTC Live Voice Streaming State
-  const mediaSourceRef = useRef<MediaSource | null>(null);
-  const sourceBufferRef = useRef<SourceBuffer | null>(null);
-  const voiceQueueRef = useRef<ArrayBuffer[]>([]);
+  // Browser Microphone & WebAudio Live Voice Streaming State
+  const nextPlayTimeRef = useRef<number>(0);
+  const voiceAudioContextRef = useRef<AudioContext | null>(null);
+  const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
   const voicePlayerRef = useRef<HTMLAudioElement | null>(null);
 
-  // Auto-unlock audio player and AudioContext on user interaction for browser autoplay policies
+  // Auto-unlock AudioContext on user interaction for browser media policies
   useEffect(() => {
     const unlockAudio = () => {
-      if (voicePlayerRef.current && voicePlayerRef.current.paused && voicePlayerRef.current.src) {
-        voicePlayerRef.current.play().catch(() => {});
+      if (voiceAudioContextRef.current && voiceAudioContextRef.current.state === 'suspended') {
+        voiceAudioContextRef.current.resume().catch(() => {});
       }
       if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
         audioContextRef.current.resume().catch(() => {});
@@ -184,117 +184,48 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     };
   }, []);
 
-  // Initialize MediaSource pipeline for continuous WebSockets voice audio streaming
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    try {
-      const mediaSource = new MediaSource();
-      mediaSourceRef.current = mediaSource;
-
-      const voicePlayer = voicePlayerRef.current || new Audio();
-      voicePlayerRef.current = voicePlayer;
-      voicePlayer.src = URL.createObjectURL(mediaSource);
-      voicePlayer.play().catch(() => {});
-
-      const handleSourceOpen = () => {
-        try {
-          let mimeType = 'audio/webm; codecs=opus';
-          if (!MediaSource.isTypeSupported(mimeType)) {
-            mimeType = MediaSource.isTypeSupported('audio/webm') ? 'audio/webm' : '';
-          }
-          if (mimeType) {
-            const sb = mediaSource.addSourceBuffer(mimeType);
-            sourceBufferRef.current = sb;
-
-            sb.addEventListener('updateend', () => {
-              const currentSb = sourceBufferRef.current;
-              if (currentSb && !currentSb.updating) {
-                // Prune played audio buffer ranges over 4 seconds to prevent QuotaExceededError & memory stalls
-                try {
-                  if (currentSb.buffered.length > 0) {
-                    const start = currentSb.buffered.start(0);
-                    const currentTime = voicePlayerRef.current?.currentTime || 0;
-                    if (currentTime - start > 4) {
-                      currentSb.remove(start, currentTime - 2);
-                      return;
-                    }
-                  }
-                } catch (e) {}
-
-                // Drain remaining chunks in queue continuously
-                if (voiceQueueRef.current.length > 0) {
-                  const nextChunk = voiceQueueRef.current.shift();
-                  if (nextChunk) {
-                    try {
-                      currentSb.appendBuffer(nextChunk);
-                    } catch (e) {
-                      console.warn('SourceBuffer append error:', e);
-                    }
-                  }
-                }
-              }
-            });
-
-            // Drain pre-open queue
-            while (voiceQueueRef.current.length > 0 && !sb.updating) {
-              const chunk = voiceQueueRef.current.shift();
-              if (chunk) {
-                try { sb.appendBuffer(chunk); } catch (e) {}
-              }
-            }
-          }
-        } catch (e) {
-          console.warn('MediaSource sourceopen error:', e);
-        }
-      };
-
-      mediaSource.addEventListener('sourceopen', handleSourceOpen);
-    } catch (e) {
-      console.warn('MediaSource initialization notice:', e);
-    }
-
-    return () => {
-      if (voicePlayerRef.current) {
-        try {
-          voicePlayerRef.current.pause();
-          voicePlayerRef.current.src = '';
-        } catch (e) {}
-      }
-    };
-  }, []);
-
-  function base64ToArrayBuffer(base64: string) {
-    const raw = base64.includes(',') ? base64.split(',')[1] : base64;
-    const binaryString = atob(raw);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return bytes.buffer;
-  }
-
   const handleVoiceStreamReceived = useCallback((data: { userId: number; audioData: string }) => {
     if (!data.audioData) return;
     try {
-      const arrayBuffer = base64ToArrayBuffer(data.audioData);
-      const sb = sourceBufferRef.current;
-
-      if (sb && !sb.updating) {
-        try {
-          sb.appendBuffer(arrayBuffer);
-          if (voicePlayerRef.current && voicePlayerRef.current.paused) {
-            voicePlayerRef.current.play().catch(() => {});
-          }
-        } catch (err) {
-          voiceQueueRef.current.push(arrayBuffer);
-        }
-      } else {
-        voiceQueueRef.current.push(arrayBuffer);
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!voiceAudioContextRef.current) {
+        voiceAudioContextRef.current = new AudioCtx();
       }
+      const audioCtx = voiceAudioContextRef.current;
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
+
+      // Decode base64 16-bit Int16 PCM back to Float32 array
+      const raw = data.audioData.includes(',') ? data.audioData.split(',')[1] : data.audioData;
+      const binary = atob(raw);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      const pcm16 = new Int16Array(bytes.buffer);
+      const float32 = new Float32Array(pcm16.length);
+      for (let i = 0; i < pcm16.length; i++) {
+        float32[i] = pcm16[i] < 0 ? pcm16[i] / 0x8000 : pcm16[i] / 0x7FFF;
+      }
+
+      // Create WebAudio buffer and connect directly to speakers
+      const audioBuffer = audioCtx.createBuffer(1, float32.length, audioCtx.sampleRate);
+      audioBuffer.getChannelData(0).set(float32);
+
+      const source = audioCtx.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioCtx.destination);
+
+      // Schedule continuous seamless playback
+      const now = audioCtx.currentTime;
+      if (nextPlayTimeRef.current < now) {
+        nextPlayTimeRef.current = now + 0.05; // 50ms safety buffer
+      }
+      source.start(nextPlayTimeRef.current);
+      nextPlayTimeRef.current += audioBuffer.duration;
     } catch (e) {
-      console.warn('Voice stream received notice:', e);
+      console.warn('Voice PCM receive notice:', e);
     }
   }, []);
 
@@ -628,15 +559,17 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   const [audioLevel, setAudioLevel] = useState(0);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const voiceAudioContextRef = useRef<AudioContext | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const animFrameRef = useRef<number | null>(null);
 
   const toggleMicrophone = async () => {
     if (isMicActive) {
-      if (mediaRecorderRef.current) {
-        try { mediaRecorderRef.current.stop(); } catch (e) {}
-        mediaRecorderRef.current = null;
+      if (scriptProcessorRef.current) {
+        try {
+          scriptProcessorRef.current.disconnect();
+          scriptProcessorRef.current.onaudioprocess = null;
+        } catch (e) {}
+        scriptProcessorRef.current = null;
       }
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(track => track.stop());
@@ -675,31 +608,36 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
 
         checkAudioLevel();
 
-        // Initialize MediaRecorder for WebSockets voice chunk streaming to all room listeners
+        // Initialize WebAudio PCM ScriptProcessor for continuous WebSockets voice streaming
         try {
-          let mimeType = 'audio/webm;codecs=opus';
-          if (!MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-            mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
-          }
-          const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-          mediaRecorderRef.current = mediaRecorder;
+          const processor = audioCtx.createScriptProcessor(2048, 1, 1);
+          scriptProcessorRef.current = processor;
+          source.connect(processor);
+          processor.connect(audioCtx.destination);
 
-          mediaRecorder.ondataavailable = async (event) => {
-            if (event.data && event.data.size > 0) {
-              const reader = new FileReader();
-              reader.onloadend = () => {
-                const base64data = reader.result as string;
-                if (base64data && typeof emitVoiceStream === 'function') {
-                  emitVoiceStream(base64data);
-                }
-              };
-              reader.readAsDataURL(event.data);
+          processor.onaudioprocess = (e) => {
+            const inputData = e.inputBuffer.getChannelData(0);
+            // Convert Float32Array to 16-bit Int16 PCM array
+            const pcm16 = new Int16Array(inputData.length);
+            for (let i = 0; i < inputData.length; i++) {
+              const s = Math.max(-1, Math.min(1, inputData[i]));
+              pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+            }
+            
+            // Convert Int16Array buffer to base64
+            const bytes = new Uint8Array(pcm16.buffer);
+            let binary = '';
+            for (let i = 0; i < bytes.byteLength; i++) {
+              binary += String.fromCharCode(bytes[i]);
+            }
+            const base64 = btoa(binary);
+
+            if (base64 && typeof emitVoiceStream === 'function') {
+              emitVoiceStream(base64);
             }
           };
-
-          mediaRecorder.start(250);
         } catch (recErr) {
-          console.warn('MediaRecorder voice stream notice:', recErr);
+          console.warn('WebAudio PCM voice stream notice:', recErr);
         }
 
         setIsMicActive(true);

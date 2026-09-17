@@ -462,18 +462,24 @@ export default function MintPage() {
         {/* ========================================================================= */}
         <header className="flex items-center justify-between px-6 sm:px-8 py-3.5 bg-[#0F172A] border-b border-[#232B3E] shrink-0 z-20">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.push('/dashboard/upload')}
-              className="flex items-center gap-2 text-white hover:text-[#8A2BE2] transition-colors cursor-pointer"
-              aria-label="Back"
-            >
-              <div className="w-7 h-7 flex items-center justify-center">
-                <ChevronLeft size={20} />
-              </div>
-              <span className="text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
-                Back
-              </span>
-            </button>
+            {(() => {
+              const activeId = trackId || (typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('id') || localStorage.getItem('pending_track_id')) : null);
+              const backUrl = activeId ? `/dashboard/upload?editId=${activeId}` : '/dashboard/upload';
+              return (
+                <button
+                  onClick={() => router.push(backUrl)}
+                  className="flex items-center gap-2 text-white hover:text-[#8A2BE2] transition-colors cursor-pointer"
+                  aria-label="Back"
+                >
+                  <div className="w-7 h-7 flex items-center justify-center">
+                    <ChevronLeft size={20} />
+                  </div>
+                  <span className="text-base font-bold font-['Space_Grotesk',sans-serif] text-white">
+                    Back
+                  </span>
+                </button>
+              );
+            })()}
           </div>
 
           <div className="flex items-center gap-2 text-xs sm:text-sm font-['Space_Grotesk',sans-serif] text-[#E5E5E5]">
@@ -487,14 +493,20 @@ export default function MintPage() {
         {/* ========================================================================= */}
         <div className="flex items-center px-3 sm:px-8 py-3 sm:py-4 bg-[#192134] border-b border-[#232B3E] shrink-0 gap-2 sm:gap-6 overflow-x-auto no-scrollbar">
           {/* Step 1: Completed */}
-          <Link href="/dashboard/upload" className="flex items-center gap-1.5 sm:gap-3 shrink-0 hover:opacity-80 transition-opacity">
-            <div className="w-5 h-5 sm:w-8 sm:h-8 rounded-full bg-[#8A2BE2] flex items-center justify-center text-white font-bold font-['Space_Grotesk',sans-serif] text-[11px] sm:text-sm shadow-[0_0_10px_rgba(138,43,226,0.5)] shrink-0">
-              <Check size={12} strokeWidth={3} className="sm:w-4 sm:h-4" />
-            </div>
-            <span className="text-[11px] sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-[#8A2BE2] whitespace-nowrap">
-              Upload Audio, Add Metadata &amp; Licensing
-            </span>
-          </Link>
+          {(() => {
+            const activeId = trackId || (typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('id') || localStorage.getItem('pending_track_id')) : null);
+            const backUrl = activeId ? `/dashboard/upload?editId=${activeId}` : '/dashboard/upload';
+            return (
+              <Link href={backUrl} className="flex items-center gap-1.5 sm:gap-3 shrink-0 hover:opacity-80 transition-opacity">
+                <div className="w-5 h-5 sm:w-8 sm:h-8 rounded-full bg-[#8A2BE2] flex items-center justify-center text-white font-bold font-['Space_Grotesk',sans-serif] text-[11px] sm:text-sm shadow-[0_0_10px_rgba(138,43,226,0.5)] shrink-0">
+                  <Check size={12} strokeWidth={3} className="sm:w-4 sm:h-4" />
+                </div>
+                <span className="text-[11px] sm:text-base font-bold font-['Space_Grotesk',sans-serif] text-[#8A2BE2] whitespace-nowrap">
+                  Upload Audio, Add Metadata &amp; Licensing
+                </span>
+              </Link>
+            );
+          })()}
 
           {/* Chevron Separator */}
           <div className="text-[#8A2BE2] shrink-0">
