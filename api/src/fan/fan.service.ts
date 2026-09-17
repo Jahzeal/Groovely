@@ -23,7 +23,7 @@ export class FanService {
        JOIN users u ON t.user_id = u.id
        LEFT JOIN track_streams ts ON t.id = ts.track_id AND ts.played_at >= NOW() - INTERVAL '7 days'
        WHERE t.visibility = 'public'
-         AND (t.status = 'active' OR t.status = 'published' OR EXISTS (SELECT 1 FROM editions e JOIN songs s ON e.song_id = s.id WHERE s.track_id = t.id AND e.contract_edition_id IS NOT NULL))
+         AND (t.payment_model = 'none' OR t.status = 'active' OR t.status = 'published' OR EXISTS (SELECT 1 FROM editions e JOIN songs s ON e.song_id = s.id WHERE s.track_id = t.id AND e.contract_edition_id IS NOT NULL))
        GROUP BY t.id, t.user_id, u.display_name, u.username, u.wallet, u.id, u.email, t.price, t.license_price
        ORDER BY stream_count DESC
        LIMIT $1`,
@@ -49,7 +49,7 @@ export class FanService {
        FROM tracks t
        JOIN users u ON t.user_id = u.id
        WHERE t.visibility = 'public'
-         AND (t.status = 'active' OR t.status = 'published' OR EXISTS (SELECT 1 FROM editions e JOIN songs s ON e.song_id = s.id WHERE s.track_id = t.id AND e.contract_edition_id IS NOT NULL))
+         AND (t.payment_model = 'none' OR t.status = 'active' OR t.status = 'published' OR EXISTS (SELECT 1 FROM editions e JOIN songs s ON e.song_id = s.id WHERE s.track_id = t.id AND e.contract_edition_id IS NOT NULL))
        ORDER BY t.created_at DESC
        LIMIT $1`,
       [limit]
@@ -145,7 +145,7 @@ export class FanService {
        JOIN users u ON t.user_id = u.id
        LEFT JOIN follows f ON f.following_id = u.id AND f.follower_id = $1
        WHERE t.visibility = 'public'
-         AND (t.status = 'active' OR t.status = 'published' OR EXISTS (SELECT 1 FROM editions e JOIN songs s ON e.song_id = s.id WHERE s.track_id = t.id AND e.contract_edition_id IS NOT NULL))
+         AND (t.payment_model = 'none' OR t.status = 'active' OR t.status = 'published' OR EXISTS (SELECT 1 FROM editions e JOIN songs s ON e.song_id = s.id WHERE s.track_id = t.id AND e.contract_edition_id IS NOT NULL))
        ORDER BY 
          CASE WHEN f.follower_id IS NOT NULL THEN 1 ELSE 2 END,
          t.created_at DESC

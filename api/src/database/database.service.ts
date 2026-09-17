@@ -12,6 +12,12 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     try {
       await this.pool.query('SELECT NOW()');
       console.log('✅ PostgreSQL database connected successfully.');
+      await this.pool.query(`
+        UPDATE tracks 
+        SET status = 'published' 
+        WHERE (payment_model = 'none' OR visibility = 'public') 
+          AND (status = 'draft' OR status IS NULL);
+      `).catch(() => {});
     } catch (error) {
       console.error('Database initialization query error:', error);
     }

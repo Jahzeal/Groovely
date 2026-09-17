@@ -376,7 +376,7 @@ export class ProfileService {
        FROM tracks t
        JOIN users u ON t.user_id = u.id
        WHERE t.user_id = $1 AND t.visibility = 'public'
-         AND EXISTS (SELECT 1 FROM songs s WHERE s.track_id = t.id AND s.status = 'published')
+         AND (t.payment_model = 'none' OR t.status IN ('published', 'active') OR EXISTS (SELECT 1 FROM songs s WHERE s.track_id = t.id AND s.status = 'published'))
        ORDER BY t.created_at DESC`,
       [profile.id]
     );

@@ -66,17 +66,19 @@ export class TrackService {
     // Cover art → Cloudinary (fast CDN delivery for display in the dashboard)
     const coverUrl = await this.cloudinary.uploadFile(coverFile.buffer, 'covers', 'image');
 
+    const status = paymentModel === 'none' ? 'published' : 'draft';
+
     const result = await this.db.query(
       `INSERT INTO tracks (
         user_id, title, description, audio_url, cover_url, visibility, 
         explicit, category, tags, bpm, key, isrc, usage_rights, payment_model,
         license_price, royalty_percentage, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'draft')
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       RETURNING *`,
       [
         userId, title, description, audioUrl, coverUrl, visibility || 'public',
         explicit, category, tags, bpm, key, isrc, usageRights, paymentModel || 'fixed',
-        licensePrice || 0.00, royaltyPercentage || 10
+        licensePrice || 0.00, royaltyPercentage || 10, status
       ]
     );
 

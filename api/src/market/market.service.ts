@@ -25,7 +25,7 @@ export class MarketService {
        FROM tracks t
        JOIN users u ON t.user_id = u.id
        WHERE t.visibility = 'public'
-         AND EXISTS (SELECT 1 FROM songs s WHERE s.track_id = t.id AND s.status = 'published')
+         AND (t.payment_model = 'none' OR t.status IN ('published', 'active') OR EXISTS (SELECT 1 FROM songs s WHERE s.track_id = t.id AND s.status = 'published'))
        ORDER BY (SELECT COUNT(*) FROM track_streams WHERE track_id = t.id) DESC
        LIMIT $1`,
       [limit]
@@ -99,7 +99,7 @@ export class MarketService {
              FROM tracks t
              JOIN users u ON t.user_id = u.id
              WHERE t.visibility = 'public'
-               AND EXISTS (SELECT 1 FROM songs s WHERE s.track_id = t.id AND s.status = 'published')
+               AND (t.payment_model = 'none' OR t.status IN ('published', 'active') OR EXISTS (SELECT 1 FROM songs s WHERE s.track_id = t.id AND s.status = 'published'))
              ORDER BY recommendation_score DESC, t.created_at DESC
              LIMIT $5`,
             [
@@ -138,7 +138,7 @@ export class MarketService {
        FROM tracks t
        JOIN users u ON t.user_id = u.id
        WHERE t.visibility = 'public'
-         AND EXISTS (SELECT 1 FROM songs s WHERE s.track_id = t.id AND s.status = 'published')
+         AND (t.payment_model = 'none' OR t.status IN ('published', 'active') OR EXISTS (SELECT 1 FROM songs s WHERE s.track_id = t.id AND s.status = 'published'))
        ORDER BY 
          (SELECT COUNT(*) FROM track_streams WHERE track_id = t.id) DESC,
          t.id ASC
@@ -188,7 +188,7 @@ export class MarketService {
        FROM tracks t
        JOIN users u ON t.user_id = u.id
        WHERE t.visibility = 'public'
-         AND EXISTS (SELECT 1 FROM songs s WHERE s.track_id = t.id AND s.status = 'published')
+         AND (t.payment_model = 'none' OR t.status IN ('published', 'active') OR EXISTS (SELECT 1 FROM songs s WHERE s.track_id = t.id AND s.status = 'published'))
        ${categoryFilter}
        ORDER BY t.created_at DESC
        LIMIT $1
@@ -237,7 +237,7 @@ export class MarketService {
        JOIN users u ON t.user_id = u.id
        WHERE t.id = $1 
          AND t.visibility = 'public'
-         AND EXISTS (SELECT 1 FROM songs s WHERE s.track_id = t.id AND s.status = 'published')`,
+         AND (t.payment_model = 'none' OR t.status IN ('published', 'active') OR EXISTS (SELECT 1 FROM songs s WHERE s.track_id = t.id AND s.status = 'published'))`,
       [trackId]
     );
 
@@ -259,7 +259,7 @@ export class MarketService {
        FROM tracks t
        WHERE t.user_id = $1 AND t.id != $2 
          AND t.visibility = 'public'
-         AND EXISTS (SELECT 1 FROM songs s WHERE s.track_id = t.id AND s.status = 'published')
+         AND (t.payment_model = 'none' OR t.status IN ('published', 'active') OR EXISTS (SELECT 1 FROM songs s WHERE s.track_id = t.id AND s.status = 'published'))
        ORDER BY t.created_at DESC
        LIMIT 4`,
       [track.creator_id, trackId]
