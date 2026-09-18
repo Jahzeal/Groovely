@@ -36,7 +36,23 @@ export const MusicPlayer = () => {
   const currentUserId = typeof window !== 'undefined' ? Number(localStorage.getItem('grooveli_user_id')) : null;
   const isUploader = currentUserId !== null && currentTrack.uploaderId === currentUserId;
   const isPurchased = purchasedTrackIds.has(currentTrack.id) || isUploader;
-  const isLocked = previewLimitReached && !isPurchased;
+
+  const rawPrice = currentTrack.price ?? (currentTrack as any).license_price ?? (currentTrack as any).licensePrice;
+  const paymentModel = currentTrack.payment_model || (currentTrack as any).paymentModel;
+
+  const isFree = Boolean(
+    paymentModel === 'none' ||
+    rawPrice === 0 ||
+    rawPrice === '0' ||
+    rawPrice === '0.00' ||
+    rawPrice === 0.0 ||
+    rawPrice === 'Free' ||
+    rawPrice === 'free' ||
+    (typeof rawPrice === 'string' && rawPrice.toLowerCase().includes('free'))
+  );
+
+  const isFullAccess = isPurchased || isFree;
+  const isLocked = previewLimitReached && !isFullAccess;
 
   const handleBarClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!barRef.current || !duration) return;
@@ -65,9 +81,9 @@ export const MusicPlayer = () => {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
-  // Progress percentage capped at preview limit visually for non-purchased
+  // Progress percentage capped at preview limit visually for non-purchased paid tracks
   const previewLimitPct = duration ? (PREVIEW_LIMIT / duration) * 100 : 0;
-  const displayProgress = isPurchased ? progress : Math.min(progress, previewLimitPct + 0.5);
+  const displayProgress = isFullAccess ? progress : Math.min(progress, previewLimitPct + 0.5);
 
   // If minimized, render sleek floating mini-player pill button in bottom right
   if (isPlayerMinimized) {
@@ -146,7 +162,7 @@ export const MusicPlayer = () => {
           }`}
           style={{ width: `${displayProgress}%` }}
         />
-        {!isPurchased && duration > 0 && duration > PREVIEW_LIMIT && (
+        {!isFullAccess && duration > 0 && duration > PREVIEW_LIMIT && (
           <div
             className="absolute top-0 bottom-0 w-1 bg-red-500/80 rounded-full"
             style={{ left: `${previewLimitPct}%` }}
@@ -186,6 +202,11 @@ export const MusicPlayer = () => {
               <span className="inline-flex items-center gap-1 text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-[#00FFC6] mt-0.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#00FFC6] inline-block" />
                 Owned
+              </span>
+            ) : isFree ? (
+              <span className="inline-flex items-center gap-1 text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-[#00FFC6] mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#00FFC6] inline-block" />
+                Free
               </span>
             ) : isLocked ? (
               <span className="inline-flex items-center gap-1 text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-[#8A2BE2] mt-0.5">
@@ -281,7 +302,7 @@ export const MusicPlayer = () => {
                 </div>
 
                 {/* Preview limit marker line */}
-                {!isPurchased && duration > 0 && duration > PREVIEW_LIMIT && (
+                {!isFullAccess && duration > 0 && duration > PREVIEW_LIMIT && (
                   <div
                     className="absolute top-1/2 -translate-y-1/2 w-0.5 h-3 -mt-[2px] rounded-full"
                     style={{
