@@ -6,7 +6,8 @@ import { MarketTopBar } from '@/components/marketplace/MarketTopBar';
 import { CartProvider } from '@/components/marketplace/CartContext';
 import { CreateRoomModal } from '@/components/rooms/CreateRoomModal';
 import { Headphones, Plus, Users, Radio, Calendar, Lock, Globe, Sparkles, Loader2 } from 'lucide-react';
-import { cachedApiFetch } from '@/lib/api';
+import { cachedApiFetch, resolveIpfsUrl } from '@/lib/api';
+import { ScheduledCountdown } from '@/components/rooms/ScheduledCountdown';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -170,6 +171,13 @@ export default function ListeningRoomsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredRooms.map(room => {
                   const isScheduled = room.status === 'scheduled';
+                  const resolvedCover = resolveIpfsUrl(
+                    room.cover_url || 
+                    room.cover_image || 
+                    room.host_avatar || 
+                    `https://api.dicebear.com/7.x/avataaars/svg?seed=${room.host_name || room.host_username || 'Creator'}`
+                  );
+
                   return (
                     <div key={room.id} className={`bg-[#0F172A] border ${isScheduled ? 'border-cyan-500/30 hover:border-cyan-500' : 'border-[#2D3548] hover:border-[#8A2BE2]/50'} rounded-2xl p-5 flex flex-col justify-between transition-all group shadow-md`}>
                       <div>
@@ -201,31 +209,33 @@ export default function ListeningRoomsPage() {
                         {/* Room Cover & Host Info */}
                         <div className="flex gap-4 mb-4">
                           <img
-                            src={
-                              (room.cover_url && room.cover_url.trim() !== '') ? room.cover_url : 
-                              (room.host_avatar && room.host_avatar.trim() !== '') ? room.host_avatar : 
-                              `https://api.dicebear.com/7.x/avataaars/svg?seed=${room.host_name || room.host_username || 'Creator'}`
-                            }
+                            src={resolvedCover}
                             alt={room.title}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${room.host_name || 'Creator'}`;
+                            }}
                             className="w-20 h-20 rounded-xl object-cover border border-[#2D3548] shrink-0"
                           />
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <h3 className={`text-base font-bold text-white transition-colors truncate ${isScheduled ? 'group-hover:text-cyan-400' : 'group-hover:text-accent-purple'}`}>
                               {room.title}
                             </h3>
-                            <p className="text-xs text-zinc-400 font-medium truncate mb-1">
+                            <p className="text-xs text-zinc-400 font-medium truncate mb-1.5">
                               Hosted by <span className="text-white font-bold">{room.host_name || 'Creator'}</span>
                             </p>
                             
                             {isScheduled ? (
-                              <p className="text-[10px] text-cyan-400 font-bold flex items-center gap-1 mt-1">
-                                <Calendar size={11} />
-                                <span>
-                                  {room.scheduled_for 
-                                    ? new Date(room.scheduled_for).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) 
-                                    : 'Upcoming'}
-                                </span>
-                              </p>
+                              <div className="space-y-1">
+                                <p className="text-[10px] text-cyan-400 font-bold flex items-center gap-1">
+                                  <Calendar size={11} />
+                                  <span>
+                                    {room.scheduled_for 
+                                      ? new Date(room.scheduled_for).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) 
+                                      : 'Upcoming'}
+                                  </span>
+                                </p>
+                                <ScheduledCountdown targetDate={room.scheduled_for || room.created_at} compact />
+                              </div>
                             ) : (
                               room.genre && (
                                 <span className="inline-block bg-[#192134] text-zinc-300 text-[10px] font-bold px-2 py-0.5 rounded-md border border-[#2D3548]">

@@ -23,54 +23,7 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { io } from 'socket.io-client';
 
-const ScheduledCountdown = ({ targetDate }: { targetDate: string }) => {
-  const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number; isPast: boolean }>({
-    days: 0, hours: 0, minutes: 0, seconds: 0, isPast: false
-  });
-
-  useEffect(() => {
-    const calculate = () => {
-      const target = new Date(targetDate).getTime();
-      const now = Date.now();
-      const diff = target - now;
-
-      if (diff <= 0) {
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, isPast: true });
-        return;
-      }
-
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-      setTimeLeft({ days, hours, minutes, seconds, isPast: false });
-    };
-
-    calculate();
-    const interval = setInterval(calculate, 1000);
-    return () => clearInterval(interval);
-  }, [targetDate]);
-
-  if (timeLeft.isPast) {
-    return (
-      <span className="px-2.5 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5">
-        <Clock size={12} className="animate-spin" />
-        <span>Starting Soon</span>
-      </span>
-    );
-  }
-
-  return (
-    <div className="inline-flex items-center gap-1.5 font-mono text-xs font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-500/30 px-3 py-1 rounded-lg">
-      <Clock size={13} className="text-cyan-400 animate-pulse" />
-      <span>
-        {timeLeft.days > 0 ? `${timeLeft.days}d ` : ''}
-        {String(timeLeft.hours).padStart(2, '0')}h : {String(timeLeft.minutes).padStart(2, '0')}m : {String(timeLeft.seconds).padStart(2, '0')}s
-      </span>
-    </div>
-  );
-};
+import { ScheduledCountdown } from '@/components/rooms/ScheduledCountdown';
 
 export default function CreatorRoomsDashboard() {
   const router = useRouter();
@@ -82,7 +35,35 @@ export default function CreatorRoomsDashboard() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedId = localStorage.getItem('groovely_user_id') || localStorage.getItem('grooveli_user_id');
-      if (storedId) setCurrentUserId(Number(storedId));
+      if (storedId && !isNaN(Number(storedId))) {
+        setCurrentUserId(Number(storedId));
+      } else {
+        const token = localStorage.getItem('groovely_token') || localStorage.getItem('grooveli_token');
+        if (token) {
+          try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const uid = payload.id || payload.sub || payload.userId;
+            if (uid) {
+              setCurrentUserId(Number(uid));
+              localStorage.setItem('groovely_user_id', String(uid));
+            }
+          } catch (_) {}
+        }
+      }
+
+      // Fetch fresh user profile ID fallback from API
+      import('@/lib/api').then(({ apiFetch }) => {
+        apiFetch('/api/users/me', { skipAuthRedirect: true })
+          .then(res => res && res.ok ? res.json() : null)
+          .then(json => {
+            const u = json?.data ?? json;
+            if (u?.id) {
+              setCurrentUserId(Number(u.id));
+              localStorage.setItem('groovely_user_id', String(u.id));
+            }
+          })
+          .catch(() => {});
+      });
     }
   }, []);
 
@@ -262,6 +243,9 @@ export default function CreatorRoomsDashboard() {
                             )
                           }
                           alt={room.title}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80';
+                          }}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-transparent to-transparent opacity-80" />
@@ -372,6 +356,9 @@ export default function CreatorRoomsDashboard() {
                             )
                           }
                           alt={room.title}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80';
+                          }}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-transparent to-transparent opacity-80" />

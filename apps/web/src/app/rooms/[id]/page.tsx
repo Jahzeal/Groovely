@@ -184,8 +184,17 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     };
   }, []);
 
+  const currentUserIdRef = useRef<number | null>(currentUserId);
+  useEffect(() => {
+    currentUserIdRef.current = currentUserId;
+  }, [currentUserId]);
+
   const handleVoiceStreamReceived = useCallback((data: { userId: number; audioData: string }) => {
     if (!data.audioData) return;
+    // CRITICAL ECHO FIX: Do NOT play back your own voice packet locally!
+    if (data.userId && currentUserIdRef.current && Number(data.userId) === Number(currentUserIdRef.current)) {
+      return;
+    }
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!voiceAudioContextRef.current) {
@@ -593,7 +602,13 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       toast.success('Microphone muted');
     } else {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
         mediaStreamRef.current = stream;
         
         const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
@@ -622,7 +637,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
           const processor = audioCtx.createScriptProcessor(2048, 1, 1);
           scriptProcessorRef.current = processor;
           source.connect(processor);
-          processor.connect(audioCtx.destination);
+          // Do NOT connect to audioCtx.destination to prevent local mic feedback echo!
 
           processor.onaudioprocess = (e) => {
             const inputData = e.inputBuffer.getChannelData(0);

@@ -114,13 +114,13 @@ export async function cachedApiFetch<T = any>(
     onBackgroundUpdate?: (freshData: any) => void;
   } = {}
 ): Promise<{ data: T | null; fromCache: boolean }> {
-  const cached = getCachedData<T>(endpoint);
   const ttl = options.ttlMs ?? DEFAULT_TTL_MS;
+  const cached = getCachedData<T>(endpoint);
   const memEntry = memoryCache.get(endpoint);
   const isFresh = memEntry && (Date.now() - memEntry.timestamp < ttl);
 
-  if (cached) {
-    // If cached, trigger background revalidation if stale
+  if (cached && ttl > 0) {
+    // If cached and ttl > 0, trigger background revalidation if stale
     if (!isFresh) {
       apiFetch(endpoint, { skipAuthRedirect: options.skipAuthRedirect })
         .then(async (res) => {
@@ -135,7 +135,7 @@ export async function cachedApiFetch<T = any>(
     return { data: cached, fromCache: true };
   }
 
-  // Not in cache: perform network request
+  // Not in cache or ttl === 0: perform network request directly
   const res = await apiFetch(endpoint, { skipAuthRedirect: options.skipAuthRedirect });
   if (res && res.ok) {
     const json = await res.json();
