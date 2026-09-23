@@ -252,6 +252,14 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     }
   }, []);
 
+  // Browser Microphone & WebAudio WebRTC Live Voice Streaming State
+  const [isMicActive, setIsMicActive] = useState(false);
+  const [audioLevel, setAudioLevel] = useState(0);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+
   // Google Meet Grade WebRTC UDP Voice Streaming Engine (< 30ms latency)
   const peerConnectionsRef = useRef<Map<number, RTCPeerConnection>>(new Map());
   const isWebRtcConnectedRef = useRef(false);
@@ -667,13 +675,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     }
   }, [playbackState]);
 
-  // Browser Microphone & WebAudio WebRTC Live Voice Streaming State
-  const [isMicActive, setIsMicActive] = useState(false);
-  const [audioLevel, setAudioLevel] = useState(0);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const animFrameRef = useRef<number | null>(null);
+
 
   const cleanupAudioResources = useCallback(() => {
     peerConnectionsRef.current.forEach(pc => {
