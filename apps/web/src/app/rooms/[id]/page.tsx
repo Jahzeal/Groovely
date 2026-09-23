@@ -197,8 +197,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
 
   const handleVoiceStreamReceived = useCallback((data: { userId: number; audioData: string; sampleRate?: number }) => {
     if (!data.audioData) return;
-    // CRITICAL ECHO & WEBRTC DUP FIX: If WebRTC UDP stream is connected or it's your own voice, skip WebSockets PCM!
-    if (isWebRtcConnectedRef.current) return;
+    // CRITICAL ECHO FIX: Do NOT play back your own voice packet locally!
     if (data.userId && currentUserIdRef.current && Number(data.userId) === Number(currentUserIdRef.current)) {
       return;
     }
