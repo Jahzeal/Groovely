@@ -31,6 +31,13 @@ export class ListeningRoomService implements OnModuleInit {
       co_host_handles = []
     } = dto;
 
+    if (scheduled_for) {
+      const scheduledTime = new Date(scheduled_for).getTime();
+      if (isNaN(scheduledTime) || scheduledTime < Date.now() - 60000) {
+        throw new BadRequestException('Scheduled date and time cannot be in the past');
+      }
+    }
+
     const initialStatus = scheduled_for ? 'scheduled' : 'live';
 
     // Create room

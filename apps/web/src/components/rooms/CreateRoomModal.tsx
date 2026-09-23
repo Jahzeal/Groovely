@@ -170,13 +170,21 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
       toast.error('Please enter a room title');
       return;
     }
-    if (startTimeType === 'scheduled' && !scheduledDate) {
-      // Default to 1 hour from now if date picker left empty
-      const defaultDate = new Date(Date.now() + 3600 * 1000);
-      const isoLocal = new Date(defaultDate.getTime() - defaultDate.getTimezoneOffset() * 60000)
-        .toISOString()
-        .slice(0, 16);
-      setScheduledDate(isoLocal);
+    if (startTimeType === 'scheduled') {
+      if (!scheduledDate) {
+        // Default to 1 hour from now if date picker left empty
+        const defaultDate = new Date(Date.now() + 3600 * 1000);
+        const isoLocal = new Date(defaultDate.getTime() - defaultDate.getTimezoneOffset() * 60000)
+          .toISOString()
+          .slice(0, 16);
+        setScheduledDate(isoLocal);
+      } else {
+        const selectedTime = new Date(scheduledDate).getTime();
+        if (isNaN(selectedTime) || selectedTime < Date.now() - 60000) {
+          toast.error('Scheduled time cannot be in the past. Please select a future date & time.');
+          return;
+        }
+      }
     }
     setModalStep(2);
   };
@@ -470,6 +478,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
                     <input
                       type="datetime-local"
                       value={scheduledDate}
+                      min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
                       onChange={(e) => setScheduledDate(e.target.value)}
                       className="w-full bg-[#0F172A] border border-[#2D3548] rounded-lg p-2 text-xs text-white font-mono focus:outline-none"
                     />
