@@ -5,7 +5,7 @@ import { Sidebar } from '@/components/dashboard/Sidebar';
 import { MarketTopBar } from '@/components/marketplace/MarketTopBar';
 import { CartProvider } from '@/components/marketplace/CartContext';
 import { CreateRoomModal } from '@/components/rooms/CreateRoomModal';
-import { Headphones, Plus, Users, Radio, Calendar, Lock, Globe, Sparkles, Loader2 } from 'lucide-react';
+import { Headphones, Plus, Users, Radio, Calendar, Lock, Globe, Sparkles, Loader2, Share2 } from 'lucide-react';
 import { cachedApiFetch, resolveIpfsUrl } from '@/lib/api';
 import { ScheduledCountdown } from '@/components/rooms/ScheduledCountdown';
 import Link from 'next/link';
@@ -253,13 +253,28 @@ export default function ListeningRoomsPage() {
                         )}
                       </div>
 
-                      {/* Join Action Button */}
-                      <Link href={`/rooms/${room.id}`}>
-                        <button className={`w-full font-bold py-2.5 rounded-xl transition-all text-xs flex items-center justify-center gap-2 cursor-pointer ${isScheduled ? 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'bg-[#8A2BE2] hover:bg-[#7823c9] text-white shadow-[0_0_15px_rgba(138,43,226,0.3)]'}`}>
-                          {isScheduled ? <Calendar size={15} /> : <Headphones size={15} />}
-                          <span>{isScheduled ? 'View Scheduled Room' : 'Join Room & Listen'}</span>
+                      {/* Join & Share Action Buttons */}
+                      <div className="flex items-center gap-2">
+                        <Link href={`/rooms/${room.id}`} className="flex-1">
+                          <button className={`w-full font-bold py-2.5 rounded-xl transition-all text-xs flex items-center justify-center gap-2 cursor-pointer ${isScheduled ? 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'bg-[#8A2BE2] hover:bg-[#7823c9] text-white shadow-[0_0_15px_rgba(138,43,226,0.3)]'}`}>
+                            {isScheduled ? <Calendar size={15} /> : <Headphones size={15} />}
+                            <span>{isScheduled ? 'View Scheduled Room' : 'Join Room & Listen'}</span>
+                          </button>
+                        </Link>
+
+                        <button
+                          onClick={() => {
+                            if (typeof window !== 'undefined') {
+                              navigator.clipboard.writeText(`${window.location.origin}/rooms/${room.id}`);
+                              toast.success('Room link copied!');
+                            }
+                          }}
+                          title="Share Room Link"
+                          className="py-2.5 px-3 bg-[#0F172A] hover:bg-[#192134] border border-[#2D3548] text-zinc-300 hover:text-white rounded-xl transition-all text-xs flex items-center justify-center cursor-pointer shrink-0"
+                        >
+                          <Share2 size={15} />
                         </button>
-                      </Link>
+                      </div>
                     </div>
                   );
                 })}

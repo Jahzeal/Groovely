@@ -309,8 +309,8 @@ export default function CreatorRoomsDashboard() {
                       </div>
                     </div>
 
-                    {/* Go Live Early & Share Link Action Buttons */}
-                    <div className="pt-2 grid grid-cols-2 gap-2">
+                    {/* Go Live Early & Share Link Icon Button */}
+                    <div className="pt-2 flex items-center gap-2">
                       <button
                         onClick={async () => {
                           try {
@@ -322,7 +322,7 @@ export default function CreatorRoomsDashboard() {
                             router.push(`/rooms/${room.id}`);
                           }
                         }}
-                        className="py-2.5 bg-gradient-to-r from-[#8A2BE2] to-[#FF0044] hover:opacity-95 text-white text-xs font-bold rounded-xl shadow-[0_0_15px_rgba(138,43,226,0.4)] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        className="flex-1 py-2.5 bg-gradient-to-r from-[#8A2BE2] to-[#FF0044] hover:opacity-95 text-white text-xs font-bold rounded-xl shadow-[0_0_15px_rgba(138,43,226,0.4)] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <Play size={13} fill="currentColor" />
                         <span>Go Live Now</span>
@@ -335,10 +335,10 @@ export default function CreatorRoomsDashboard() {
                             toast.success('Room link copied!');
                           }
                         }}
-                        className="py-2.5 bg-[#192134] hover:bg-[#232B3E] border border-[#2D3548] text-zinc-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        title="Share Room Link"
+                        className="py-2.5 px-3 bg-[#192134] hover:bg-[#232B3E] border border-[#2D3548] text-zinc-300 hover:text-white rounded-xl transition-all text-xs flex items-center justify-center cursor-pointer shrink-0"
                       >
-                        <Share2 size={13} />
-                        <span>Share Link</span>
+                        <Share2 size={15} />
                       </button>
                     </div>
                   </div>
@@ -415,14 +415,29 @@ export default function CreatorRoomsDashboard() {
                       </div>
                     </div>
 
-                    {/* Action Button */}
-                    <button
-                      onClick={() => router.push(`/rooms/${room.id}`)}
-                      className="w-full py-3 bg-[#8A2BE2] hover:bg-[#7823c9] text-white text-xs font-bold rounded-xl shadow-[0_0_15px_rgba(138,43,226,0.4)] transition-all flex items-center justify-center gap-2 cursor-pointer mt-4"
-                    >
-                      <Play size={14} fill="currentColor" />
-                      <span>Enter Live Room Studio</span>
-                    </button>
+                    {/* Action Buttons: Enter Studio & Share Link Icon Button */}
+                    <div className="flex items-center gap-2 mt-4">
+                      <button
+                        onClick={() => router.push(`/rooms/${room.id}`)}
+                        className="flex-1 py-3 bg-[#8A2BE2] hover:bg-[#7823c9] text-white text-xs font-bold rounded-xl shadow-[0_0_15px_rgba(138,43,226,0.4)] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <Play size={14} fill="currentColor" />
+                        <span>Enter Live Room Studio</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (typeof window !== 'undefined') {
+                            navigator.clipboard.writeText(`${window.location.origin}/rooms/${room.id}`);
+                            toast.success('Live room link copied!');
+                          }
+                        }}
+                        title="Share Room Link"
+                        className="py-3 px-3 bg-[#192134] hover:bg-[#232B3E] border border-[#2D3548] text-zinc-300 hover:text-white rounded-xl transition-all text-xs flex items-center justify-center cursor-pointer shrink-0"
+                      >
+                        <Share2 size={15} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
