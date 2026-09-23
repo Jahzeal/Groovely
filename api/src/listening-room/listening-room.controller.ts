@@ -1,6 +1,8 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards, Req, ParseIntPipe, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, UseGuards, UseInterceptors, UploadedFile, Req, ParseIntPipe, BadRequestException } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ListeningRoomService } from './listening-room.service';
 import { ListeningRoomGateway } from './listening-room.gateway';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../common/guards/optional-jwt-auth.guard';
@@ -9,8 +11,36 @@ import { OptionalJwtAuthGuard } from '../common/guards/optional-jwt-auth.guard';
 export class ListeningRoomController {
   constructor(
     private readonly roomService: ListeningRoomService,
-    private readonly roomGateway: ListeningRoomGateway
+    private readonly roomGateway: ListeningRoomGateway,
+    private readonly cloudinaryService: CloudinaryService
   ) {}
+
+  @Post('upload-cover')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('cover'))
+  async uploadRoomCover(@UploadedFile() file?: Express.Multer.File) {
+    if (!file) throw new BadRequestException('No image file provided');
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.mimetype)) {
+      throw new BadRequestException('Invalid image format. Allowed: JPG, JPEG, PNG, WEBP');
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      throw new BadRequestException('Image size must be less than 5MB');
+    }
+
+    try {
+      const url = await this.cloudinaryService.uploadFile(
+        file.buffer,
+        'room_covers',
+        'image',
+        [{ width: 800, height: 800, crop: 'limit' }]
+      );
+      return { success: true, url, cover_url: url };
+    } catch (err: any) {
+      console.error('Cloudinary cover upload error:', err);
+      throw new BadRequestException(err?.message || 'Failed to upload image to Cloudinary');
+    }
+  }
 
   @Post()
   @UseGuards(JwtAuthGuard)

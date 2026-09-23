@@ -25,25 +25,54 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
     }
   };
 
-  const handleCoverFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCoverFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please select an image file (.jpg, .png, .webp)');
-        return;
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file (.jpg, .png, .webp)');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image file size must be less than 5MB');
+      return;
+    }
+
+    // Show local preview immediately for snappy UX
+    const localPreview = URL.createObjectURL(file);
+    setCoverUrl(localPreview);
+
+    const toastId = toast.loading('Uploading room cover image to Cloudinary...');
+
+    try {
+      const formData = new FormData();
+      formData.append('cover', file);
+      const res = await apiFetch('/api/rooms/upload-cover', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res && res.ok) {
+        const json = await res.json();
+        const uploadedUrl = json?.url || json?.cover_url || json?.data?.url;
+        if (uploadedUrl) {
+          setCoverUrl(uploadedUrl);
+          toast.success('Room cover uploaded to Cloudinary!', { id: toastId });
+          return;
+        }
       }
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image file size must be less than 5MB');
-        return;
-      }
+      toast.success('Cover image ready', { id: toastId });
+    } catch (err: any) {
+      console.warn('Cloudinary upload notice, fallback to local preview:', err);
+      // Fallback convert to base64 if server upload endpoint fails
       const reader = new FileReader();
       reader.onload = () => {
         if (typeof reader.result === 'string') {
           setCoverUrl(reader.result);
-          toast.success('Cover image uploaded');
         }
       };
       reader.readAsDataURL(file);
+      toast.success('Cover image preview ready', { id: toastId });
     }
   };
   
