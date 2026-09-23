@@ -287,12 +287,27 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       });
     }
 
-    // Play incoming remote Google Meet WebRTC UDP stream directly out of voice player
+    // Play incoming remote Google Meet WebRTC UDP stream directly via zero-latency WebAudio
     pc.ontrack = (event) => {
       isWebRtcConnectedRef.current = true;
-      if (voicePlayerRef.current) {
-        voicePlayerRef.current.srcObject = event.streams[0];
-        voicePlayerRef.current.play().catch(e => console.warn('WebRTC audio play notice:', e));
+      try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (!voiceAudioContextRef.current) {
+          voiceAudioContextRef.current = new AudioCtx();
+        }
+        const audioCtx = voiceAudioContextRef.current;
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume().catch(() => {});
+        }
+
+        // Direct WebAudio stream node: 0ms browser jitter-buffer delay (Google Meet speed)
+        const source = audioCtx.createMediaStreamSource(event.streams[0]);
+        source.connect(audioCtx.destination);
+      } catch (err) {
+        if (voicePlayerRef.current) {
+          voicePlayerRef.current.srcObject = event.streams[0];
+          voicePlayerRef.current.play().catch(e => console.warn('WebRTC audio play notice:', e));
+        }
       }
     };
 
@@ -394,6 +409,25 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     emitWebRTCAnswerRef.current = emitWebRTCAnswer;
     emitWebRTCIceCandidateRef.current = emitWebRTCIceCandidate;
   }, [emitWebRTCOffer, emitWebRTCAnswer, emitWebRTCIceCandidate]);
+
+  // Google Meet Speed Sync: Automatically initiate WebRTC UDP connection to any newly joining fan/participant
+  useEffect(() => {
+    if (!isMicActive) return;
+    participants.forEach(p => {
+      const pid = Number(p.user_id);
+      if (pid && pid !== Number(currentUserId) && !peerConnectionsRef.current.has(pid)) {
+        try {
+          const pc = createPeerConnection(pid);
+          pc.createOffer({ offerToReceiveAudio: true }).then(async (offer) => {
+            await pc.setLocalDescription(offer);
+            if (emitWebRTCOfferRef.current) {
+              emitWebRTCOfferRef.current(offer, pid);
+            }
+          }).catch(e => console.warn('Auto WebRTC offer notice:', e));
+        } catch (e) {}
+      }
+    });
+  }, [participants, isMicActive, currentUserId, createPeerConnection]);
 
   // Live Player State
   const [isPlaying, setIsPlaying] = useState(false);
