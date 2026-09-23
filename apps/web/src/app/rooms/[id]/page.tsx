@@ -169,6 +169,10 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   // Auto-unlock AudioContext on user interaction for browser media policies
   useEffect(() => {
     const unlockAudio = () => {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!voiceAudioContextRef.current) {
+        try { voiceAudioContextRef.current = new AudioCtx(); } catch (e) {}
+      }
       if (voiceAudioContextRef.current && voiceAudioContextRef.current.state === 'suspended') {
         voiceAudioContextRef.current.resume().catch(() => {});
       }
@@ -178,9 +182,11 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     };
     window.addEventListener('click', unlockAudio);
     window.addEventListener('touchstart', unlockAudio);
+    window.addEventListener('keydown', unlockAudio);
     return () => {
       window.removeEventListener('click', unlockAudio);
       window.removeEventListener('touchstart', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
     };
   }, []);
 
@@ -642,7 +648,13 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
           const processor = audioCtx.createScriptProcessor(4096, 1, 1);
           scriptProcessorRef.current = processor;
           source.connect(processor);
-          // Do NOT connect to audioCtx.destination to prevent local mic feedback echo!
+
+          // Route processor through a silent GainNode (gain = 0) to audioCtx.destination.
+          // CRITICAL WEBAUDIO SPEC: WebAudio requires nodes to terminate at destination for onaudioprocess to execute!
+          const silentGain = audioCtx.createGain();
+          silentGain.gain.value = 0;
+          processor.connect(silentGain);
+          silentGain.connect(audioCtx.destination);
 
           let pcmAccumulator: number[] = [];
           const targetChunkSize = Math.round(audioCtx.sampleRate * 0.1); // ~100ms chunk (10 packets/sec)
