@@ -165,7 +165,7 @@ export class ListeningRoomService implements OnModuleInit {
     try {
       const participantsRes = await this.db.query(
         `SELECT p.*, 
-                COALESCE(NULLIF(TRIM(u.display_name), ''), NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), CASE WHEN u.wallet IS NOT NULL AND length(u.wallet) > 8 THEN SUBSTRING(u.wallet FROM 1 FOR 6) || '...' || SUBSTRING(u.wallet FROM length(u.wallet)-3 FOR 4) ELSE 'Participant' END) as display_name, 
+                COALESCE(NULLIF(TRIM(u.display_name), ''), NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), CASE WHEN u.wallet IS NOT NULL AND length(u.wallet) > 8 THEN SUBSTRING(u.wallet FROM 1 FOR 6) || '...' || SUBSTRING(u.wallet FROM length(u.wallet)-3 FOR 4) ELSE 'Fan #' || u.id END) as display_name, 
                 COALESCE(NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), 'user_' || u.id) as username, 
                 u.avatar_url, 
                 u.wallet, 
@@ -213,7 +213,7 @@ export class ListeningRoomService implements OnModuleInit {
     try {
       const messagesRes = await this.db.query(
         `SELECT m.*, 
-                COALESCE(NULLIF(TRIM(u.display_name), ''), NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), CASE WHEN u.wallet IS NOT NULL AND length(u.wallet) > 8 THEN SUBSTRING(u.wallet FROM 1 FOR 6) || '...' || SUBSTRING(u.wallet FROM length(u.wallet)-3 FOR 4) ELSE 'User' END) as display_name, 
+                COALESCE(NULLIF(TRIM(u.display_name), ''), NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), CASE WHEN u.wallet IS NOT NULL AND length(u.wallet) > 8 THEN SUBSTRING(u.wallet FROM 1 FOR 6) || '...' || SUBSTRING(u.wallet FROM length(u.wallet)-3 FOR 4) ELSE 'Fan #' || u.id END) as display_name, 
                 COALESCE(NULLIF(TRIM(u.username), ''), NULLIF(TRIM(SPLIT_PART(u.email, '@', 1)), ''), 'user_' || u.id) as username, 
                 u.avatar_url,
                 u.wallet
@@ -363,8 +363,25 @@ export class ListeningRoomService implements OnModuleInit {
     );
     const msg = res.rows[0];
 
-    const userRes = await this.db.query('SELECT display_name, username, avatar_url, wallet FROM users WHERE id = $1', [userId]);
-    return { ...msg, ...userRes.rows[0] };
+    const userRes = await this.db.query('SELECT id, display_name, username, avatar_url, wallet, email, role FROM users WHERE id = $1', [userId]);
+    const user = userRes.rows[0] || {};
+    
+    const displayName = (user.display_name && user.display_name.trim()) 
+      || (user.username && user.username.trim()) 
+      || (user.email ? user.email.split('@')[0] : '') 
+      || (user.wallet && user.wallet.length > 8 ? `${user.wallet.slice(0, 6)}...${user.wallet.slice(-4)}` : `Fan #${userId}`);
+      
+    const username = (user.username && user.username.trim()) 
+      || (user.email ? user.email.split('@')[0] : `user_${userId}`);
+
+    return { 
+      ...msg, 
+      display_name: displayName, 
+      username: username,
+      avatar_url: user.avatar_url,
+      wallet: user.wallet,
+      user_role: user.role
+    };
   }
 
   async toggleHandRaise(roomId: number, userId: number) {

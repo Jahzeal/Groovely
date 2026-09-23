@@ -790,7 +790,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   };
 
   return (
-    <div className="min-h-screen bg-[#0F172A] text-white font-['Space_Grotesk',sans-serif] flex flex-col overflow-x-hidden">
+    <div className="h-screen max-h-screen bg-[#0F172A] text-white font-['Space_Grotesk',sans-serif] flex flex-col overflow-hidden">
       {/* ── LIVE AUDIO STREAM ENGINE ── */}
       <audio
         ref={audioRef}
@@ -824,7 +824,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       />
 
       {/* ── TOP HEADER BAR ── */}
-      <header className="h-[76px] px-4 sm:px-8 border-b border-[#232B3E] bg-[#0F172A]/90 backdrop-blur-md flex items-center justify-between z-30">
+      <header className="h-[64px] px-4 sm:px-8 border-b border-[#232B3E] bg-[#0F172A]/90 backdrop-blur-md flex items-center justify-between z-30 shrink-0">
         
         {/* Left: Live Status Badges */}
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
@@ -892,10 +892,10 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       </header>
 
       {/* ── MAIN CONTENT GRID ── */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 p-4 sm:p-8 max-w-[1600px] mx-auto w-full">
+      <div className="flex-1 h-[calc(100vh-64px)] min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 sm:p-6 max-w-[1600px] mx-auto w-full overflow-y-auto lg:overflow-hidden">
         
         {/* ── LEFT COLUMN (4 Cols): CURRENT PLAYING TRACK & PLAYER CONTROLS ── */}
-        <div className="lg:col-span-4 flex flex-col items-center space-y-6 bg-[#0F172A] p-6 rounded-3xl border border-[#232B3E]">
+        <div className="lg:col-span-4 flex flex-col items-center justify-between space-y-4 bg-[#0F172A] p-5 rounded-3xl border border-[#232B3E] h-full overflow-y-auto custom-scrollbar">
           
           {/* Rectangle 6: Album Artwork (320x320px) */}
           <div className="relative group w-full max-w-[320px] aspect-square rounded-2xl overflow-hidden border border-[#232B3E] shadow-xl bg-[#192134]">
@@ -1065,7 +1065,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
         </div>
 
         {/* ── CENTER COLUMN (4 Cols): ON STAGE & LIVE LISTENERS GRID ── */}
-        <div className="lg:col-span-4 flex flex-col space-y-8 bg-[#0F172A] p-6 rounded-3xl border border-[#232B3E]">
+        <div className="lg:col-span-4 flex flex-col justify-between space-y-6 bg-[#0F172A] p-5 rounded-3xl border border-[#232B3E] h-full overflow-y-auto custom-scrollbar">
           
           {/* ON STAGE SECTION */}
           <div className="space-y-4">
@@ -1219,7 +1219,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
         </div>
 
         {/* ── RIGHT COLUMN (4 Cols): INLINE CHAT (Visible on Desktop lg+) ── */}
-        <div className="hidden lg:flex lg:col-span-4 relative bg-[#192134] border border-[#232B3E] rounded-3xl overflow-hidden flex-col h-[740px] max-h-[740px] shadow-2xl">
+        <div className="hidden lg:flex lg:col-span-4 relative bg-[#192134] border border-[#232B3E] rounded-3xl overflow-hidden flex-col h-full max-h-full shadow-2xl">
           
           {/* Header Tabs: Chat vs Activity */}
           <div className="h-[56px] bg-[#232B3E] flex items-center border-b border-[#2D3548] shrink-0">
@@ -1262,7 +1262,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className={`text-xs font-bold ${msg.role === 'host' || msg.isHost ? 'text-accent-purple' : 'text-[#E5E5E5]'}`}>
-                      {msg.display_name || msg.username || (msg.email ? msg.email.split('@')[0] : '') || msg.name || 'User'}
+                      {msg.display_name || msg.username || (msg.email ? msg.email.split('@')[0] : '') || msg.name || (msg.user_id ? `Fan #${msg.user_id}` : 'Fan')}
                     </span>
                     <span className="text-[10px] text-zinc-400 font-mono">
                       {msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (msg.time || 'Live')}

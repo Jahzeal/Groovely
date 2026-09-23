@@ -40,7 +40,12 @@ export const useRoomSocket = (
   roomId?: string | number, 
   userId?: number | null, 
   initialRole: string = 'listener',
-  onVoiceStreamReceived?: (data: { userId: number; audioData: string; sampleRate?: number }) => void
+  onVoiceStreamReceived?: (data: { userId: number; audioData: string; sampleRate?: number }) => void,
+  webRtcCallbacks?: {
+    onWebRTCOffer?: (data: { senderId: number; targetUserId?: number; sdp: any }) => void;
+    onWebRTCAnswer?: (data: { senderId: number; targetUserId?: number; sdp: any }) => void;
+    onWebRTCIceCandidate?: (data: { senderId: number; targetUserId?: number; candidate: any }) => void;
+  }
 ) => {
   const socketRef = useRef<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -60,9 +65,10 @@ export const useRoomSocket = (
   useEffect(() => {
     userIdRef.current = userId;
   }, [userId]);
+  const webRtcCallbacksRef = useRef(webRtcCallbacks);
   useEffect(() => {
-    initialRoleRef.current = initialRole;
-  }, [initialRole]);
+    webRtcCallbacksRef.current = webRtcCallbacks;
+  }, [webRtcCallbacks]);
 
   useEffect(() => {
     if (!roomId) return;
@@ -194,6 +200,24 @@ export const useRoomSocket = (
     socket.on('voice_stream_received', (data: { userId: number; audioData: string; sampleRate?: number }) => {
       if (onVoiceStreamReceivedRef.current) {
         onVoiceStreamReceivedRef.current(data);
+      }
+    });
+
+    socket.on('webrtc_offer', (data: { senderId: number; targetUserId?: number; sdp: any }) => {
+      if (webRtcCallbacksRef.current?.onWebRTCOffer) {
+        webRtcCallbacksRef.current.onWebRTCOffer(data);
+      }
+    });
+
+    socket.on('webrtc_answer', (data: { senderId: number; targetUserId?: number; sdp: any }) => {
+      if (webRtcCallbacksRef.current?.onWebRTCAnswer) {
+        webRtcCallbacksRef.current.onWebRTCAnswer(data);
+      }
+    });
+
+    socket.on('webrtc_ice_candidate', (data: { senderId: number; targetUserId?: number; candidate: any }) => {
+      if (webRtcCallbacksRef.current?.onWebRTCIceCandidate) {
+        webRtcCallbacksRef.current.onWebRTCIceCandidate(data);
       }
     });
 
@@ -335,6 +359,39 @@ export const useRoomSocket = (
     }
   }, [roomId, userId]);
 
+  const emitWebRTCOffer = useCallback((sdp: any, targetUserId?: number) => {
+    if (socketRef.current && roomId && userId) {
+      socketRef.current.emit('webrtc_offer', {
+        roomId: Number(roomId),
+        senderId: userId,
+        targetUserId,
+        sdp,
+      });
+    }
+  }, [roomId, userId]);
+
+  const emitWebRTCAnswer = useCallback((sdp: any, targetUserId?: number) => {
+    if (socketRef.current && roomId && userId) {
+      socketRef.current.emit('webrtc_answer', {
+        roomId: Number(roomId),
+        senderId: userId,
+        targetUserId,
+        sdp,
+      });
+    }
+  }, [roomId, userId]);
+
+  const emitWebRTCIceCandidate = useCallback((candidate: any, targetUserId?: number) => {
+    if (socketRef.current && roomId && userId) {
+      socketRef.current.emit('webrtc_ice_candidate', {
+        roomId: Number(roomId),
+        senderId: userId,
+        targetUserId,
+        candidate,
+      });
+    }
+  }, [roomId, userId]);
+
   return {
     socket: socketRef.current,
     isConnected,
@@ -353,5 +410,8 @@ export const useRoomSocket = (
     emitToggleMute,
     emitVoiceStream,
     emitKickParticipant,
+    emitWebRTCOffer,
+    emitWebRTCAnswer,
+    emitWebRTCIceCandidate,
   };
 };
