@@ -16,7 +16,8 @@ import {
   ShieldCheck, 
   Share2, 
   Calendar,
-  DollarSign
+  DollarSign,
+  Trash2
 } from 'lucide-react';
 import { cachedApiFetch, resolveIpfsUrl } from '@/lib/api';
 import { useRouter } from 'next/navigation';
@@ -284,36 +285,59 @@ export default function CreatorRoomsDashboard() {
                       </div>
                     </div>
 
-                    {/* Go Live Early Action Button */}
-                    <div className="pt-2 grid grid-cols-2 gap-2">
-                      <button
-                        onClick={async () => {
-                          try {
-                            const { apiFetch } = await import('@/lib/api');
-                            await apiFetch(`/api/rooms/${room.id}/start`, { method: 'POST' });
-                            toast.success('Room is now live!');
-                            router.push(`/rooms/${room.id}`);
-                          } catch (err) {
-                            router.push(`/rooms/${room.id}`);
-                          }
-                        }}
-                        className="py-2.5 bg-gradient-to-r from-[#8A2BE2] to-[#FF0044] hover:opacity-95 text-white text-xs font-bold rounded-xl shadow-[0_0_15px_rgba(138,43,226,0.4)] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                      >
-                        <Play size={13} fill="currentColor" />
-                        <span>Go Live Now</span>
-                      </button>
+                    {/* Go Live Early, Share Link & Cancel Session Action Buttons */}
+                    <div className="pt-2 flex flex-col gap-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={async () => {
+                            try {
+                              const { apiFetch } = await import('@/lib/api');
+                              await apiFetch(`/api/rooms/${room.id}/start`, { method: 'POST' });
+                              toast.success('Room is now live!');
+                              router.push(`/rooms/${room.id}`);
+                            } catch (err) {
+                              router.push(`/rooms/${room.id}`);
+                            }
+                          }}
+                          className="py-2.5 bg-gradient-to-r from-[#8A2BE2] to-[#FF0044] hover:opacity-95 text-white text-xs font-bold rounded-xl shadow-[0_0_15px_rgba(138,43,226,0.4)] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <Play size={13} fill="currentColor" />
+                          <span>Go Live Now</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            if (typeof window !== 'undefined') {
+                              navigator.clipboard.writeText(`${window.location.origin}/rooms/${room.id}`);
+                              toast.success('Room link copied!');
+                            }
+                          }}
+                          className="py-2.5 bg-[#192134] hover:bg-[#232B3E] border border-[#2D3548] text-zinc-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <Share2 size={13} />
+                          <span>Share Link</span>
+                        </button>
+                      </div>
 
                       <button
-                        onClick={() => {
-                          if (typeof window !== 'undefined') {
-                            navigator.clipboard.writeText(`${window.location.origin}/rooms/${room.id}`);
-                            toast.success('Room link copied!');
+                        onClick={async () => {
+                          if (confirm(`Are you sure you want to cancel scheduled room session "${room.title}"?`)) {
+                            try {
+                              const { apiFetch, invalidateCache } = await import('@/lib/api');
+                              await apiFetch(`/api/rooms/${room.id}/cancel`, { method: 'POST' });
+                              invalidateCache('/api/rooms');
+                              toast.success('Scheduled room session cancelled');
+                              loadRooms();
+                            } catch (err) {
+                              console.error('Cancel room error:', err);
+                              toast.error('Could not cancel scheduled room');
+                            }
                           }
                         }}
-                        className="py-2.5 bg-[#192134] hover:bg-[#232B3E] border border-[#2D3548] text-zinc-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        className="w-full py-2 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 hover:text-rose-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                       >
-                        <Share2 size={13} />
-                        <span>Share Link</span>
+                        <Trash2 size={13} />
+                        <span>Cancel Scheduled Room</span>
                       </button>
                     </div>
                   </div>

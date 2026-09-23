@@ -147,6 +147,25 @@ export class ListeningRoomController {
     return { success: true, data: updatedDetails };
   }
 
+  @Post(':id/cancel')
+  @UseGuards(JwtAuthGuard)
+  async cancelRoom(@Req() req: any, @Param('id', ParseIntPipe) roomId: number) {
+    const hostId = Number(req.userId || req.user?.id);
+    const res = await this.roomService.cancelRoom(roomId, hostId);
+
+    if (this.roomGateway?.server) {
+      this.roomGateway.server.emit('room_status_changed', {
+        roomId: Number(roomId),
+        status: 'ended',
+        is_live: false,
+        isLive: false,
+      });
+      this.roomGateway.server.emit('room_ended', { roomId, endedBy: hostId });
+    }
+
+    return { success: true, data: res };
+  }
+
   @Post(':id/end')
   @UseGuards(JwtAuthGuard)
   async endRoom(@Req() req: any, @Param('id', ParseIntPipe) roomId: number) {

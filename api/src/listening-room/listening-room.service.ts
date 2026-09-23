@@ -414,6 +414,21 @@ export class ListeningRoomService implements OnModuleInit {
     return this.getRoomDetails(roomId);
   }
 
+  async cancelRoom(roomId: number, hostId: number) {
+    const roomRes = await this.db.query('SELECT host_id, status FROM listening_rooms WHERE id = $1', [roomId]);
+    if (roomRes.rows.length === 0) throw new NotFoundException('Room not found');
+    if (Number(roomRes.rows[0].host_id) !== Number(hostId)) {
+      throw new ForbiddenException('Only the host can cancel this scheduled room');
+    }
+
+    await this.db.query(
+      `UPDATE listening_rooms SET status = 'ended', ended_at = CURRENT_TIMESTAMP WHERE id = $1`,
+      [roomId]
+    );
+
+    return { success: true, roomId };
+  }
+
   async endRoom(roomId: number, hostId: number) {
     await this.db.query(
       `UPDATE listening_rooms SET status = 'ended', ended_at = CURRENT_TIMESTAMP WHERE id = $1`,
