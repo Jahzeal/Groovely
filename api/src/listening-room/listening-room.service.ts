@@ -88,7 +88,7 @@ export class ListeningRoomService implements OnModuleInit {
     return enrichedRes.rows[0] || room;
   }
 
-  async getActiveRooms(genre?: string, search?: string) {
+  async getActiveRooms(genre?: string, search?: string, status?: string) {
     let query = `
       SELECT r.*, 
              u.display_name as host_name, 
@@ -102,10 +102,17 @@ export class ListeningRoomService implements OnModuleInit {
       FROM listening_rooms r
       JOIN users u ON r.host_id = u.id
       LEFT JOIN tracks t ON r.current_track_id = t.id
-      WHERE r.status = 'live'
+      WHERE 1=1
     `;
 
     const params: any[] = [];
+
+    if (status && status !== 'all') {
+      params.push(status);
+      query += ` AND r.status = $${params.length}`;
+    } else if (!status) {
+      query += ` AND r.status IN ('live', 'scheduled')`;
+    }
 
     if (genre && genre !== 'All') {
       params.push(genre);
@@ -117,7 +124,7 @@ export class ListeningRoomService implements OnModuleInit {
       query += ` AND (LOWER(r.title) LIKE LOWER($${params.length}) OR LOWER(u.display_name) LIKE LOWER($${params.length}))`;
     }
 
-    query += ` ORDER BY r.created_at DESC`;
+    query += ` ORDER BY CASE WHEN r.status = 'live' THEN 1 WHEN r.status = 'scheduled' THEN 2 ELSE 3 END ASC, r.created_at DESC`;
 
     const res = await this.db.query(query, params);
     return res.rows;
@@ -223,12 +230,35 @@ export class ListeningRoomService implements OnModuleInit {
     };
   }
 
+  async startRoom(roomId: number, hostId: number) {
+    const roomRes = await this.db.query('SELECT host_id FROM listening_rooms WHERE id = $1', [roomId]);
+    if (roomRes.rows.length === 0) throw new NotFoundException('Room not found');
+    if (Number(roomRes.rows[0].host_id) !== Number(hostId)) {
+      throw new ForbiddenException('Only the host can start this room');
+    }
+
+    await this.db.query(
+      `UPDATE listening_rooms SET status = 'live', started_at = CURRENT_TIMESTAMP WHERE id = $1`,
+      [roomId]
+    );
+
+    return this.getRoomDetails(roomId);
+  }
+
   async joinRoom(roomId: number, userId: number, role?: string) {
     const roomRes = await this.db.query('SELECT * FROM listening_rooms WHERE id = $1', [roomId]);
     if (roomRes.rows.length === 0) throw new NotFoundException('Room not found');
 
     const room = roomRes.rows[0];
     const isHost = Number(room.host_id) === Number(userId);
+
+    if (isHost && room.status === 'scheduled') {
+      await this.db.query(
+        `UPDATE listening_rooms SET status = 'live', started_at = CURRENT_TIMESTAMP WHERE id = $1`,
+        [roomId]
+      );
+    }
+
     let initialRole = 'listener';
     if (isHost) {
       initialRole = 'host';

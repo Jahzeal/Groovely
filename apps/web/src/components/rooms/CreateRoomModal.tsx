@@ -32,9 +32,18 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
         toast.error('Please select an image file (.jpg, .png, .webp)');
         return;
       }
-      const imageUrl = URL.createObjectURL(file);
-      setCoverUrl(imageUrl);
-      toast.success('Cover image uploaded');
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image file size must be less than 5MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          setCoverUrl(reader.result);
+          toast.success('Cover image uploaded');
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
   
@@ -161,12 +170,24 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
       toast.error('Please enter a room title');
       return;
     }
+    if (startTimeType === 'scheduled' && !scheduledDate) {
+      // Default to 1 hour from now if date picker left empty
+      const defaultDate = new Date(Date.now() + 3600 * 1000);
+      const isoLocal = new Date(defaultDate.getTime() - defaultDate.getTimezoneOffset() * 60000)
+        .toISOString()
+        .slice(0, 16);
+      setScheduledDate(isoLocal);
+    }
     setModalStep(2);
   };
 
   const handleFinalSubmit = async () => {
     setLoading(true);
     try {
+      const scheduledIso = startTimeType === 'scheduled'
+        ? (scheduledDate ? new Date(scheduledDate).toISOString() : new Date(Date.now() + 3600 * 1000).toISOString())
+        : undefined;
+
       const payload = {
         title: title.trim(),
         description: description.trim(),
@@ -179,7 +200,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
         allow_hand_raise: allowHandRaise,
         stems_enabled: stemsEnabled,
         co_host_handles: coHosts,
-        scheduled_for: startTimeType === 'scheduled' && scheduledDate ? new Date(scheduledDate).toISOString() : undefined,
+        scheduled_for: scheduledIso,
       };
 
       const res = await apiFetch('/api/rooms', {
@@ -197,7 +218,7 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
       setCreatedRoom(data);
       if (onRoomCreated) onRoomCreated(data);
       
-      // Advance to Step 3: "Your Room is Now Live"
+      // Advance to Step 3 Confirmation
       setModalStep(3);
     } catch (err: any) {
       console.error('Room creation error:', err);
@@ -735,9 +756,9 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
         </div>
       )}
 
-      {/* ── STEP 3: LIVE CONFIRMATION MODAL ("Your Room is Now Live") Matching Figma Spec Frame 96 (544px x 374px) ── */}
+      {/* ── STEP 3: LIVE CONFIRMATION MODAL Matching Figma Spec Frame 96 ── */}
       {modalStep === 3 && (
-        <div className="relative w-full max-w-[544px] h-[374px] bg-[#0F172A] border border-[#232B3E] rounded-[24px] shadow-[0_20px_60px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col items-center justify-center p-8 font-['Space_Grotesk',sans-serif] text-white animate-in zoom-in-95 duration-200">
+        <div className="relative w-full max-w-[544px] min-h-[384px] bg-[#0F172A] border border-[#232B3E] rounded-[24px] shadow-[0_20px_60px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col items-center justify-center p-8 font-['Space_Grotesk',sans-serif] text-white animate-in zoom-in-95 duration-200">
           
           {/* Outer Close Button */}
           <button 
@@ -748,39 +769,78 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
             <X size={20} />
           </button>
 
-          {/* Frame 95: Content Stack (326px width x 224px height) */}
-          <div className="flex flex-col items-center justify-center text-center gap-6 w-full max-w-[326px]">
+          <div className="flex flex-col items-center justify-center text-center gap-5 w-full max-w-[340px]">
             
-            {/* Frame 94: Avatar Circle + Title */}
+            {/* Avatar Circle + Status Icon */}
             <div className="flex flex-col items-center gap-3 w-full">
               
-              {/* Ellipse 1: 100x100px Circle Badge */}
-              <div className="relative w-[100px] h-[100px] rounded-full bg-[#192134] border-2 border-[#8A2BE2] p-1 flex items-center justify-center shadow-[0_0_30px_rgba(138,43,226,0.5)]">
+              <div className="relative w-[90px] h-[90px] rounded-full bg-[#192134] border-2 border-[#8A2BE2] p-1 flex items-center justify-center shadow-[0_0_30px_rgba(138,43,226,0.5)]">
                 <img
                   src={coverUrl || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=300&q=80'}
                   alt="Room Cover"
                   className="w-full h-full rounded-full object-cover"
                 />
-                <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#00FF85] border-2 border-[#0F172A] flex items-center justify-center text-black">
-                  <RadioIcon size={14} className="animate-pulse" />
+                <div className={`absolute -bottom-1 -right-1 w-7 h-7 rounded-full border-2 border-[#0F172A] flex items-center justify-center ${startTimeType === 'scheduled' ? 'bg-cyan-500 text-black' : 'bg-[#00FF85] text-black'}`}>
+                  {startTimeType === 'scheduled' ? (
+                    <Calendar size={14} />
+                  ) : (
+                    <RadioIcon size={14} className="animate-pulse" />
+                  )}
                 </div>
               </div>
 
-              {/* Title: "Your Room is Now Live" (Clash Display, 24px bold) */}
-              <h2 className="font-['Clash_Display',sans-serif] font-bold text-2xl text-white tracking-wide mt-2">
-                Your Room is Now Live
+              {/* Title */}
+              <h2 className="font-['Clash_Display',sans-serif] font-bold text-2xl text-white tracking-wide mt-1">
+                {startTimeType === 'scheduled' ? 'Room Scheduled Successfully!' : 'Your Room is Now Live'}
               </h2>
+
+              {startTimeType === 'scheduled' && (
+                <p className="text-xs text-zinc-400">
+                  Scheduled for <span className="text-white font-bold">{scheduledDate ? new Date(scheduledDate).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'Later'}</span>. It is now listed under Scheduled Sessions on your dashboard.
+                </p>
+              )}
             </div>
 
-            {/* Primary Action Button (Frame 94: #8A2BE2 326px width x 56px height) */}
-            <button
-              type="button"
-              onClick={handleEnterRoom}
-              className="w-full h-[56px] bg-[#8A2BE2] hover:bg-[#7823c9] text-white font-bold text-base rounded-[8px] transition-all shadow-[0_0_25px_rgba(138,43,226,0.5)] flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <Sparkles size={18} />
-              <span>Enter Room</span>
-            </button>
+            {/* Action Buttons */}
+            {startTimeType === 'scheduled' ? (
+              <div className="w-full space-y-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    router.push('/dashboard/rooms');
+                    onClose();
+                    setModalStep(1);
+                  }}
+                  className="w-full h-[50px] bg-[#8A2BE2] hover:bg-[#7823c9] text-white font-bold text-sm rounded-[8px] transition-all shadow-[0_0_25px_rgba(138,43,226,0.5)] flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Calendar size={16} />
+                  <span>Done / View Dashboard</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== 'undefined' && createdRoom?.id) {
+                      navigator.clipboard.writeText(`${window.location.origin}/rooms/${createdRoom.id}`);
+                      toast.success('Scheduled room link copied to clipboard!');
+                    }
+                  }}
+                  className="w-full py-2.5 bg-[#192134] hover:bg-[#232B3E] border border-[#2D3548] text-zinc-300 font-bold text-xs rounded-[8px] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Check size={14} />
+                  <span>Copy Invite Link</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleEnterRoom}
+                className="w-full h-[56px] bg-[#8A2BE2] hover:bg-[#7823c9] text-white font-bold text-base rounded-[8px] transition-all shadow-[0_0_25px_rgba(138,43,226,0.5)] flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Sparkles size={18} />
+                <span>Enter Room</span>
+              </button>
+            )}
 
           </div>
         </div>

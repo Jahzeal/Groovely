@@ -23,6 +23,55 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { io } from 'socket.io-client';
 
+const ScheduledCountdown = ({ targetDate }: { targetDate: string }) => {
+  const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number; isPast: boolean }>({
+    days: 0, hours: 0, minutes: 0, seconds: 0, isPast: false
+  });
+
+  useEffect(() => {
+    const calculate = () => {
+      const target = new Date(targetDate).getTime();
+      const now = Date.now();
+      const diff = target - now;
+
+      if (diff <= 0) {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, isPast: true });
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      setTimeLeft({ days, hours, minutes, seconds, isPast: false });
+    };
+
+    calculate();
+    const interval = setInterval(calculate, 1000);
+    return () => clearInterval(interval);
+  }, [targetDate]);
+
+  if (timeLeft.isPast) {
+    return (
+      <span className="px-2.5 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+        <Clock size={12} className="animate-spin" />
+        <span>Starting Soon</span>
+      </span>
+    );
+  }
+
+  return (
+    <div className="inline-flex items-center gap-1.5 font-mono text-xs font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-500/30 px-3 py-1 rounded-lg">
+      <Clock size={13} className="text-cyan-400 animate-pulse" />
+      <span>
+        {timeLeft.days > 0 ? `${timeLeft.days}d ` : ''}
+        {String(timeLeft.hours).padStart(2, '0')}h : {String(timeLeft.minutes).padStart(2, '0')}m : {String(timeLeft.seconds).padStart(2, '0')}s
+      </span>
+    </div>
+  );
+};
+
 export default function CreatorRoomsDashboard() {
   const router = useRouter();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -183,6 +232,111 @@ export default function CreatorRoomsDashboard() {
               <p className="text-2xl font-bold text-white">Active</p>
             </div>
           </div>
+
+          {/* Scheduled Sessions Section */}
+          {scheduledRooms.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-bold uppercase tracking-widest text-cyan-400 flex items-center gap-2">
+                  <Calendar size={14} className="animate-bounce" />
+                  <span>Upcoming Scheduled Sessions ({scheduledRooms.length})</span>
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {scheduledRooms.map((room: any) => (
+                  <div
+                    key={room.id}
+                    className="bg-[#0F172A] border border-[#232B3E] hover:border-cyan-500/50 rounded-3xl p-5 space-y-4 transition-all duration-200 group flex flex-col justify-between"
+                  >
+                    <div className="space-y-4">
+                      {/* Room Cover & Status */}
+                      <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-[#192134] border border-[#232B3E]">
+                        <img
+                          src={
+                            resolveIpfsUrl(
+                              room.cover_url ||
+                              room.cover_image ||
+                              room.host_avatar ||
+                              'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80'
+                            )
+                          }
+                          alt={room.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-transparent to-transparent opacity-80" />
+                        
+                        <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md border border-cyan-500/30 text-[10px] font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+                          <Calendar size={12} />
+                          <span>SCHEDULED</span>
+                        </div>
+
+                        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-xs text-white font-bold">
+                          <span className="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10">
+                            {room.genre || 'Afrobeat'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Room Details & Countdown */}
+                      <div className="space-y-2">
+                        <h3 className="font-['Clash_Display',sans-serif] text-lg font-bold text-white group-hover:text-cyan-400 transition-colors truncate">
+                          {room.title}
+                        </h3>
+                        
+                        {/* Date & Countdown Ticker */}
+                        <div className="space-y-1.5">
+                          <p className="text-[11px] text-zinc-400 font-medium flex items-center gap-1.5">
+                            <Clock size={12} className="text-cyan-400" />
+                            <span>
+                              {room.scheduled_for
+                                ? new Date(room.scheduled_for).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
+                                : 'Scheduled'}
+                            </span>
+                          </p>
+
+                          <ScheduledCountdown targetDate={room.scheduled_for || room.created_at} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Go Live Early Action Button */}
+                    <div className="pt-2 grid grid-cols-2 gap-2">
+                      <button
+                        onClick={async () => {
+                          try {
+                            const { apiFetch } = await import('@/lib/api');
+                            await apiFetch(`/api/rooms/${room.id}/start`, { method: 'POST' });
+                            toast.success('Room is now live!');
+                            router.push(`/rooms/${room.id}`);
+                          } catch (err) {
+                            router.push(`/rooms/${room.id}`);
+                          }
+                        }}
+                        className="py-2.5 bg-gradient-to-r from-[#8A2BE2] to-[#FF0044] hover:opacity-95 text-white text-xs font-bold rounded-xl shadow-[0_0_15px_rgba(138,43,226,0.4)] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Play size={13} fill="currentColor" />
+                        <span>Go Live Now</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (typeof window !== 'undefined') {
+                            navigator.clipboard.writeText(`${window.location.origin}/rooms/${room.id}`);
+                            toast.success('Room link copied!');
+                          }
+                        }}
+                        className="py-2.5 bg-[#192134] hover:bg-[#232B3E] border border-[#2D3548] text-zinc-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Share2 size={13} />
+                        <span>Share Link</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Active Live Rooms Section */}
           <div className="space-y-4">

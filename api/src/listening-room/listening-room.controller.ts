@@ -35,10 +35,29 @@ export class ListeningRoomController {
   @UseGuards(OptionalJwtAuthGuard)
   async getActiveRooms(
     @Query('genre') genre?: string,
-    @Query('search') search?: string
+    @Query('search') search?: string,
+    @Query('status') status?: string
   ) {
-    const rooms = await this.roomService.getActiveRooms(genre, search);
+    const rooms = await this.roomService.getActiveRooms(genre, search, status);
     return { success: true, data: rooms };
+  }
+
+  @Post(':id/start')
+  @UseGuards(JwtAuthGuard)
+  async startRoom(@Req() req: any, @Param('id', ParseIntPipe) roomId: number) {
+    const hostId = Number(req.userId || req.user?.id);
+    const details = await this.roomService.startRoom(roomId, hostId);
+
+    if (this.roomGateway?.server) {
+      this.roomGateway.server.emit('room_status_changed', {
+        roomId: Number(roomId),
+        status: 'live',
+        is_live: true,
+        isLive: true,
+      });
+    }
+
+    return { success: true, data: details };
   }
 
   @Get(':id')

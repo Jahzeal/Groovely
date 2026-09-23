@@ -168,67 +168,91 @@ export default function ListeningRoomsPage() {
               </div>
             ) : filteredRooms.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredRooms.map(room => (
-                  <div key={room.id} className="bg-[#0F172A] border border-[#2D3548] hover:border-[#8A2BE2]/50 rounded-2xl p-5 flex flex-col justify-between transition-all group shadow-md">
-                    <div>
-                      {/* Top Meta */}
-                      <div className="flex items-center justify-between gap-2 mb-3">
-                        <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                          Live Now
-                        </span>
-
-                        <div className="flex items-center gap-3 text-xs text-zinc-400 font-bold">
-                          <span className="flex items-center gap-1">
-                            <Users size={14} />
-                            {room.active_listeners || 1}
-                          </span>
-                          {room.room_type === 'private' ? <Lock size={14} /> : <Globe size={14} />}
-                        </div>
-                      </div>
-
-                      {/* Room Cover & Host Info */}
-                      <div className="flex gap-4 mb-4">
-                        <img
-                          src={
-                            (room.cover_url && room.cover_url.trim() !== '') ? room.cover_url : 
-                            (room.host_avatar && room.host_avatar.trim() !== '') ? room.host_avatar : 
-                            `https://api.dicebear.com/7.x/avataaars/svg?seed=${room.host_name || room.host_username || 'Creator'}`
-                          }
-                          alt={room.title}
-                          className="w-20 h-20 rounded-xl object-cover border border-[#2D3548] shrink-0"
-                        />
-                        <div className="min-w-0">
-                          <h3 className="text-base font-bold text-white group-hover:text-accent-purple transition-colors truncate">
-                            {room.title}
-                          </h3>
-                          <p className="text-xs text-zinc-400 font-medium truncate mb-2">
-                            Hosted by <span className="text-white font-bold">{room.host_name || 'Creator'}</span>
-                          </p>
-                          {room.genre && (
-                            <span className="inline-block bg-[#192134] text-zinc-300 text-[10px] font-bold px-2 py-0.5 rounded-md border border-[#2D3548]">
-                              {room.genre}
+                {filteredRooms.map(room => {
+                  const isScheduled = room.status === 'scheduled';
+                  return (
+                    <div key={room.id} className={`bg-[#0F172A] border ${isScheduled ? 'border-cyan-500/30 hover:border-cyan-500' : 'border-[#2D3548] hover:border-[#8A2BE2]/50'} rounded-2xl p-5 flex flex-col justify-between transition-all group shadow-md`}>
+                      <div>
+                        {/* Top Meta */}
+                        <div className="flex items-center justify-between gap-2 mb-3">
+                          {isScheduled ? (
+                            <span className="px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                              <Calendar size={12} />
+                              Scheduled
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              Live Now
                             </span>
                           )}
+
+                          <div className="flex items-center gap-3 text-xs text-zinc-400 font-bold">
+                            {!isScheduled && (
+                              <span className="flex items-center gap-1">
+                                <Users size={14} />
+                                {room.active_listeners || 1}
+                              </span>
+                            )}
+                            {room.room_type === 'private' ? <Lock size={14} /> : <Globe size={14} />}
+                          </div>
                         </div>
+
+                        {/* Room Cover & Host Info */}
+                        <div className="flex gap-4 mb-4">
+                          <img
+                            src={
+                              (room.cover_url && room.cover_url.trim() !== '') ? room.cover_url : 
+                              (room.host_avatar && room.host_avatar.trim() !== '') ? room.host_avatar : 
+                              `https://api.dicebear.com/7.x/avataaars/svg?seed=${room.host_name || room.host_username || 'Creator'}`
+                            }
+                            alt={room.title}
+                            className="w-20 h-20 rounded-xl object-cover border border-[#2D3548] shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <h3 className={`text-base font-bold text-white transition-colors truncate ${isScheduled ? 'group-hover:text-cyan-400' : 'group-hover:text-accent-purple'}`}>
+                              {room.title}
+                            </h3>
+                            <p className="text-xs text-zinc-400 font-medium truncate mb-1">
+                              Hosted by <span className="text-white font-bold">{room.host_name || 'Creator'}</span>
+                            </p>
+                            
+                            {isScheduled ? (
+                              <p className="text-[10px] text-cyan-400 font-bold flex items-center gap-1 mt-1">
+                                <Calendar size={11} />
+                                <span>
+                                  {room.scheduled_for 
+                                    ? new Date(room.scheduled_for).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) 
+                                    : 'Upcoming'}
+                                </span>
+                              </p>
+                            ) : (
+                              room.genre && (
+                                <span className="inline-block bg-[#192134] text-zinc-300 text-[10px] font-bold px-2 py-0.5 rounded-md border border-[#2D3548]">
+                                  {room.genre}
+                                </span>
+                              )
+                            )}
+                          </div>
+                        </div>
+
+                        {room.description && (
+                          <p className="text-xs text-zinc-400 line-clamp-2 mb-4 font-medium">
+                            {room.description}
+                          </p>
+                        )}
                       </div>
 
-                      {room.description && (
-                        <p className="text-xs text-zinc-400 line-clamp-2 mb-4 font-medium">
-                          {room.description}
-                        </p>
-                      )}
+                      {/* Join Action Button */}
+                      <Link href={`/rooms/${room.id}`}>
+                        <button className={`w-full font-bold py-2.5 rounded-xl transition-all text-xs flex items-center justify-center gap-2 cursor-pointer ${isScheduled ? 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-[0_0_15px_rgba(6,182,212,0.3)]' : 'bg-[#8A2BE2] hover:bg-[#7823c9] text-white shadow-[0_0_15px_rgba(138,43,226,0.3)]'}`}>
+                          {isScheduled ? <Calendar size={15} /> : <Headphones size={15} />}
+                          <span>{isScheduled ? 'View Scheduled Room' : 'Join Room & Listen'}</span>
+                        </button>
+                      </Link>
                     </div>
-
-                    {/* Join Action Button */}
-                    <Link href={`/rooms/${room.id}`}>
-                      <button className="w-full bg-[#8A2BE2] hover:bg-[#7823c9] text-white font-bold py-2.5 rounded-xl transition-all text-xs flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(138,43,226,0.3)]">
-                        <Headphones size={15} />
-                        <span>Join Room &amp; Listen</span>
-                      </button>
-                    </Link>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-20 bg-[#0F172A] border border-[#2D3548] rounded-3xl p-8 space-y-4">

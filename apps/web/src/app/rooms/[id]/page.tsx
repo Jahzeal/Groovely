@@ -217,10 +217,10 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       source.buffer = audioBuffer;
       source.connect(audioCtx.destination);
 
-      // Schedule continuous seamless playback
+      // Schedule continuous seamless playback with ultra-low latency drift clamping
       const now = audioCtx.currentTime;
-      if (nextPlayTimeRef.current < now) {
-        nextPlayTimeRef.current = now + 0.05; // 50ms safety buffer
+      if (nextPlayTimeRef.current < now || nextPlayTimeRef.current > now + 0.1) {
+        nextPlayTimeRef.current = now + 0.02; // Snap back to 20ms low-latency target
       }
       source.start(nextPlayTimeRef.current);
       nextPlayTimeRef.current += audioBuffer.duration;
@@ -499,14 +499,12 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       if (audioRef.current) {
         audioRef.current.pause();
       }
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
-      }
+      cleanupAudioResources();
       setTimeout(() => {
         router.push('/rooms');
       }, 1500);
     }
-  }, [isRoomEnded, isHostOrCreator, router]);
+  }, [isRoomEnded, isHostOrCreator, router, cleanupAudioResources]);
 
   // Listen for WebSockets participant_kicked event to notify kicked user and redirect immediately
   useEffect(() => {
@@ -518,12 +516,10 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       if (audioRef.current) {
         audioRef.current.pause();
       }
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
-      }
+      cleanupAudioResources();
       router.replace('/rooms');
     }
-  }, [isKicked, router]);
+  }, [isKicked, router, cleanupAudioResources]);
 
   // Handle Sending Chat Messages over WebSockets
   const handleSendMessage = (e: React.FormEvent) => {
@@ -562,22 +558,35 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   const audioContextRef = useRef<AudioContext | null>(null);
   const animFrameRef = useRef<number | null>(null);
 
+  const cleanupAudioResources = useCallback(() => {
+    if (scriptProcessorRef.current) {
+      try {
+        scriptProcessorRef.current.disconnect();
+        scriptProcessorRef.current.onaudioprocess = null;
+      } catch (e) {}
+      scriptProcessorRef.current = null;
+    }
+    if (audioContextRef.current) {
+      try { audioContextRef.current.close().catch(() => {}); } catch (e) {}
+      audioContextRef.current = null;
+    }
+    if (voiceAudioContextRef.current) {
+      try { voiceAudioContextRef.current.close().catch(() => {}); } catch (e) {}
+      voiceAudioContextRef.current = null;
+    }
+    if (mediaStreamRef.current) {
+      try { mediaStreamRef.current.getTracks().forEach(track => track.stop()); } catch (e) {}
+      mediaStreamRef.current = null;
+    }
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    nextPlayTimeRef.current = 0;
+    setIsMicActive(false);
+    setAudioLevel(0);
+  }, []);
+
   const toggleMicrophone = async () => {
     if (isMicActive) {
-      if (scriptProcessorRef.current) {
-        try {
-          scriptProcessorRef.current.disconnect();
-          scriptProcessorRef.current.onaudioprocess = null;
-        } catch (e) {}
-        scriptProcessorRef.current = null;
-      }
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach(track => track.stop());
-        mediaStreamRef.current = null;
-      }
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      setIsMicActive(false);
-      setAudioLevel(0);
+      cleanupAudioResources();
       if (typeof emitToggleMute === 'function') {
         emitToggleMute(true);
       }
@@ -686,17 +695,13 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
         } catch (err) {
           console.warn('Backend end room warning:', err);
         } finally {
-          if (mediaStreamRef.current) {
-            mediaStreamRef.current.getTracks().forEach(track => track.stop());
-          }
+          cleanupAudioResources();
           toast.success('Room session ended');
           router.push('/dashboard/rooms');
         }
       }
     } else {
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach(track => track.stop());
-      }
+      cleanupAudioResources();
       toast.success('Left listening room');
       router.push('/rooms');
     }
