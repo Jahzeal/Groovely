@@ -175,10 +175,10 @@ export class ListeningRoomGateway implements OnGatewayConnection, OnGatewayDisco
   @SubscribeMessage('voice_stream')
   handleVoiceStream(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { roomId: number; userId: number; audioData: string }
+    @MessageBody() payload: { roomId: number; userId: number; audioData: string; sampleRate?: number }
   ) {
-    const { roomId, userId, audioData } = payload;
-    this.server.to(`room:${roomId}`).emit('voice_stream_received', { userId, audioData });
+    const { roomId, userId, audioData, sampleRate } = payload;
+    client.to(`room:${roomId}`).emit('voice_stream_received', { userId, audioData, sampleRate });
   }
 
   @SubscribeMessage('send_message')

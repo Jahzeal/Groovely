@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, ArrowLeft, Upload, Music, Sparkles, Lock, Globe, Mic, Users, DollarSign, Calendar, Clock, Plus, Trash2, Check, Radio, Play, Radio as RadioIcon } from 'lucide-react';
+import { X, ArrowLeft, Upload, Music, Sparkles, Lock, Globe, Mic, Users, DollarSign, Calendar, Clock, Plus, Trash2, Check, Radio, Play, Radio as RadioIcon, Loader2 } from 'lucide-react';
 import { apiFetch, cachedApiFetch, invalidateCache } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
@@ -13,8 +13,26 @@ interface CreateRoomModalProps {
 export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose, onRoomCreated }) => {
   const [modalStep, setModalStep] = useState<1 | 2 | 3>(1); // 1 = Setup, 2 = Review, 3 = "Your Room is Now Live"
   const [loading, setLoading] = useState(false);
+  const [loadingStepTextIndex, setLoadingStepTextIndex] = useState(0);
   const [createdRoom, setCreatedRoom] = useState<any>(null);
   const router = useRouter();
+
+  const loadingMessages = [
+    'Preparing audio studio room...',
+    'Processing cover artwork...',
+    'Broadcasting session live...'
+  ];
+
+  useEffect(() => {
+    if (!loading) {
+      setLoadingStepTextIndex(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setLoadingStepTextIndex(prev => (prev + 1) % loadingMessages.length);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [loading]);
   
   // Cover File Input Ref
   const coverFileInputRef = useRef<HTMLInputElement | null>(null);
@@ -38,12 +56,11 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
       return;
     }
 
-    // Show local preview immediately for snappy UX
+    // Set local preview immediately for smooth UI
     const localPreview = URL.createObjectURL(file);
     setCoverUrl(localPreview);
 
-    const toastId = toast.loading('Uploading room cover image to Cloudinary...');
-
+    // Silently upload to CDN in background without technical toasts
     try {
       const formData = new FormData();
       formData.append('cover', file);
@@ -57,14 +74,10 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
         const uploadedUrl = json?.url || json?.cover_url || json?.data?.url;
         if (uploadedUrl) {
           setCoverUrl(uploadedUrl);
-          toast.success('Room cover uploaded to Cloudinary!', { id: toastId });
-          return;
         }
       }
-      toast.success('Cover image ready', { id: toastId });
-    } catch (err: any) {
-      console.warn('Cloudinary upload notice, fallback to local preview:', err);
-      // Fallback convert to base64 if server upload endpoint fails
+    } catch (_) {
+      // Fallback convert to base64 silently if endpoint fails
       const reader = new FileReader();
       reader.onload = () => {
         if (typeof reader.result === 'string') {
@@ -72,7 +85,6 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
         }
       };
       reader.readAsDataURL(file);
-      toast.success('Cover image preview ready', { id: toastId });
     }
   };
   

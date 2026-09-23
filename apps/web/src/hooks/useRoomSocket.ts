@@ -40,7 +40,7 @@ export const useRoomSocket = (
   roomId?: string | number, 
   userId?: number | null, 
   initialRole: string = 'listener',
-  onVoiceStreamReceived?: (data: { userId: number; audioData: string }) => void
+  onVoiceStreamReceived?: (data: { userId: number; audioData: string; sampleRate?: number }) => void
 ) => {
   const socketRef = useRef<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -54,6 +54,15 @@ export const useRoomSocket = (
   useEffect(() => {
     onVoiceStreamReceivedRef.current = onVoiceStreamReceived;
   }, [onVoiceStreamReceived]);
+
+  const userIdRef = useRef(userId);
+  const initialRoleRef = useRef(initialRole);
+  useEffect(() => {
+    userIdRef.current = userId;
+  }, [userId]);
+  useEffect(() => {
+    initialRoleRef.current = initialRole;
+  }, [initialRole]);
 
   useEffect(() => {
     if (!roomId) return;
@@ -71,14 +80,16 @@ export const useRoomSocket = (
     const socket = io(`${API_URL}/rooms`, {
       transports: ['polling', 'websocket'],
       reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
     });
 
     socketRef.current = socket;
 
     socket.on('connect', () => {
       setIsConnected(true);
-      if (userId) {
-        socket.emit('join_room', { roomId: Number(roomId), userId, role: initialRole });
+      if (userIdRef.current) {
+        socket.emit('join_room', { roomId: Number(roomId), userId: userIdRef.current, role: initialRoleRef.current });
       }
     });
 
@@ -180,7 +191,7 @@ export const useRoomSocket = (
       ));
     });
 
-    socket.on('voice_stream_received', (data: { userId: number; audioData: string }) => {
+    socket.on('voice_stream_received', (data: { userId: number; audioData: string; sampleRate?: number }) => {
       if (onVoiceStreamReceivedRef.current) {
         onVoiceStreamReceivedRef.current(data);
       }
@@ -188,8 +199,8 @@ export const useRoomSocket = (
 
     socket.on('participant_kicked', (data: { targetUserId: number; roomId: number; participants?: any[] }) => {
       const localId = typeof window !== 'undefined'
-        ? Number(localStorage.getItem('groovely_user_id') || localStorage.getItem('grooveli_user_id') || userId)
-        : Number(userId);
+        ? Number(localStorage.getItem('groovely_user_id') || localStorage.getItem('grooveli_user_id') || userIdRef.current)
+        : Number(userIdRef.current);
 
       if (localId && Number(data.targetUserId) === Number(localId)) {
         setIsKicked(true);
@@ -219,8 +230,8 @@ export const useRoomSocket = (
     });
 
     return () => {
-      if (userId) {
-        socket.emit('leave_room', { roomId: Number(roomId), userId });
+      if (userIdRef.current) {
+        socket.emit('leave_room', { roomId: Number(roomId), userId: userIdRef.current });
       }
       socket.disconnect();
       setMessages([]);
@@ -229,14 +240,14 @@ export const useRoomSocket = (
       setIsRoomEnded(false);
       setIsKicked(false);
     };
-  }, [roomId, userId]);
+  }, [roomId]);
 
-  // Dynamically re-sync join_room role whenever initialRole is determined (e.g. Host ID fetched)
+  // Dynamically re-sync join_room role whenever initialRole or userId is determined
   useEffect(() => {
-    if (socketRef.current && isConnected && userId && initialRole) {
+    if (socketRef.current && socketRef.current.connected && userId && initialRole) {
       socketRef.current.emit('join_room', { roomId: Number(roomId), userId, role: initialRole });
     }
-  }, [roomId, userId, initialRole, isConnected]);
+  }, [roomId, userId, initialRole]);
 
   // Actions
   const emitPlaybackControl = useCallback((action: 'play' | 'pause' | 'seek', trackId?: number, positionMs: number = 0, track?: any) => {
@@ -303,12 +314,13 @@ export const useRoomSocket = (
     }
   }, [roomId, userId]);
 
-  const emitVoiceStream = useCallback((audioData: string) => {
+  const emitVoiceStream = useCallback((audioData: string, sampleRate?: number) => {
     if (socketRef.current && roomId && userId) {
       socketRef.current.emit('voice_stream', {
         roomId: Number(roomId),
         userId,
         audioData,
+        sampleRate,
       });
     }
   }, [roomId, userId]);

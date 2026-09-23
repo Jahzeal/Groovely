@@ -189,7 +189,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     currentUserIdRef.current = currentUserId;
   }, [currentUserId]);
 
-  const handleVoiceStreamReceived = useCallback((data: { userId: number; audioData: string }) => {
+  const handleVoiceStreamReceived = useCallback((data: { userId: number; audioData: string; sampleRate?: number }) => {
     if (!data.audioData) return;
     // CRITICAL ECHO FIX: Do NOT play back your own voice packet locally!
     if (data.userId && currentUserIdRef.current && Number(data.userId) === Number(currentUserIdRef.current)) {
@@ -205,21 +205,28 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
         audioCtx.resume().catch(() => {});
       }
 
-      // Decode base64 16-bit Int16 PCM back to Float32 array
+      // Decode base64 16-bit Int16 PCM back to Float32 array using DataView for safe alignment
       const raw = data.audioData.includes(',') ? data.audioData.split(',')[1] : data.audioData;
       const binary = atob(raw);
       const bytes = new Uint8Array(binary.length);
       for (let i = 0; i < binary.length; i++) {
         bytes[i] = binary.charCodeAt(i);
       }
-      const pcm16 = new Int16Array(bytes.buffer);
-      const float32 = new Float32Array(pcm16.length);
-      for (let i = 0; i < pcm16.length; i++) {
-        float32[i] = pcm16[i] < 0 ? pcm16[i] / 0x8000 : pcm16[i] / 0x7FFF;
+      const numSamples = Math.floor(bytes.length / 2);
+      if (numSamples <= 0) return;
+
+      const dataView = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      const float32 = new Float32Array(numSamples);
+      for (let i = 0; i < numSamples; i++) {
+        const pcm16Val = dataView.getInt16(i * 2, true);
+        float32[i] = pcm16Val < 0 ? pcm16Val / 0x8000 : pcm16Val / 0x7FFF;
       }
 
+      // Use sender's sample rate if provided, fallback to receiver audioCtx sample rate
+      const senderSampleRate = data.sampleRate || audioCtx.sampleRate || 44100;
+
       // Create WebAudio buffer and connect directly to speakers
-      const audioBuffer = audioCtx.createBuffer(1, float32.length, audioCtx.sampleRate);
+      const audioBuffer = audioCtx.createBuffer(1, float32.length, senderSampleRate);
       audioBuffer.getChannelData(0).set(float32);
 
       const source = audioCtx.createBufferSource();
@@ -228,7 +235,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
 
       // Schedule continuous seamless playback with ultra-low latency drift clamping
       const now = audioCtx.currentTime;
-      if (nextPlayTimeRef.current < now || nextPlayTimeRef.current > now + 0.1) {
+      if (nextPlayTimeRef.current < now || nextPlayTimeRef.current > now + 0.15) {
         nextPlayTimeRef.current = now + 0.02; // Snap back to 20ms low-latency target
       }
       source.start(nextPlayTimeRef.current);
@@ -630,32 +637,41 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
 
         checkAudioLevel();
 
-        // Initialize WebAudio PCM ScriptProcessor for continuous WebSockets voice streaming
+        // Initialize WebAudio PCM ScriptProcessor for buffered WebSockets voice streaming (~100ms chunks)
         try {
-          const processor = audioCtx.createScriptProcessor(2048, 1, 1);
+          const processor = audioCtx.createScriptProcessor(4096, 1, 1);
           scriptProcessorRef.current = processor;
           source.connect(processor);
           // Do NOT connect to audioCtx.destination to prevent local mic feedback echo!
 
+          let pcmAccumulator: number[] = [];
+          const targetChunkSize = Math.round(audioCtx.sampleRate * 0.1); // ~100ms chunk (10 packets/sec)
+
           processor.onaudioprocess = (e) => {
             const inputData = e.inputBuffer.getChannelData(0);
-            // Convert Float32Array to 16-bit Int16 PCM array
-            const pcm16 = new Int16Array(inputData.length);
             for (let i = 0; i < inputData.length; i++) {
-              const s = Math.max(-1, Math.min(1, inputData[i]));
-              pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+              pcmAccumulator.push(inputData[i]);
             }
-            
-            // Convert Int16Array buffer to base64
-            const bytes = new Uint8Array(pcm16.buffer);
-            let binary = '';
-            for (let i = 0; i < bytes.byteLength; i++) {
-              binary += String.fromCharCode(bytes[i]);
-            }
-            const base64 = btoa(binary);
 
-            if (base64 && typeof emitVoiceStream === 'function') {
-              emitVoiceStream(base64);
+            if (pcmAccumulator.length >= targetChunkSize) {
+              const chunk = pcmAccumulator.splice(0, pcmAccumulator.length);
+              const pcm16 = new Int16Array(chunk.length);
+              for (let i = 0; i < chunk.length; i++) {
+                const s = Math.max(-1, Math.min(1, chunk[i]));
+                pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+              }
+
+              const bytes = new Uint8Array(pcm16.buffer);
+              let binary = '';
+              const len = bytes.byteLength;
+              for (let i = 0; i < len; i++) {
+                binary += String.fromCharCode(bytes[i]);
+              }
+              const base64 = btoa(binary);
+
+              if (base64 && typeof emitVoiceStream === 'function') {
+                emitVoiceStream(base64, audioCtx.sampleRate);
+              }
             }
           };
         } catch (recErr) {
