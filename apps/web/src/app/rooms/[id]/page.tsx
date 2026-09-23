@@ -498,6 +498,40 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     }
   }, [playbackState]);
 
+  // Browser Microphone & WebAudio WebRTC Live Voice Streaming State
+  const [isMicActive, setIsMicActive] = useState(false);
+  const [audioLevel, setAudioLevel] = useState(0);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+
+  const cleanupAudioResources = useCallback(() => {
+    if (scriptProcessorRef.current) {
+      try {
+        scriptProcessorRef.current.disconnect();
+        scriptProcessorRef.current.onaudioprocess = null;
+      } catch (e) {}
+      scriptProcessorRef.current = null;
+    }
+    if (audioContextRef.current) {
+      try { audioContextRef.current.close().catch(() => {}); } catch (e) {}
+      audioContextRef.current = null;
+    }
+    if (voiceAudioContextRef.current) {
+      try { voiceAudioContextRef.current.close().catch(() => {}); } catch (e) {}
+      voiceAudioContextRef.current = null;
+    }
+    if (mediaStreamRef.current) {
+      try { mediaStreamRef.current.getTracks().forEach(track => track.stop()); } catch (e) {}
+      mediaStreamRef.current = null;
+    }
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    nextPlayTimeRef.current = 0;
+    setIsMicActive(false);
+    setAudioLevel(0);
+  }, []);
+
   // Listen for WebSockets room_ended event to notify fans and redirect
   useEffect(() => {
     if (isRoomEnded && !isHostOrCreator) {
@@ -556,42 +590,6 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       }, 2500);
     }
   };
-
-
-
-  // Browser Microphone & WebAudio WebRTC Live Voice Streaming State
-  const [isMicActive, setIsMicActive] = useState(false);
-  const [audioLevel, setAudioLevel] = useState(0);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const animFrameRef = useRef<number | null>(null);
-
-  const cleanupAudioResources = useCallback(() => {
-    if (scriptProcessorRef.current) {
-      try {
-        scriptProcessorRef.current.disconnect();
-        scriptProcessorRef.current.onaudioprocess = null;
-      } catch (e) {}
-      scriptProcessorRef.current = null;
-    }
-    if (audioContextRef.current) {
-      try { audioContextRef.current.close().catch(() => {}); } catch (e) {}
-      audioContextRef.current = null;
-    }
-    if (voiceAudioContextRef.current) {
-      try { voiceAudioContextRef.current.close().catch(() => {}); } catch (e) {}
-      voiceAudioContextRef.current = null;
-    }
-    if (mediaStreamRef.current) {
-      try { mediaStreamRef.current.getTracks().forEach(track => track.stop()); } catch (e) {}
-      mediaStreamRef.current = null;
-    }
-    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-    nextPlayTimeRef.current = 0;
-    setIsMicActive(false);
-    setAudioLevel(0);
-  }, []);
 
   const toggleMicrophone = async () => {
     if (isMicActive) {
