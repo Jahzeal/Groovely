@@ -876,9 +876,13 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
         });
 
         toast.success('Microphone active - Google Meet HD Voice Streaming Live!');
-      } catch (err) {
+      } catch (err: any) {
         console.error('Microphone access error:', err);
-        toast.error('Could not access microphone');
+        if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
+          toast.error('Microphone access blocked! Please click the mic/lock icon in your browser address bar to allow microphone access.', { duration: 7000 });
+        } else {
+          toast.error('Could not access microphone: ' + (err?.message || 'Check device mic settings'));
+        }
       }
     }
   };
