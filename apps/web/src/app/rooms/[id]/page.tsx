@@ -243,7 +243,14 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
 
       // Create WebAudio buffer and connect directly to speakers
       const audioBuffer = audioCtx.createBuffer(1, float32.length, senderSampleRate);
-      audioBuffer.getChannelData(0).set(float32);
+      const channelData = audioBuffer.getChannelData(0);
+      channelData.set(float32);
+
+      // Add 5ms linear gain ramp on initial channel data to eliminate startup sample step crackle/pops
+      const rampLength = Math.min(channelData.length, Math.floor(senderSampleRate * 0.005));
+      for (let i = 0; i < rampLength; i++) {
+        channelData[i] *= (i / rampLength);
+      }
 
       const source = audioCtx.createBufferSource();
       source.buffer = audioBuffer;
@@ -407,6 +414,8 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     playbackState,
     isRoomEnded,
     isKicked,
+    isChatLocked: isSocketChatLocked,
+    setIsChatLocked,
     emitPlaybackControl,
     emitSendMessage,
     emitRaiseHand,
@@ -417,6 +426,8 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
     emitWebRTCOffer,
     emitWebRTCAnswer,
     emitWebRTCIceCandidate,
+    emitToggleChatLock,
+    emitMuteAll,
   } = useRoomSocket(
     roomId, 
     currentUserId ?? undefined, 
@@ -463,7 +474,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   const [isMuted, setIsMuted] = useState(false);
   const [activeTab, setActiveTab] = useState<'chat' | 'activity'>('chat');
   const [chatMessage, setChatMessage] = useState('');
-  const [isChatLocked, setIsChatLocked] = useState(false);
+  const isChatLocked = Boolean(isSocketChatLocked);
   const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
 
   // Floating Reactions State
@@ -965,6 +976,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   const roomListeners = normalizedParticipants.filter(p => p.role === 'listener' && String(p.user_id) !== String(room?.host_id));
 
   // Fallback to room host if stage speakers state is initializing
+  const hostParticipant = normalizedParticipants.find(p => String(p.user_id) === String(room?.host_id));
   const displaySpeakers = stageSpeakers.length > 0 ? stageSpeakers : [
     {
       user_id: room?.host_id || -1,
@@ -972,7 +984,8 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       username: room?.host_username || 'host',
       avatar_url: room?.host_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
       role: 'host' as const,
-      is_muted: false,
+      is_muted: isHostOrCreator ? !isMicActive : (hostParticipant?.is_muted ?? true),
+      isMuted: isHostOrCreator ? !isMicActive : (hostParticipant?.is_muted ?? true),
     }
   ];
 
@@ -982,14 +995,15 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       return;
     }
     if (isMicActive) {
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach(track => track.stop());
-        mediaStreamRef.current = null;
+      cleanupAudioResources();
+      if (typeof emitToggleMute === 'function') {
+        emitToggleMute(true);
       }
-      setIsMicActive(false);
-      setAudioLevel(0);
     }
-    setParticipants(prev => prev.map(p => ({ ...p, is_muted: true })));
+    if (typeof emitMuteAll === 'function') {
+      emitMuteAll();
+    }
+    setParticipants(prev => prev.map(p => ({ ...p, is_muted: true, isMuted: true })));
     toast.success('Muted all stage speakers');
   };
 
@@ -1464,8 +1478,12 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
             </button>
 
             <button
-              onClick={() => setIsChatLocked(!isChatLocked)}
-              className="px-4 text-accent-purple hover:text-white transition-colors flex items-center gap-1 text-xs font-bold"
+              onClick={() => {
+                const nextState = !isChatLocked;
+                setIsChatLocked(nextState);
+                if (typeof emitToggleChatLock === 'function') emitToggleChatLock(nextState);
+              }}
+              className="px-4 text-accent-purple hover:text-white transition-colors flex items-center gap-1 text-xs font-bold cursor-pointer"
             >
               {isChatLocked ? <Lock size={16} /> : <Unlock size={16} />}
               <span>{isChatLocked ? 'Locked' : 'Lock Chat'}</span>
@@ -1578,8 +1596,12 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
               <div className="flex items-center gap-2">
                 {isHostOrCreator && (
                   <button
-                    onClick={() => setIsChatLocked(!isChatLocked)}
-                    className="px-2.5 py-1 text-accent-purple hover:text-white transition-colors flex items-center gap-1 text-xs font-bold rounded-lg bg-[#192134] border border-[#2D3548]"
+                    onClick={() => {
+                      const nextState = !isChatLocked;
+                      setIsChatLocked(nextState);
+                      if (typeof emitToggleChatLock === 'function') emitToggleChatLock(nextState);
+                    }}
+                    className="px-2.5 py-1 text-accent-purple hover:text-white transition-colors flex items-center gap-1 text-xs font-bold rounded-lg bg-[#192134] border border-[#2D3548] cursor-pointer"
                   >
                     {isChatLocked ? <Lock size={14} /> : <Unlock size={14} />}
                     <span>{isChatLocked ? 'Locked' : 'Lock'}</span>

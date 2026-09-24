@@ -109,7 +109,7 @@ export class ListeningRoomGateway implements OnGatewayConnection, OnGatewayDisco
   @SubscribeMessage('webrtc_offer')
   handleWebRTCOffer(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { roomId: number; senderId: number; sdp: any }
+    @MessageBody() payload: { roomId: number; senderId: number; targetUserId?: number; sdp: any }
   ) {
     client.to(`room:${payload.roomId}`).emit('webrtc_offer', payload);
   }
@@ -117,7 +117,7 @@ export class ListeningRoomGateway implements OnGatewayConnection, OnGatewayDisco
   @SubscribeMessage('webrtc_answer')
   handleWebRTCAnswer(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { roomId: number; senderId: number; sdp: any }
+    @MessageBody() payload: { roomId: number; senderId: number; targetUserId?: number; sdp: any }
   ) {
     client.to(`room:${payload.roomId}`).emit('webrtc_answer', payload);
   }
@@ -125,7 +125,7 @@ export class ListeningRoomGateway implements OnGatewayConnection, OnGatewayDisco
   @SubscribeMessage('webrtc_ice_candidate')
   handleWebRTCIceCandidate(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { roomId: number; senderId: number; candidate: any }
+    @MessageBody() payload: { roomId: number; senderId: number; targetUserId?: number; candidate: any }
   ) {
     client.to(`room:${payload.roomId}`).emit('webrtc_ice_candidate', payload);
   }
@@ -170,6 +170,24 @@ export class ListeningRoomGateway implements OnGatewayConnection, OnGatewayDisco
     this.activeRoomMuteState.set(`${roomId}:${userId}`, isMuted);
     this.server.to(`room:${roomId}`).emit('participant_mute_updated', { userId, isMuted });
     return { event: 'mute_toggled', userId, isMuted };
+  }
+
+  @SubscribeMessage('mute_all_participants')
+  handleMuteAllParticipants(
+    @MessageBody() payload: { roomId: number; hostId: number }
+  ) {
+    const { roomId, hostId } = payload;
+    this.server.to(`room:${roomId}`).emit('all_participants_muted', { roomId, mutedBy: hostId });
+    return { event: 'all_participants_muted', roomId, mutedBy: hostId };
+  }
+
+  @SubscribeMessage('toggle_chat_lock')
+  handleToggleChatLock(
+    @MessageBody() payload: { roomId: number; isLocked: boolean }
+  ) {
+    const { roomId, isLocked } = payload;
+    this.server.to(`room:${roomId}`).emit('chat_lock_updated', { roomId, isLocked });
+    return { event: 'chat_lock_updated', roomId, isLocked };
   }
 
   @SubscribeMessage('voice_stream')

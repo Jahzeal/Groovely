@@ -54,6 +54,7 @@ export const useRoomSocket = (
   const [playbackState, setPlaybackState] = useState<PlaybackSyncData | null>(null);
   const [isRoomEnded, setIsRoomEnded] = useState(false);
   const [isKicked, setIsKicked] = useState(false);
+  const [isChatLocked, setIsChatLocked] = useState(false);
 
   const onVoiceStreamReceivedRef = useRef(onVoiceStreamReceived);
   useEffect(() => {
@@ -201,6 +202,14 @@ export const useRoomSocket = (
       if (onVoiceStreamReceivedRef.current) {
         onVoiceStreamReceivedRef.current(data);
       }
+    });
+
+    socket.on('chat_lock_updated', (data: { isLocked: boolean }) => {
+      setIsChatLocked(data.isLocked);
+    });
+
+    socket.on('all_participants_muted', () => {
+      setParticipants(prev => prev.map(p => ({ ...p, is_muted: true, isMuted: true })));
     });
 
     socket.on('webrtc_offer', (data: { senderId: number; targetUserId?: number; sdp: any }) => {
@@ -392,6 +401,24 @@ export const useRoomSocket = (
     }
   }, [roomId, userId]);
 
+  const emitToggleChatLock = useCallback((isLocked: boolean) => {
+    if (socketRef.current && roomId && userId) {
+      socketRef.current.emit('toggle_chat_lock', {
+        roomId: Number(roomId),
+        isLocked,
+      });
+    }
+  }, [roomId, userId]);
+
+  const emitMuteAll = useCallback(() => {
+    if (socketRef.current && roomId && userId) {
+      socketRef.current.emit('mute_all_participants', {
+        roomId: Number(roomId),
+        hostId: userId,
+      });
+    }
+  }, [roomId, userId]);
+
   return {
     socket: socketRef.current,
     isConnected,
@@ -402,6 +429,8 @@ export const useRoomSocket = (
     playbackState,
     isRoomEnded,
     isKicked,
+    isChatLocked,
+    setIsChatLocked,
     emitPlaybackControl,
     emitSendMessage,
     emitRaiseHand,
@@ -413,5 +442,7 @@ export const useRoomSocket = (
     emitWebRTCOffer,
     emitWebRTCAnswer,
     emitWebRTCIceCandidate,
+    emitToggleChatLock,
+    emitMuteAll,
   };
 };
