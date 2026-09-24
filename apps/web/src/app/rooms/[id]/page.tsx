@@ -218,7 +218,7 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       }
       const audioCtx = voiceAudioContextRef.current;
       if (audioCtx.state === 'suspended') {
-        audioCtx.resume().catch(() => {});
+        audioCtx.resume().then(() => setIsAudioUnlocked(true)).catch(() => {});
       }
 
       // Decode base64 16-bit Int16 PCM back to Float32 array using DataView for safe alignment
@@ -249,10 +249,13 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       source.buffer = audioBuffer;
       source.connect(audioCtx.destination);
 
-      // Schedule continuous seamless playback with ultra-low latency drift clamping
+      // Jitter buffer queue scheduler: continuous smooth playback with 60ms initial buffer threshold
       const now = audioCtx.currentTime;
-      if (nextPlayTimeRef.current < now || nextPlayTimeRef.current > now + 0.15) {
-        nextPlayTimeRef.current = now + 0.02; // Snap back to 20ms low-latency target
+      if (nextPlayTimeRef.current < now) {
+        nextPlayTimeRef.current = now + 0.06;
+      } else if (nextPlayTimeRef.current > now + 0.35) {
+        // Clamp extreme network drift (> 350ms) back to 80ms target
+        nextPlayTimeRef.current = now + 0.08;
       }
       source.start(nextPlayTimeRef.current);
       nextPlayTimeRef.current += audioBuffer.duration;
@@ -302,6 +305,11 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
       mediaStreamRef.current.getAudioTracks().forEach(track => {
         pc.addTrack(track, mediaStreamRef.current!);
       });
+    } else {
+      // Passive listener: add recvonly audio transceiver so WebRTC UDP stream negotiation succeeds
+      try {
+        pc.addTransceiver('audio', { direction: 'recvonly' });
+      } catch (e) {}
     }
 
     // Play incoming remote Google Meet WebRTC UDP stream directly via zero-latency WebAudio
@@ -848,9 +856,10 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
 
               const bytes = new Uint8Array(pcm16.buffer);
               let binary = '';
-              const len = bytes.byteLength;
-              for (let i = 0; i < len; i++) {
-                binary += String.fromCharCode(bytes[i]);
+              const chunkSize = 1024;
+              for (let i = 0; i < bytes.length; i += chunkSize) {
+                const sub = bytes.subarray(i, i + chunkSize);
+                binary += String.fromCharCode.apply(null, sub as any);
               }
               const base64 = btoa(binary);
 
