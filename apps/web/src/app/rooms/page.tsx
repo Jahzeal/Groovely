@@ -5,7 +5,7 @@ import { Sidebar } from '@/components/dashboard/Sidebar';
 import { MarketTopBar } from '@/components/marketplace/MarketTopBar';
 import { CartProvider } from '@/components/marketplace/CartContext';
 import { CreateRoomModal } from '@/components/rooms/CreateRoomModal';
-import { Headphones, Plus, Users, Radio, Calendar, Lock, Globe, Sparkles, Loader2, Share2 } from 'lucide-react';
+import { Headphones, Plus, Users, Radio, Calendar, Lock, Globe, Sparkles, Loader2, Share2, ChevronDown } from 'lucide-react';
 import { cachedApiFetch, resolveIpfsUrl } from '@/lib/api';
 import { ScheduledCountdown } from '@/components/rooms/ScheduledCountdown';
 import Link from 'next/link';
@@ -136,18 +136,40 @@ export default function ListeningRoomsPage() {
                   </p>
                 </div>
 
-                <button
-                  onClick={handleCreateRoomClick}
-                  className="px-6 py-3.5 bg-[#8A2BE2] hover:bg-[#7823c9] text-white font-bold text-sm rounded-xl transition-all shadow-[0_0_25px_rgba(138,43,226,0.4)] flex items-center justify-center gap-2 cursor-pointer shrink-0"
-                >
-                  <Plus size={18} />
-                  <span>Create Listening Room</span>
-                </button>
+                {isCreator && (
+                  <button
+                    onClick={handleCreateRoomClick}
+                    className="px-6 py-3.5 bg-[#8A2BE2] hover:bg-[#7823c9] text-white font-bold text-sm rounded-xl transition-all shadow-[0_0_25px_rgba(138,43,226,0.4)] flex items-center justify-center gap-2 cursor-pointer shrink-0"
+                  >
+                    <Plus size={18} />
+                    <span>Create Listening Room</span>
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* Genre Filter Bar */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-6 custom-scrollbar">
+            {/* Mobile Genre Select Dropdown (< md) */}
+            <div className="md:hidden mb-6">
+              <div className="relative">
+                <select
+                  value={selectedGenre}
+                  onChange={(e) => setSelectedGenre(e.target.value)}
+                  className="w-full bg-[#0F172A] border border-[#2D3548] text-white font-bold text-xs rounded-xl px-4 py-3 appearance-none focus:outline-none focus:border-[#8A2BE2] shadow-md cursor-pointer pr-10"
+                >
+                  {genres.map(g => (
+                    <option key={g} value={g} className="bg-[#0F172A] text-white">
+                      {g === 'All' ? '🎵 All Genres' : g}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400">
+                  <ChevronDown size={16} />
+                </div>
+              </div>
+            </div>
+
+            {/* Desktop Genre Filter Pills (md+) */}
+            <div className="hidden md:flex items-center gap-2 overflow-x-auto pb-4 mb-6 custom-scrollbar">
               {genres.map(g => (
                 <button
                   key={g}

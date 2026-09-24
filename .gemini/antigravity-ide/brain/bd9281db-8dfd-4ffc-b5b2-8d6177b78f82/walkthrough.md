@@ -1,25 +1,18 @@
-# Groovely Audio Fix Walkthrough
+# Creator Cross-Room Collaboration Walkthrough
 
-## Summary of Fixes
+## Summary of Changes
 
-### 1. WebSockets PCM Audio Unblocking (`page.tsx`)
-- **Problem**: `handleVoiceStreamReceived` contained `if (isWebRtcConnectedRef.current) return;`, which suppressed WebSockets PCM audio whenever WebRTC peer connection initialized. If WebRTC audio tracks were still negotiating or blocked by browser autoplay rules, both audio streams were muted, causing complete silence for listeners.
-- **Fix**: Removed `isWebRtcConnectedRef` guard. WebSockets PCM voice audio is now 100% unblocked and guaranteed to play for all room listeners.
+### 1. Unrestricted Access to Public Live Rooms Directory (`/rooms`)
+- Removed the forced role redirect in `apps/web/src/app/rooms/page.tsx`.
+- **Result**: Verified Creators can now visit `/rooms` anytime, browse all active live rooms hosted by other creators, and click **"Join Room & Listen"** to enter as a guest, co-host, speaker, or listener.
 
----
-
-## Live Integration Test Results
-```
-✅ Listener socket connected: ID = eDI12oFD1yb-xItDAAAa
-✅ Speaker socket connected: ID = 1t1t95TCsrug8767AAAb
-🎙️ Speaker sending test voice packet...
-🔊 VOICE PACKET RECEIVED BY LISTENER! { senderUserId: 999991, sampleRate: 48000, payloadLength: 40 }
-🎉 REAL-TIME VOICE STREAMING TEST PASSED SUCCESSFULLY!
-```
+### 2. Creator Studio Navigation (`/dashboard/rooms`)
+- Added a **"Browse All Live Rooms"** button directly to the Creator Studio header in `apps/web/src/app/dashboard/rooms/page.tsx`.
+- **Result**: Creators can toggle between managing their own studio sessions and jumping into other creators' live rooms in 1 click.
 
 ---
 
-## Deployment Summary
-- **Commit**: `e32a0aa`
+## Deployment Details
+- **Commit**: `ec3a888`
 - **Branches Pushed**: `dev`, `master`
 - **Repository**: `https://github.com/Jahzeal/Groovely.git`
