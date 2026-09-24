@@ -167,26 +167,36 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
   const voicePlayerRef = useRef<HTMLAudioElement | null>(null);
 
   // Auto-unlock AudioContext on user interaction for browser media policies
+  const [isAudioUnlocked, setIsAudioUnlocked] = useState(false);
+
   useEffect(() => {
     const unlockAudio = () => {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!voiceAudioContextRef.current) {
         try { voiceAudioContextRef.current = new AudioCtx(); } catch (e) {}
       }
-      if (voiceAudioContextRef.current && voiceAudioContextRef.current.state === 'suspended') {
-        voiceAudioContextRef.current.resume().catch(() => {});
+      if (voiceAudioContextRef.current) {
+        if (voiceAudioContextRef.current.state === 'suspended') {
+          voiceAudioContextRef.current.resume().then(() => {
+            setIsAudioUnlocked(true);
+          }).catch(() => {});
+        } else if (voiceAudioContextRef.current.state === 'running') {
+          setIsAudioUnlocked(true);
+        }
       }
       if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
         audioContextRef.current.resume().catch(() => {});
       }
     };
-    window.addEventListener('click', unlockAudio);
-    window.addEventListener('touchstart', unlockAudio);
-    window.addEventListener('keydown', unlockAudio);
+
+    // Check if AudioContext is already running on mount
+    unlockAudio();
+
+    const events = ['click', 'touchstart', 'pointerdown', 'mousedown', 'keydown', 'scroll'];
+    events.forEach(evt => window.addEventListener(evt, unlockAudio, { passive: true }));
+
     return () => {
-      window.removeEventListener('click', unlockAudio);
-      window.removeEventListener('touchstart', unlockAudio);
-      window.removeEventListener('keydown', unlockAudio);
+      events.forEach(evt => window.removeEventListener(evt, unlockAudio));
     };
   }, []);
 
@@ -1010,6 +1020,22 @@ export default function LiveRoomPage({ params }: { params: Promise<{ id: string 
 
       {/* ── TOP HEADER BAR ── */}
       <header className="h-[64px] px-4 sm:px-8 border-b border-[#232B3E] bg-[#0F172A]/90 backdrop-blur-md flex items-center justify-between z-30 shrink-0">
+        
+        {/* Floating Interactive Audio Unlock Banner for Fans */}
+        {!isAudioUnlocked && (
+          <div 
+            onClick={() => {
+              if (voiceAudioContextRef.current) {
+                voiceAudioContextRef.current.resume().then(() => setIsAudioUnlocked(true)).catch(() => {});
+              }
+              setIsAudioUnlocked(true);
+            }}
+            className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-full bg-gradient-to-r from-[#8A2BE2] to-[#FF0044] text-white font-bold text-xs shadow-[0_0_25px_rgba(138,43,226,0.8)] flex items-center gap-2 cursor-pointer animate-bounce border border-white/20"
+          >
+            <Volume2 size={16} className="animate-pulse text-[#00FF85]" />
+            <span>Tap anywhere to enable stage audio</span>
+          </div>
+        )}
         
         {/* Left: Live Status Badges */}
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
