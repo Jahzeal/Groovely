@@ -167,13 +167,23 @@ export default function CreatorRoomsDashboard() {
               </p>
             </div>
 
-            <button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="z-10 px-6 py-3.5 bg-gradient-to-r from-[#8A2BE2] to-[#FF0044] hover:opacity-95 text-white font-bold text-sm rounded-2xl shadow-[0_0_25px_rgba(138,43,226,0.5)] transition-all flex items-center gap-2 cursor-pointer shrink-0"
-            >
-              <Plus size={18} />
-              <span>Host New Room</span>
-            </button>
+            <div className="flex items-center gap-3 shrink-0 z-10">
+              <button
+                onClick={() => router.push('/rooms')}
+                className="px-5 py-3.5 bg-[#192134] hover:bg-[#232B3E] border border-[#2D3548] text-white font-bold text-sm rounded-2xl transition-all flex items-center gap-2 cursor-pointer shadow-md"
+              >
+                <Headphones size={18} className="text-cyan-400" />
+                <span>Browse All Live Rooms</span>
+              </button>
+
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="px-6 py-3.5 bg-gradient-to-r from-[#8A2BE2] to-[#FF0044] hover:opacity-95 text-white font-bold text-sm rounded-2xl shadow-[0_0_25px_rgba(138,43,226,0.5)] transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <Plus size={18} />
+                <span>Host New Room</span>
+              </button>
+            </div>
 
             {/* Background Decorative Glow */}
             <div className="absolute -right-10 -bottom-10 w-60 h-60 bg-[#8A2BE2]/15 rounded-full blur-3xl pointer-events-none" />
