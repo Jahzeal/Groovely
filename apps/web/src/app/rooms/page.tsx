@@ -88,11 +88,8 @@ export default function ListeningRoomsPage() {
     if (typeof window !== 'undefined') {
       const role = (localStorage.getItem('groovely_role') || localStorage.getItem('grooveli_role') || 'fan').toLowerCase();
       setUserRole(role);
-      if (role === 'creator') {
-        router.replace('/dashboard/rooms');
-      }
     }
-  }, [router]);
+  }, []);
 
   const handleCreateRoomClick = () => {
     if (!isCreator) {
