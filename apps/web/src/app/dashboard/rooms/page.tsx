@@ -153,35 +153,35 @@ export default function CreatorRoomsDashboard() {
         <main className="flex-1 p-6 sm:p-10 overflow-y-auto space-y-8 custom-scrollbar max-w-[1600px] mx-auto w-full">
           
           {/* Header Banner */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-8 bg-gradient-to-r from-[#0F172A] via-[#192134] to-[#2E0B5E] rounded-3xl border border-[#2D3548] shadow-xl relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 sm:p-8 bg-gradient-to-r from-[#0F172A] via-[#192134] to-[#2E0B5E] rounded-2xl sm:rounded-3xl border border-[#2D3548] shadow-xl relative overflow-hidden">
             <div className="space-y-2 z-10">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#8A2BE2]/20 border border-[#8A2BE2]/40 text-accent-purple text-xs font-bold uppercase tracking-wider">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#8A2BE2]/20 border border-[#8A2BE2]/40 text-accent-purple text-[10px] sm:text-xs font-bold uppercase tracking-wider">
                 <Radio size={14} className="animate-pulse text-[#00FF85]" />
                 <span>Creator Studio Live</span>
               </div>
-              <h1 className="font-['Clash_Display',sans-serif] text-2xl sm:text-3xl font-bold text-white tracking-wide">
+              <h1 className="font-['Clash_Display',sans-serif] text-xl sm:text-3xl font-bold text-white tracking-wide">
                 Listening Room Hub
               </h1>
-              <p className="text-sm text-zinc-400 max-w-xl">
+              <p className="text-xs sm:text-sm text-zinc-400 max-w-xl">
                 Host live listening parties, stream high-fidelity stems, interact with fans on stage, and monetize with real-time tips.
               </p>
             </div>
 
-            <div className="flex items-center gap-3 shrink-0 z-10">
+            <div className="grid grid-cols-2 sm:flex items-center gap-2.5 sm:gap-3 w-full sm:w-auto shrink-0 z-10">
               <button
                 onClick={() => router.push('/rooms')}
-                className="px-5 py-3.5 bg-[#192134] hover:bg-[#232B3E] border border-[#2D3548] text-white font-bold text-sm rounded-2xl transition-all flex items-center gap-2 cursor-pointer shadow-md"
+                className="px-3.5 py-2.5 sm:px-5 sm:py-3.5 bg-[#192134] hover:bg-[#232B3E] border border-[#2D3548] text-white font-bold text-xs sm:text-sm rounded-xl sm:rounded-2xl transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer shadow-md"
               >
-                <Headphones size={18} className="text-cyan-400" />
-                <span>Browse All Live Rooms</span>
+                <Headphones size={16} className="text-cyan-400 shrink-0" />
+                <span className="truncate">Browse Live</span>
               </button>
 
               <button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="px-6 py-3.5 bg-gradient-to-r from-[#8A2BE2] to-[#FF0044] hover:opacity-95 text-white font-bold text-sm rounded-2xl shadow-[0_0_25px_rgba(138,43,226,0.5)] transition-all flex items-center gap-2 cursor-pointer"
+                className="px-3.5 py-2.5 sm:px-6 sm:py-3.5 bg-gradient-to-r from-[#8A2BE2] to-[#FF0044] hover:opacity-95 text-white font-bold text-xs sm:text-sm rounded-xl sm:rounded-2xl shadow-[0_0_25px_rgba(138,43,226,0.5)] transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer"
               >
-                <Plus size={18} />
-                <span>Host New Room</span>
+                <Plus size={16} className="shrink-0" />
+                <span className="truncate">Host New Room</span>
               </button>
             </div>
 

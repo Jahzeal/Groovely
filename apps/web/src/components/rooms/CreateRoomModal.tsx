@@ -302,34 +302,34 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
       
       {/* ── STEP 1: SETUP YOUR LISTENING ROOM ── */}
       {modalStep === 1 && (
-        <div className="relative w-full max-w-[880px] max-h-[92vh] bg-[#0F172A] border border-[#232B3E] rounded-[24px] shadow-[0_20px_60px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col font-['Space_Grotesk',sans-serif] text-white animate-in zoom-in-95 duration-150">
+        <div className="relative w-[95%] sm:w-full max-w-[880px] max-h-[90vh] bg-[#0F172A] border border-[#232B3E] rounded-2xl sm:rounded-[24px] shadow-[0_20px_60px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col font-['Space_Grotesk',sans-serif] text-white animate-in zoom-in-95 duration-150">
           
           {/* Header Bar */}
-          <div className="relative h-[68px] px-8 bg-[#0F172A]/80 border-b border-[#232B3E] backdrop-blur-md flex items-center justify-between shrink-0">
+          <div className="relative min-h-[56px] sm:h-[68px] px-4 sm:px-8 py-3 bg-[#0F172A]/80 border-b border-[#232B3E] backdrop-blur-md flex items-center justify-between shrink-0 gap-2">
             <button 
               type="button"
               onClick={onClose} 
-              className="flex items-center gap-2 text-white hover:text-accent-purple font-bold text-sm transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 text-white hover:text-accent-purple font-bold text-xs sm:text-sm transition-colors cursor-pointer shrink-0"
             >
-              <ArrowLeft size={20} />
+              <ArrowLeft size={18} className="sm:w-5 sm:h-5" />
               <span>Back</span>
             </button>
 
-            <h2 className="font-['Clash_Display',sans-serif] font-bold text-xl sm:text-2xl text-white tracking-wide">
+            <h2 className="font-['Clash_Display',sans-serif] font-bold text-sm sm:text-2xl text-white tracking-wide truncate text-center flex-1 mx-1">
               Setup Your Listening Room
             </h2>
 
             <button 
               type="button"
               onClick={onClose} 
-              className="p-2 text-zinc-400 hover:text-white rounded-full hover:bg-white/5 transition-colors cursor-pointer"
+              className="p-1.5 text-zinc-400 hover:text-white rounded-full hover:bg-white/5 transition-colors cursor-pointer shrink-0"
             >
-              <X size={20} />
+              <X size={18} className="sm:w-5 sm:h-5" />
             </button>
           </div>
 
           {/* Scrollable Form Body */}
-          <form onSubmit={handleProceedToReview} className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6 custom-scrollbar">
+          <form onSubmit={handleProceedToReview} className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-5 sm:space-y-6 custom-scrollbar">
             
             {/* Main Title & Description */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -690,29 +690,29 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
 
       {/* ── STEP 2: REVIEW MODAL ("Are You Ready To Go Live?") Matching Figma Spec (544px x 506px) ── */}
       {modalStep === 2 && (
-        <div className="relative w-full max-w-[544px] bg-[#0F172A] border border-[#232B3E] rounded-[24px] shadow-[0_20px_60px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col font-['Space_Grotesk',sans-serif] text-white animate-in zoom-in-95 duration-150">
+        <div className="relative w-[95%] sm:w-full max-w-[544px] max-h-[90vh] bg-[#0F172A] border border-[#232B3E] rounded-2xl sm:rounded-[24px] shadow-[0_20px_60px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col font-['Space_Grotesk',sans-serif] text-white animate-in zoom-in-95 duration-150">
           
           {/* Header Bar */}
-          <div className="relative h-[68px] px-6 bg-[#0F172A]/80 border-b border-[#232B3E] backdrop-blur-md flex items-center justify-between shrink-0">
+          <div className="relative min-h-[56px] sm:h-[68px] px-4 sm:px-6 py-3 bg-[#0F172A]/80 border-b border-[#232B3E] backdrop-blur-md flex items-center justify-between shrink-0 gap-2">
             <button 
               type="button"
               onClick={() => setModalStep(1)} 
-              className="flex items-center gap-1.5 text-white hover:text-accent-purple font-bold text-sm transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 text-white hover:text-accent-purple font-bold text-xs sm:text-sm transition-colors cursor-pointer shrink-0"
             >
-              <ArrowLeft size={20} />
+              <ArrowLeft size={18} className="sm:w-5 sm:h-5" />
               <span>Back</span>
             </button>
 
-            <h2 className="font-['Clash_Display',sans-serif] font-bold text-lg sm:text-xl text-white tracking-wide text-center flex-1 mx-2">
+            <h2 className="font-['Clash_Display',sans-serif] font-bold text-sm sm:text-xl text-white tracking-wide text-center flex-1 mx-1 truncate">
               Are You Ready To Go Live?
             </h2>
 
             <button 
               type="button"
               onClick={onClose} 
-              className="p-1.5 text-zinc-400 hover:text-white rounded-full hover:bg-white/5 transition-colors cursor-pointer"
+              className="p-1.5 text-zinc-400 hover:text-white rounded-full hover:bg-white/5 transition-colors cursor-pointer shrink-0"
             >
-              <X size={18} />
+              <X size={18} className="sm:w-5 sm:h-5" />
             </button>
           </div>
 
@@ -808,13 +808,13 @@ export const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClos
 
       {/* ── STEP 3: LIVE CONFIRMATION MODAL Matching Figma Spec Frame 96 ── */}
       {modalStep === 3 && (
-        <div className="relative w-full max-w-[544px] min-h-[384px] bg-[#0F172A] border border-[#232B3E] rounded-[24px] shadow-[0_20px_60px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col items-center justify-center p-8 font-['Space_Grotesk',sans-serif] text-white animate-in zoom-in-95 duration-200">
+        <div className="relative w-[95%] sm:w-full max-w-[544px] min-h-[360px] max-h-[90vh] bg-[#0F172A] border border-[#232B3E] rounded-2xl sm:rounded-[24px] shadow-[0_20px_60px_rgba(0,0,0,0.95)] overflow-y-auto flex flex-col items-center justify-center p-6 sm:p-8 font-['Space_Grotesk',sans-serif] text-white animate-in zoom-in-95 duration-200">
           
           {/* Outer Close Button */}
           <button 
             type="button"
             onClick={onClose} 
-            className="absolute top-6 right-6 p-2 text-zinc-400 hover:text-white rounded-full hover:bg-white/5 transition-colors cursor-pointer"
+            className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 text-zinc-400 hover:text-white rounded-full hover:bg-white/5 transition-colors cursor-pointer"
           >
             <X size={20} />
           </button>
